@@ -1,9 +1,7 @@
-import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Gift, X, Eye, Copy, Save, Trash2, Package } from "lucide-react";
 import ProductHero from "../components/ProductHero";
 import ProductSidebar from "../components/ProductSidebar";
-import ProductCard from "../components/ProductCard";
 import {
   Select,
   SelectContent,
