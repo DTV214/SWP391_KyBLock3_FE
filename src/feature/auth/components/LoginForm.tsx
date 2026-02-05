@@ -49,10 +49,17 @@ export function LoginForm() {
         const { token, username, email, role } = response.data;
 
         localStorage.setItem("token", token);
+        localStorage.setItem("role", role); // Lưu role riêng để dễ check
         localStorage.setItem("user", JSON.stringify({ username, email, role }));
 
         alert("Đăng nhập thành công!");
-        navigate("/home");
+        
+        // Redirect dựa trên role
+        if (role === "ADMIN" || role === "STAFF") {
+          navigate("/admin");
+        } else {
+          navigate("/home");
+        }
       }
     } catch (error: unknown) {
       // Xử lý lỗi một cách chuyên nghiệp không dùng any

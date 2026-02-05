@@ -9,6 +9,7 @@ import {
   X,
   LogOut,
   ChevronDown,
+  Settings,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -32,10 +33,13 @@ export default function Navbar() {
   // Kiểm tra token để xác định trạng thái đăng nhập
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const role = localStorage.getItem("role");
+  const isAdmin = role === "ADMIN" || role === "STAFF";
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("role");
     setIsUserMenuOpen(false);
     navigate("/login");
   };
@@ -114,6 +118,15 @@ export default function Navbar() {
                     onClick={() => setIsUserMenuOpen(false)}
                   ></div>
                   <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 text-tet-primary overflow-hidden animate-in fade-in zoom-in duration-200">
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2.5 hover:bg-purple-50 transition-colors font-bold text-xs uppercase text-purple-600 border-b border-gray-50"
+                      >
+                        <Settings size={16} /> Admin Panel
+                      </Link>
+                    )}
                     <Link
                       to="/account/overview"
                       onClick={() => setIsUserMenuOpen(false)}
