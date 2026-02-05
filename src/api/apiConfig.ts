@@ -1,8 +1,19 @@
 // URL cơ sở của Backend .NET 8
 // src/api/apiConfig.ts
-const SERVER_URL = "http://14.225.207.221:5000/api";
-const BASE_URL = SERVER_URL || "https://localhost:7056/api";
-// Điều này giúp bạn chỉ cần đổi file .env khi đẩy lên server thật.
+
+// Ưu tiên cấu hình qua biến môi trường Vite:
+// - VITE_API_BASE_URL=http://localhost:5280/api
+// - VITE_API_BASE_URL=http://14.225.207.221:5000/api
+const ENV_BASE_URL = (import.meta as any).env
+  ?.VITE_API_BASE_URL as string | undefined;
+
+// Fallback về server hiện tại nếu không set env
+const BASE_URL = (
+  ENV_BASE_URL?.trim() || "http://14.225.207.221:5000/api"
+).replace(/\/+$/, "");
+// const BASE_URL = (ENV_BASE_URL?.trim() || "http://localhost:5280/api").replace(/\/+$/, "");
+
+// Điều này giúp bạn chỉ cần đổi file .env khi chạy local / deploy.
 export const API_ENDPOINTS = {
   AUTH: {
     // Khớp chính xác với Swagger trong ảnh bạn cung cấp
