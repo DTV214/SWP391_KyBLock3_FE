@@ -1,38 +1,26 @@
-import { X, Plus, Minus, Trash2, Ticket } from 'lucide-react';
+import { X, Plus, Minus, Trash2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { useState } from 'react';
 
 export default function CartSidebar() {
-    const { items, isOpen, isLoading, closeCart, removeFromCart, updateQuantity, getTotalPrice, getTotalItems, applyPromo } = useCart();
-    const [promoCode, setPromoCode] = useState('');
-    const [promoError, setPromoError] = useState('');
+    const { items, isOpen, closeCart, removeFromCart, updateQuantity, getTotalPrice, getTotalItems } = useCart();
 
     if (!isOpen) return null;
 
     const totalPrice = getTotalPrice();
     const totalItems = getTotalItems();
-    const handleApplyPromo = async () => {
-        if (!promoCode.trim()) return;
-        try {
-            setPromoError('');
-            await applyPromo(promoCode);
-        } catch (err: any) {
-            setPromoError(err.message);
-        }
-    };
 
     return (
         <>
             {/* Overlay */}
             <div
-                className="fixed inset-0 bg-black/50 z-[9998] transition-opacity"
+                className="fixed inset-0 bg-black/50 z-9998 transition-opacity"
                 onClick={closeCart}
             />
 
             {/* Sidebar */}
-            <div className="fixed right-0 top-0 h-screen w-full sm:w-96 bg-white z-[9999] shadow-2xl flex flex-col animate-in slide-in-from-right">
+            <div className="fixed right-0 top-0 h-screen w-full sm:w-96 bg-white z-9999 shadow-2xl flex flex-col animate-in slide-in-from-right">
                 {/* Header */}
-                <div className="flex-shrink-0 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                <div className="shrink-0 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
                     <h2 className="text-xl font-bold text-tet-primary">GIỎ HÀNG</h2>
                     <button
                         onClick={closeCart}
@@ -59,7 +47,7 @@ export default function CartSidebar() {
                                 className="flex gap-3 p-4 border border-gray-200 rounded-xl hover:shadow-md transition-all"
                             >
                                 {/* Product Image */}
-                                <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                                     {item.imageUrl ? (
                                         <img
                                             src={item.imageUrl}
@@ -67,7 +55,7 @@ export default function CartSidebar() {
                                             className="w-full h-full object-cover"
                                         />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-tet-secondary to-tet-primary/10">
+                                        <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-tet-secondary to-tet-primary/10">
                                             <span className="text-2xl">🎁</span>
                                         </div>
                                     )}
@@ -129,7 +117,7 @@ export default function CartSidebar() {
 
                 {/* Footer */}
                 {items.length > 0 && (
-                    <div className="flex-shrink-0 border-t border-gray-200 p-6 space-y-4 bg-gray-50">
+                    <div className="shrink-0 border-t border-gray-200 p-6 space-y-4 bg-gray-50">
                         {/* Summary */}
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm">
@@ -146,7 +134,7 @@ export default function CartSidebar() {
 
                         {/* Checkout Button */}
                         <button
-                            className="w-full py-3 bg-gradient-to-r bg-tet-primary text-white rounded-lg font-bold hover:shadow-lg transition-all active:scale-95"
+                            className="w-full py-3 bg-linear-to-r bg-tet-primary text-white rounded-lg font-bold hover:shadow-lg transition-all active:scale-95"
                             onClick={() => {
                                 // TODO: Redirect to checkout page
                                 console.log('Thanh toán:', { items, totalPrice, totalItems });
