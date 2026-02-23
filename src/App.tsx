@@ -22,6 +22,10 @@ import IntroducePage from "@/feature/introduce/pages/IntroducePage";
 import BlogPage from "@/feature/blog/pages/BlogPage";
 import BlogDetailPage from "@/feature/blog/pages/BlogDetailPage";
 import ContactPage from "@/feature/contact/pages/ContactPage";
+import QuotationIntroPage from "@/feature/quotation/pages/QuotationIntroPage";
+import QuotationCreatePage from "@/feature/quotation/pages/QuotationCreatePage";
+import QuotationStatusPage from "@/feature/quotation/pages/QuotationStatusPage";
+import QuotationHistoryPage from "@/feature/quotation/pages/QuotationHistoryPage";
 
 // Account Module
 import AccountLayout from "@/feature/account/layouts/AccountLayout";
@@ -74,6 +78,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
+
     <CartProvider>
       <Router>
         <div className="min-h-screen flex flex-col bg-tet-bg font-sans">
