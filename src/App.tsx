@@ -78,7 +78,6 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-
     <CartProvider>
       <Router>
         <div className="min-h-screen flex flex-col bg-tet-bg font-sans">
@@ -91,6 +90,10 @@ function App() {
               <Route path="/blogs" element={<BlogPage />} />
               <Route path="/blog/:id" element={<BlogDetailPage />} />
               <Route path="/contact" element={<ContactPage />} />
+              <Route path="/quotation" element={<QuotationIntroPage />} />
+              <Route path="/quotation/create" element={<QuotationCreatePage />} />
+              <Route path="/quotation/history" element={<QuotationHistoryPage />} />
+              <Route path="/quotation/status/:id" element={<QuotationStatusPage />} />
               <Route path="/products" element={<ProductPage />} />
               <Route path="/product/:id" element={<ProductDetailPage />} />
 
