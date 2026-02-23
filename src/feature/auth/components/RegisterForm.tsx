@@ -19,11 +19,11 @@ export function RegisterForm() {
   const [otp, setOtp] = useState("");
 
   const [formData, setFormData] = useState<RegisterRequestPayload>({
-    username: "", // SĐT hoặc tên đăng nhập
+    username: "",
     password: "",
     email: "",
     fullname: "",
-    phone: "",
+    phone: "", // Đã có trường riêng để quản lý
   });
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -130,40 +130,60 @@ export function RegisterForm() {
         />
       </div>
 
+      {/* Email (Đưa ra full width để nhường chỗ cho SĐT ở dưới) */}
+      <div>
+        <label className="block text-sm font-bold text-tet-primary mb-1">
+          Email
+        </label>
+        <input
+          type="email"
+          required
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          placeholder="Địa chỉ email"
+          className="w-full p-3 border border-gray-200 rounded-lg focus:ring-1 focus:ring-tet-primary outline-none text-sm"
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
-        {/* Email */}
+        {/* Username */}
         <div>
           <label className="block text-sm font-bold text-tet-primary mb-1">
-            Email
-          </label>
-          <input
-            type="email"
-            required
-            value={formData.email}
-            onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })
-            }
-            placeholder="Địa chỉ email"
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-1 focus:ring-tet-primary outline-none text-sm"
-          />
-        </div>
-        {/* Username/SĐT */}
-        <div>
-          <label className="block text-sm font-bold text-tet-primary mb-1">
-            Username
+            Tên đăng nhập
           </label>
           <input
             type="text"
             required
             value={formData.username}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                username: e.target.value,
-                phone: e.target.value,
-              })
+            onChange={
+              (e) =>
+                setFormData({
+                  ...formData,
+                  username: e.target.value,
+                }) // Chỉ cập nhật username
             }
-            placeholder="Tên đăng nhập"
+            placeholder="Username"
+            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-1 focus:ring-tet-primary outline-none text-sm"
+          />
+        </div>
+
+        {/* Số điện thoại (Trường mới được thêm vào) */}
+        <div>
+          <label className="block text-sm font-bold text-tet-primary mb-1">
+            Số điện thoại
+          </label>
+          <input
+            type="tel"
+            required
+            value={formData.phone}
+            onChange={
+              (e) =>
+                setFormData({
+                  ...formData,
+                  phone: e.target.value,
+                }) // Chỉ cập nhật phone
+            }
+            placeholder="Số điện thoại"
             className="w-full p-3 border border-gray-200 rounded-lg focus:ring-1 focus:ring-tet-primary outline-none text-sm"
           />
         </div>
