@@ -7,6 +7,8 @@ import {
 import Navbar from "./layouts/components/Navbar";
 import Footer from "./layouts/components/Footer";
 import BackToTop from "./components/common/BackToTop";
+import { CartProvider } from "./feature/cart/context/CartContext";
+import CartSidebar from "./feature/cart/components/CartSidebar";
 import { KeyboardShortcutsHint } from "./lib/hooks/useKeyboardShortcuts";
 import "./App.css";
 
@@ -72,91 +74,94 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen flex flex-col bg-tet-bg font-sans">
-        <Navbar />
-        <main className="flex-grow">
-          <Routes>
-            {/* TRANG CÔNG KHAI */}
-            <Route path="/home" element={<HomePage />} />
-            <Route path="/introduce" element={<IntroducePage />} />
-            <Route path="/blogs" element={<BlogPage />} />
-            <Route path="/blog/:id" element={<BlogDetailPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/products" element={<ProductPage />} />
-            <Route path="/product/:id" element={<ProductDetailPage />} />
+    <CartProvider>
+      <Router>
+        <div className="min-h-screen flex flex-col bg-tet-bg font-sans">
+          <Navbar />
+          <main className="flex-grow">
+            <Routes>
+              {/* TRANG CÔNG KHAI */}
+              <Route path="/home" element={<HomePage />} />
+              <Route path="/introduce" element={<IntroducePage />} />
+              <Route path="/blogs" element={<BlogPage />} />
+              <Route path="/blog/:id" element={<BlogDetailPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/products" element={<ProductPage />} />
+              <Route path="/product/:id" element={<ProductDetailPage />} />
 
-            {/* TRANG HẠN CHẾ (PUBLIC ONLY) */}
-            <Route
-              path="/login"
-              element={
-                <PublicRoute>
-                  <LoginPage />
-                </PublicRoute>
-              }
-            />
-            <Route
-              path="/register"
-              element={
-                <PublicRoute>
-                  <RegisterPage />
-                </PublicRoute>
-              }
-            />
-            <Route path="/" element={<Navigate to="/home" />} />
+              {/* TRANG HẠN CHẾ (PUBLIC ONLY) */}
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute>
+                    <LoginPage />
+                  </PublicRoute>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <PublicRoute>
+                    <RegisterPage />
+                  </PublicRoute>
+                }
+              />
+              <Route path="/" element={<Navigate to="/home" />} />
 
-            {/* TRANG BẢO MẬT (PRIVATE ONLY) */}
-            <Route
-              path="/account"
-              element={
-                <ProtectedRoute>
-                  <AccountLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to="overview" />} />
-              <Route path="overview" element={<AccountOverview />} />
-              <Route path="baskets/:id/edit" element={<EditBasket />} />
-              <Route path="profile" element={<AccountProfile />} />
-              <Route path="orders" element={<OrderHistory />} />
-              <Route path="addresses" element={<AccountAddresses />} />
-              <Route path="vouchers" element={<AccountVouchers />} />
-            </Route>
+              {/* TRANG BẢO MẬT (PRIVATE ONLY) */}
+              <Route
+                path="/account"
+                element={
+                  <ProtectedRoute>
+                    <AccountLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="overview" />} />
+                <Route path="overview" element={<AccountOverview />} />
+                <Route path="baskets/:id/edit" element={<EditBasket />} />
+                <Route path="profile" element={<AccountProfile />} />
+                <Route path="orders" element={<OrderHistory />} />
+                <Route path="addresses" element={<AccountAddresses />} />
+                <Route path="vouchers" element={<AccountVouchers />} />
+              </Route>
 
-            {/* ADMIN PANEL (ADMIN/STAFF ONLY) */}
-            <Route
-              path="/admin"
-              element={
-                <AdminRoute>
-                  <AdminLayout />
-                </AdminRoute>
-              }
-            >
-              <Route index element={<Navigate to="overview" />} />
-              <Route path="overview" element={<AdminOverview />} />
-              <Route path="products" element={<AdminProducts />} />
-              <Route path="categories" element={<AdminCategories />} />
-              <Route path="configs" element={<AdminConfigs />} />
-              <Route path="templates" element={<AdminTemplates />} />
-            </Route>
+              {/* ADMIN PANEL (ADMIN/STAFF ONLY) */}
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminLayout />
+                  </AdminRoute>
+                }
+              >
+                <Route index element={<Navigate to="overview" />} />
+                <Route path="overview" element={<AdminOverview />} />
+                <Route path="products" element={<AdminProducts />} />
+                <Route path="categories" element={<AdminCategories />} />
+                <Route path="configs" element={<AdminConfigs />} />
+                <Route path="templates" element={<AdminTemplates />} />
+              </Route>
 
-            <Route
-              path="/checkout"
-              element={
-                <ProtectedRoute>
-                  <CheckoutPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/payment-success" element={<PaymentSuccess />} />
-            <Route path="/payment-failure" element={<PaymentFailure />} />
-          </Routes>
-        </main>
-        <Footer />
-        <BackToTop />
-        <KeyboardShortcutsHint />
-      </div>
-    </Router>
+              <Route
+                path="/checkout"
+                element={
+                  <ProtectedRoute>
+                    <CheckoutPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-failure" element={<PaymentFailure />} />
+            </Routes>
+          </main>
+          <Footer />
+          <BackToTop />
+          <CartSidebar />
+          <KeyboardShortcutsHint />
+        </div>
+      </Router>
+    </CartProvider>
   );
 }
 

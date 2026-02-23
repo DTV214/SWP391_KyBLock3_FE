@@ -12,6 +12,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useCart } from "@/feature/cart/context/CartContext";
 
 const LOGO_URL =
   "https://res.cloudinary.com/dratbz8bh/image/upload/v1769523263/Gemini_Generated_Image_h7qrtzh7qrtzh7qr_uszekn.png";
@@ -28,6 +29,7 @@ const navItems = [
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const { openCart, getTotalItems } = useCart();
   const navigate = useNavigate();
 
   // Kiểm tra token để xác định trạng thái đăng nhập
@@ -151,12 +153,17 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-1.5 cursor-pointer relative hover:text-tet-secondary transition-colors group">
-            <div className="p-2 group-hover:bg-white/10 rounded-full transition-colors">
+
+            <button
+              onClick={openCart}
+              className="p-2 group-hover:bg-white/10 rounded-full transition-colors"
+            >
               <ShoppingCart size={22} />
-            </div>
-            <span className="absolute top-0 right-0 bg-tet-accent text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-tet-primary shadow-lg">
-              3
-            </span>
+              <span className="absolute top-0 right-0 bg-tet-accent text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-tet-primary shadow-lg">
+                {getTotalItems()}
+              </span>
+            </button>
+
           </div>
 
           <button className="hidden md:flex bg-tet-secondary text-tet-primary px-5 py-2 rounded-full items-center gap-2 font-bold text-sm shadow-lg hover:bg-white hover:scale-105 transition-all">
@@ -181,16 +188,14 @@ export default function Navbar() {
 
       {/* 3. MENU DI ĐỘNG (MOBILE DRAWER) */}
       <div
-        className={`fixed inset-0 bg-black/60 z-[110] transition-opacity duration-300 md:hidden ${
-          isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
+        className={`fixed inset-0 bg-black/60 z-[110] transition-opacity duration-300 md:hidden ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
         onClick={() => setIsMenuOpen(false)}
       />
 
       <div
-        className={`fixed top-0 left-0 h-full w-[300px] bg-tet-bg z-[120] shadow-2xl transform transition-transform duration-300 ease-out md:hidden ${
-          isMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed top-0 left-0 h-full w-[300px] bg-tet-bg z-[120] shadow-2xl transform transition-transform duration-300 ease-out md:hidden ${isMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="bg-tet-primary p-6 flex justify-between items-center text-white">
           <div className="flex items-center gap-3">

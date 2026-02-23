@@ -24,23 +24,23 @@ export const API_ENDPOINTS = {
     BY_ACCOUNT: `${BASE_URL}/products/account`,
     DRAFTS: `${BASE_URL}/products/drafts`,
     MY_BASKETS: `${BASE_URL}/products/my-baskets`,
-    
+
     // Create endpoints
     CREATE_NORMAL: `${BASE_URL}/products/normal`,
     CREATE_CUSTOM: `${BASE_URL}/products/custom`,
     CREATE_TEMPLATE: `${BASE_URL}/products/templates`,
-    
+
     // Update endpoints
     UPDATE_NORMAL: (id: string | number) => `${BASE_URL}/products/normal/${id}`,
     UPDATE_CUSTOM: (id: string | number) => `${BASE_URL}/products/${id}/custom`,
-    
+
     // Delete endpoint
     DELETE: (id: string | number) => `${BASE_URL}/products/${id}`,
-    
+
     // Validation
     VALIDATION_STATUS: (id: string | number) =>
       `${BASE_URL}/products/${id}/validation-status`,
-    
+
     // Template endpoints
     TEMPLATES: `${BASE_URL}/products/templates`,
     ADMIN_BASKETS: `${BASE_URL}/products/admin-baskets`,
@@ -91,6 +91,16 @@ export const API_ENDPOINTS = {
   USER: {
     PROFILE: `${BASE_URL}/profile`,
   },
+
+  // Carts endpoints
+  CARTS: {
+    GET: `${BASE_URL}/carts`,
+    GET_ITEMS_COUNT: `${BASE_URL}/carts/count`,
+    ADD_TO_CART: `${BASE_URL}/carts/items`,
+    UPDATE_ITEM: (cartDetailId: string | number) => `${BASE_URL}/carts/items/${cartDetailId}`,
+    REMOVE_ITEM: (cartDetailId: string | number) => `${BASE_URL}/carts/items/${cartDetailId}`,
+    CLEAR: `${BASE_URL}/carts/clear`
+  }
 };
 
 export default BASE_URL;
