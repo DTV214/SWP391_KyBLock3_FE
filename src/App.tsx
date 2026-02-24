@@ -22,6 +22,10 @@ import IntroducePage from "@/feature/introduce/pages/IntroducePage";
 import BlogPage from "@/feature/blog/pages/BlogPage";
 import BlogDetailPage from "@/feature/blog/pages/BlogDetailPage";
 import ContactPage from "@/feature/contact/pages/ContactPage";
+import QuotationIntroPage from "@/feature/quotation/pages/QuotationIntroPage";
+import QuotationCreatePage from "@/feature/quotation/pages/QuotationCreatePage";
+import QuotationStatusPage from "@/feature/quotation/pages/QuotationStatusPage";
+import QuotationHistoryPage from "@/feature/quotation/pages/QuotationHistoryPage";
 
 // Account Module
 import AccountLayout from "@/feature/account/layouts/AccountLayout";
@@ -87,6 +91,10 @@ function App() {
               <Route path="/blogs" element={<BlogPage />} />
               <Route path="/blog/:id" element={<BlogDetailPage />} />
               <Route path="/contact" element={<ContactPage />} />
+              <Route path="/quotation" element={<QuotationIntroPage />} />
+              <Route path="/quotation/create" element={<QuotationCreatePage />} />
+              <Route path="/quotation/history" element={<QuotationHistoryPage />} />
+              <Route path="/quotation/status/:id" element={<QuotationStatusPage />} />
               <Route path="/products" element={<ProductPage />} />
               <Route path="/product/:id" element={<ProductDetailPage />} />
 
