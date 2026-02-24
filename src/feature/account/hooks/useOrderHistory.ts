@@ -82,6 +82,14 @@ export const useOrderHistory = () => {
         setSortBy(sort);
     };
 
+    const updateOrderInList = (updatedOrder: OrderResponse) => {
+        setOrders(prevOrders =>
+            prevOrders.map(order =>
+                order.orderId === updatedOrder.orderId ? updatedOrder : order
+            )
+        );
+    };
+
     return {
         orders,
         filteredOrders,
@@ -94,5 +102,6 @@ export const useOrderHistory = () => {
         handlePriceRangeChange,
         handleSearch,
         handleSort,
+        updateOrderInList,
     };
 };

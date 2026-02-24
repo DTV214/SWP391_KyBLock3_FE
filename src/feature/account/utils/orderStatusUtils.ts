@@ -40,5 +40,5 @@ export const canReorder = (status: string): boolean => {
 
 // Check if order can be cancelled
 export const canCancel = (status: string): boolean => {
-    return status === ORDER_STATUS.PENDING;
+    return status === ORDER_STATUS.PENDING || status === ORDER_STATUS.CONFIRMED;
 };

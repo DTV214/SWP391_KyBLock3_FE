@@ -108,6 +108,10 @@ export const API_ENDPOINTS = {
     LIST: `${BASE_URL}/orders`,
     DETAIL: (orderId: string | number) => `${BASE_URL}/orders/${orderId}`,
     MY_ORDERS: `${BASE_URL}/orders/my-orders`,
+    UPDATE_SHIPPING_INFO: (orderId: string | number) =>
+      `${BASE_URL}/orders/${orderId}/shipping-info`,
+    CANCEL: (orderId: string | number) =>
+      `${BASE_URL}/orders/${orderId}/cancel`,
   },
 
   // Payments endpoints

@@ -5,11 +5,14 @@ import { useOrderHistory } from '../hooks/useOrderHistory';
 import OrderFilters from '../components/OrderFilters';
 import OrderCard from '../components/OrderCard';
 import OrderDetailModal from '../components/OrderDetailModal';
+import CancelOrderConfirmModal from '../components/CancelOrderConfirmModal';
+import { orderService, type OrderResponse } from '@/feature/checkout/services/orderService';
 import type { SortBy } from '../utils/orderFilterUtils';
-import type { OrderResponse } from '@/feature/checkout/services/orderService';
 
 export default function OrderHistory() {
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<OrderResponse | null>(null);
   const {
     filteredOrders,
     isLoading,
@@ -19,6 +22,7 @@ export default function OrderHistory() {
     handleDateRangeChange,
     handleSearch,
     handleSort,
+    updateOrderInList
   } = useOrderHistory();
 
   const handleViewDetails = (orderId: number) => {
@@ -34,8 +38,21 @@ export default function OrderHistory() {
   };
 
   const handleCancel = (orderId: number) => {
-    console.log('Cancel order:', orderId);
-    // TODO: Implement cancel functionality
+    const order = filteredOrders.find((o) => o.orderId === orderId);
+    if (order) {
+      setOrderToCancel(order);
+      setCancelModalOpen(true);
+    }
+  };
+
+  const handleConfirmCancel = async (orderId: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const updatedOrder = await orderService.cancelOrder(orderId, token || undefined);
+      updateOrderInList(updatedOrder);
+    } catch (err: any) {
+      throw new Error(err.message || 'Không thể hủy đơn hàng');
+    }
   };
 
   if (isLoading) {
@@ -119,8 +136,20 @@ export default function OrderHistory() {
           order={selectedOrder}
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrder(null)}
+          onUpdate={updateOrderInList}
         />
       )}
+
+      {/* Cancel Order Confirm Modal */}
+      <CancelOrderConfirmModal
+        order={orderToCancel}
+        isOpen={cancelModalOpen}
+        onClose={() => {
+          setCancelModalOpen(false);
+          setOrderToCancel(null);
+        }}
+        onConfirm={handleConfirmCancel}
+      />
     </motion.div>
   );
 }

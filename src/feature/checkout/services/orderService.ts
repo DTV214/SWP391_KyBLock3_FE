@@ -39,16 +39,12 @@ export interface OrderResponse {
     items: OrderItem[];
 }
 
-export interface OrderResponseData {
-    status: number;
-    msg: string;
-    data: OrderResponse;
-}
-
-export interface OrderListResponseData {
-    status: number;
-    msg: string;
-    data: OrderResponse[];
+export interface UpdateOrderRequest {
+    customerName: string;
+    customerPhone: string;
+    customerEmail: string;
+    customerAddress: string;
+    note: string;
 }
 
 /**
@@ -83,8 +79,44 @@ export const getMyOrders = async (token?: string): Promise<OrderResponse[]> => {
     return response.data;
 };
 
+// Cập nhật thông tin giao hàng của order
+export const updateOrderShippingInfo = async (
+    orderId: number,
+    payload: UpdateOrderRequest,
+    token?: string
+): Promise<OrderResponse> => {
+    const response = await axiosClient.put<OrderResponse>(
+        API_ENDPOINTS.ORDERS.UPDATE_SHIPPING_INFO(orderId),
+        payload,
+        {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        }
+    );
+
+    return response.data;
+};
+
+/**
+ * Hủy đơn hàng
+ * DELETE /api/orders/{orderId}/cancel
+ */
+export const cancelOrder = async (
+    orderId: number,
+    token?: string
+): Promise<OrderResponse> => {
+    const response = await axiosClient.delete<OrderResponse>(
+        API_ENDPOINTS.ORDERS.CANCEL(orderId),
+        {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        }
+    );
+    return response.data;
+};
+
 // Export all as object for easier importing
 export const orderService = {
     createOrder,
     getMyOrders,
+    updateOrderShippingInfo,
+    cancelOrder
 };
