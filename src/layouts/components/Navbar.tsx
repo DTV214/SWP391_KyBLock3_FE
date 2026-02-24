@@ -194,7 +194,7 @@ export default function Navbar() {
               to="/quotation"
               className="block px-4 py-2 hover:bg-[#FBF5E8] transition-colors"
             >
-              Trang giới thiệu
+              Giới thiệu
             </Link>
             <Link
               to="/quotation/create"

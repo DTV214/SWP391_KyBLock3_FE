@@ -1,7 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  BadgeCheck,
   Minus,
   Plus,
   Search,
@@ -39,7 +38,6 @@ export default function QuotationCreatePage() {
 
   const [items, setItems] = useState<QuoteItem[]>([]);
   const [draftQuantities, setDraftQuantities] = useState<Record<number, number>>({});
-  const [draftLoaded, setDraftLoaded] = useState(false);
   const [form, setForm] = useState({
     company: "",
     address: "",
@@ -58,7 +56,7 @@ export default function QuotationCreatePage() {
       try {
         setLoading(true);
         const [productRes, categoryRes] = await Promise.all([
-          quotationService.getProducts({ pageNumber: 1, pageSize: 200 }),
+          quotationService.getProducts({ pageNumber: 1, pageSize: 200, status: "ACTIVE" }),
           categoryService.getAll(),
         ]);
 
@@ -85,34 +83,7 @@ export default function QuotationCreatePage() {
 
         const detailMap = Object.fromEntries(detailEntries) as Record<number, QuotationProductDetail>;
         setProductDetails(detailMap);
-
-        if (!draftLoaded) {
-          const rawDraft = localStorage.getItem("quotationDraft");
-          if (rawDraft) {
-            try {
-              const draft = JSON.parse(rawDraft);
-              if (draft?.form) {
-                setForm((prev) => ({ ...prev, ...draft.form }));
-              }
-              if (Array.isArray(draft?.items)) {
-                const restoredItems: QuoteItem[] = draft.items
-                  .map((item: { productId: number; quantity: number }) => {
-                    const product = detailMap[item.productId] || activeProducts.find(
-                      (p: QuotationProduct) => p.productid === item.productId,
-                    );
-                    if (!product) return null;
-                    return { product, quantity: Math.max(1, item.quantity || 1) };
-                  })
-                  .filter(Boolean) as QuoteItem[];
-                setItems(restoredItems);
-              }
-            } catch (e) {
-              console.error("Không thể đọc nháp báo giá:", e);
-            }
-          }
-          setDraftLoaded(true);
-        }
-      } catch (err) {
+        } catch (err) {
         console.error(err);
         setFetchError("Không thể tải danh sách sản phẩm.");
       } finally {
@@ -122,20 +93,7 @@ export default function QuotationCreatePage() {
 
     fetchData();
   }, []);
-
-  useEffect(() => {
-    if (!draftLoaded) return;
-    const draft = {
-      form,
-      items: items.map((item) => ({
-        productId: item.product.productid,
-        quantity: item.quantity,
-      })),
-    };
-    localStorage.setItem("quotationDraft", JSON.stringify(draft));
-  }, [form, items, draftLoaded]);
-
-  const filteredProducts = useMemo(() => {
+const filteredProducts = useMemo(() => {
     const keyword = search.trim().toLowerCase();
     const min = minPrice ? Number(minPrice) : undefined;
     const max = maxPrice ? Number(maxPrice) : undefined;
@@ -268,18 +226,6 @@ export default function QuotationCreatePage() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleSaveDraft = () => {
-    const draft = {
-      form,
-      items: items.map((item) => ({
-        productId: item.product.productid,
-        quantity: item.quantity,
-      })),
-    };
-    localStorage.setItem("quotationDraft", JSON.stringify(draft));
-    alert("Đã lưu nháp yêu cầu báo giá.");
   };
 
   return (
@@ -542,13 +488,6 @@ export default function QuotationCreatePage() {
                   <FileText className="h-4 w-4" />
                   {submitting ? "Đang tạo nháp..." : "Tạo nháp báo giá"}
                 </button>
-                <button
-                  type="button"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d7b8a5] bg-white px-6 py-3 text-sm font-semibold text-[#7a160e] transition hover:bg-[#fff7ee]"
-                  onClick={handleSaveDraft}
-                >
-                  <BadgeCheck className="h-4 w-4" /> Lưu nháp
-                </button>
               </div>
             </div>
 
@@ -565,3 +504,9 @@ export default function QuotationCreatePage() {
     </div>
   );
 }
+
+
+
+
+
+

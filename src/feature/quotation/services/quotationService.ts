@@ -171,6 +171,7 @@ export const quotationService = {
     maxPrice?: number;
     pageNumber?: number;
     pageSize?: number;
+    status?: string;
   }) => {
     const response = await axiosClient.get(API_ENDPOINTS.PRODUCTS.LIST, {
       params,
@@ -291,3 +292,4 @@ export const quotationService = {
     return response;
   },
 };
+
