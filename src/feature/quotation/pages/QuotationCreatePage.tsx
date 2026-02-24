@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   BadgeCheck,
@@ -14,6 +14,7 @@ import {
   quotationService,
   type ManualQuotationRequest,
   type QuotationProduct,
+  type QuotationProductDetail,
 } from "@/feature/quotation/services/quotationService";
 
 type QuoteItem = {
@@ -24,6 +25,7 @@ type QuoteItem = {
 export default function QuotationCreatePage() {
   const navigate = useNavigate();
   const [products, setProducts] = useState<QuotationProduct[]>([]);
+  const [productDetails, setProductDetails] = useState<Record<number, QuotationProductDetail>>({});
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -47,6 +49,10 @@ export default function QuotationCreatePage() {
     note: "",
   });
 
+  const getDisplayProduct = (product: QuotationProduct): QuotationProductDetail => {
+    return productDetails[product.productid] || (product as QuotationProductDetail);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -60,8 +66,25 @@ export default function QuotationCreatePage() {
         const activeProducts = productData.filter(
           (p: QuotationProduct) => p.status === "ACTIVE",
         );
+        const categoryData = categoryRes?.data || [];
+
         setProducts(activeProducts);
-        setCategories(categoryRes?.data || []);
+        setCategories(categoryData);
+
+        const detailEntries = await Promise.all(
+          activeProducts.map(async (product: QuotationProduct) => {
+            try {
+              const detailRes = await quotationService.getProductById(product.productid);
+              const detail = detailRes?.data as QuotationProductDetail | undefined;
+              return [product.productid, detail || (product as QuotationProductDetail)] as const;
+            } catch {
+              return [product.productid, product as QuotationProductDetail] as const;
+            }
+          }),
+        );
+
+        const detailMap = Object.fromEntries(detailEntries) as Record<number, QuotationProductDetail>;
+        setProductDetails(detailMap);
 
         if (!draftLoaded) {
           const rawDraft = localStorage.getItem("quotationDraft");
@@ -74,8 +97,8 @@ export default function QuotationCreatePage() {
               if (Array.isArray(draft?.items)) {
                 const restoredItems: QuoteItem[] = draft.items
                   .map((item: { productId: number; quantity: number }) => {
-                    const product = activeProducts.find(
-                      (p) => p.productid === item.productId,
+                    const product = detailMap[item.productId] || activeProducts.find(
+                      (p: QuotationProduct) => p.productid === item.productId,
                     );
                     if (!product) return null;
                     return { product, quantity: Math.max(1, item.quantity || 1) };
@@ -118,22 +141,23 @@ export default function QuotationCreatePage() {
     const max = maxPrice ? Number(maxPrice) : undefined;
 
     return products.filter((product) => {
+      const displayProduct = getDisplayProduct(product);
       if (keyword) {
-        const name = product.productname?.toLowerCase() || "";
-        const sku = product.sku?.toLowerCase() || "";
+        const name = displayProduct.productname?.toLowerCase() || "";
+        const sku = displayProduct.sku?.toLowerCase() || "";
         if (!name.includes(keyword) && !sku.includes(keyword)) return false;
       }
 
       if (selectedCategory) {
-        if (String(product.categoryid || "") !== selectedCategory) return false;
+        if (String(displayProduct.categoryid || "") !== selectedCategory) return false;
       }
 
-      if (min !== undefined && product.price < min) return false;
-      if (max !== undefined && product.price > max) return false;
+      if (min !== undefined && displayProduct.price < min) return false;
+      if (max !== undefined && displayProduct.price > max) return false;
 
       return true;
     });
-  }, [products, search, selectedCategory, minPrice, maxPrice]);
+  }, [products, productDetails, search, selectedCategory, minPrice, maxPrice]);
 
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalItems = items.length;
@@ -144,6 +168,7 @@ export default function QuotationCreatePage() {
 
   const handleAddItem = (product: QuotationProduct) => {
     const draftQty = Math.max(1, draftQuantities[product.productid] || 1);
+    const displayProduct = getDisplayProduct(product);
     setItems((prev) => {
       const existing = prev.find((item) => item.product.productid === product.productid);
       if (existing) {
@@ -153,7 +178,7 @@ export default function QuotationCreatePage() {
             : item,
         );
       }
-      return [...prev, { product, quantity: draftQty }];
+      return [...prev, { product: displayProduct, quantity: draftQty }];
     });
   };
 
@@ -238,7 +263,7 @@ export default function QuotationCreatePage() {
       setFormError(
         err?.response?.data?.msg ||
           err?.message ||
-          "Không thể gửi yêu cầu báo giá.",
+          "Không thể tạo nháp báo giá.",
       );
     } finally {
       setSubmitting(false);
@@ -261,7 +286,6 @@ export default function QuotationCreatePage() {
     <div className="bg-[#FBF5E8]/40 text-[#4a0d06] min-h-screen">
       <div className="container mx-auto max-w-6xl px-4 py-10 md:px-8">
         <div className="grid gap-8 lg:grid-cols-[1.4fr_0.9fr]">
-          {/* Left Column */}
           <div className="space-y-6">
             <div>
               <h1 className="text-2xl font-bold">Chọn sản phẩm</h1>
@@ -321,106 +345,105 @@ export default function QuotationCreatePage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredProducts.map((product) => (
-                  <div
-                    key={product.productid}
-                    className="flex flex-col gap-4 rounded-3xl border border-[#f1e1d6] bg-white p-5 shadow-sm md:flex-row md:items-center"
-                  >
-                    <div className="h-24 w-24 overflow-hidden rounded-2xl bg-[#f7ebe2]">
-                      {product.imageUrl ? (
-                        <img
-                          src={product.imageUrl}
-                          alt={product.productname}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-sm text-[#b48a7a]">
-                          No Image
-                        </div>
-                      )}
-                    </div>
+                {filteredProducts.map((product) => {
+                  const displayProduct = getDisplayProduct(product);
+                  const categoryName = categories.find(
+                    (category) => category.categoryid === displayProduct.categoryid,
+                  )?.categoryname;
 
-                    <div className="flex-1 space-y-1">
-                      <h3 className="text-base font-semibold">
-                        {product.productname}
-                      </h3>
-                      <p className="text-xs text-[#8a5b4f]">
-                        SKU: {product.sku || "N/A"}
-                      </p>
-                      <p className="text-xs text-[#8a5b4f] line-clamp-2">
-                        {product.description || "Sản phẩm quà tặng cao cấp."}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-4 md:flex-col md:items-end">
-                      <p className="text-lg font-bold text-[#7a160e]">
-                        {product.price.toLocaleString("vi-VN")}đ
-                      </p>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 rounded-full border border-[#f1e1d6] bg-white px-2 py-1">
-                          <button
-                            className="text-[#7a160e]"
-                            onClick={() =>
-                              setDraftQuantities((prev) => ({
-                                ...prev,
-                                [product.productid]: Math.max(
-                                  1,
-                                  (prev[product.productid] || 1) - 1,
-                                ),
-                              }))
-                            }
-                          >
-                            <Minus className="h-4 w-4" />
-                          </button>
-                          <input
-                            type="number"
-                            min={1}
-                            className="w-14 bg-transparent text-center text-sm font-semibold text-[#4a0d06] focus:outline-none"
-                            value={draftQuantities[product.productid] || 1}
-                            onChange={(event) =>
-                              setDraftQuantities((prev) => ({
-                                ...prev,
-                                [product.productid]: Math.max(
-                                  1,
-                                  Number(event.target.value) || 1,
-                                ),
-                              }))
-                            }
+                  return (
+                    <div
+                      key={product.productid}
+                      className="flex flex-col gap-4 rounded-3xl border border-[#f1e1d6] bg-white p-5 shadow-sm md:flex-row md:items-center"
+                    >
+                      <div className="h-24 w-24 overflow-hidden rounded-2xl bg-[#f7ebe2]">
+                        {displayProduct.imageUrl ? (
+                          <img
+                            src={displayProduct.imageUrl}
+                            alt={displayProduct.productname}
+                            className="h-full w-full object-cover"
                           />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-sm text-[#b48a7a]">
+                            No Image
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 space-y-2">
+                        <h3 className="text-base font-semibold">{displayProduct.productname}</h3>
+                        <p className="text-xs text-[#8a5b4f]">SKU: {displayProduct.sku || "N/A"}</p>
+                        <p className="text-xs text-[#8a5b4f] line-clamp-2">
+                          {displayProduct.description || "Sản phẩm quà tặng cao cấp."}
+                        </p>
+                        <div className="flex flex-wrap gap-2 text-[11px]">
+                          <span className="rounded-full bg-[#edf8f1] px-2 py-1 text-[#276749]">{displayProduct.status}</span>
+                          <span className="rounded-full bg-[#f7ebe2] px-2 py-1 text-[#7a160e]">{categoryName || "Chưa phân loại"}</span>
+                          <span className="rounded-full bg-[#eef5ff] px-2 py-1 text-[#1e3a8a]">{displayProduct.isCustom ? "Tùy chỉnh" : "Tiêu chuẩn"}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4 md:flex-col md:items-end">
+                        <p className="text-lg font-bold text-[#7a160e]">
+                          {displayProduct.price.toLocaleString("vi-VN")}đ
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 rounded-full border border-[#f1e1d6] bg-white px-2 py-1">
+                            <button
+                              className="text-[#7a160e]"
+                              onClick={() =>
+                                setDraftQuantities((prev) => ({
+                                  ...prev,
+                                  [product.productid]: Math.max(1, (prev[product.productid] || 1) - 1),
+                                }))
+                              }
+                            >
+                              <Minus className="h-4 w-4" />
+                            </button>
+                            <input
+                              type="number"
+                              min={1}
+                              className="w-14 bg-transparent text-center text-sm font-semibold text-[#4a0d06] focus:outline-none"
+                              value={draftQuantities[product.productid] || 1}
+                              onChange={(event) =>
+                                setDraftQuantities((prev) => ({
+                                  ...prev,
+                                  [product.productid]: Math.max(1, Number(event.target.value) || 1),
+                                }))
+                              }
+                            />
+                            <button
+                              className="text-[#7a160e]"
+                              onClick={() =>
+                                setDraftQuantities((prev) => ({
+                                  ...prev,
+                                  [product.productid]: (prev[product.productid] || 1) + 1,
+                                }))
+                              }
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          </div>
                           <button
-                            className="text-[#7a160e]"
-                            onClick={() =>
-                              setDraftQuantities((prev) => ({
-                                ...prev,
-                                [product.productid]: (prev[product.productid] || 1) + 1,
-                              }))
-                            }
+                            className="inline-flex items-center gap-2 rounded-full bg-[#7a160e] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#5c0f09]"
+                            onClick={() => handleAddItem(product)}
                           >
-                            <Plus className="h-4 w-4" />
+                            <Plus className="h-4 w-4" /> Thêm vào yêu cầu
                           </button>
                         </div>
-                        <button
-                          className="inline-flex items-center gap-2 rounded-full bg-[#7a160e] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#5c0f09]"
-                          onClick={() => handleAddItem(product)}
-                        >
-                          <Plus className="h-4 w-4" /> Thêm vào yêu cầu
-                        </button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {/* Right Column */}
           <div className="space-y-6">
             <div className="rounded-3xl border border-[#f1e1d6] bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Yêu cầu báo giá</h2>
-                <span className="rounded-full bg-[#f7ebe2] px-3 py-1 text-xs font-semibold text-[#7a160e]">
-                  Nháp
-                </span>
+                <span className="rounded-full bg-[#f7ebe2] px-3 py-1 text-xs font-semibold text-[#7a160e]">Nháp</span>
               </div>
 
               <div className="mt-4 space-y-4">
@@ -429,82 +452,67 @@ export default function QuotationCreatePage() {
                     Chưa có sản phẩm nào trong yêu cầu.
                   </div>
                 ) : (
-                  items.map((item) => (
-                    <div
-                      key={item.product.productid}
-                      className="rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold">
-                            {item.product.productname}
-                          </p>
-                          <p className="text-xs text-[#8a5b4f]">
-                            Đơn giá ước tính:{" "}
-                            {item.product.price.toLocaleString("vi-VN")}đ
-                          </p>
+                  items.map((item) => {
+                    const displayProduct = getDisplayProduct(item.product);
+                    return (
+                      <div key={item.product.productid} className="rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            <div className="h-12 w-12 overflow-hidden rounded-xl bg-[#f7ebe2]">
+                              {displayProduct.imageUrl ? (
+                                <img
+                                  src={displayProduct.imageUrl}
+                                  alt={displayProduct.productname}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : null}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold">{displayProduct.productname}</p>
+                              <p className="text-xs text-[#8a5b4f]">SKU: {displayProduct.sku || "N/A"}</p>
+                              <p className="text-xs text-[#8a5b4f]">
+                                Đơn giá ước tính: {displayProduct.price.toLocaleString("vi-VN")}đ
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            className="text-[#b48a7a] hover:text-red-500"
+                            onClick={() => handleRemoveItem(item.product.productid)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
-                        <button
-                          className="text-[#b48a7a] hover:text-red-500"
-                          onClick={() => handleRemoveItem(item.product.productid)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
 
-                      <div className="mt-3 flex items-center gap-3">
-                        <span className="text-xs text-[#8a5b4f]">Số lượng:</span>
-                        <div className="flex items-center gap-2 rounded-full border border-[#f1e1d6] bg-white px-2 py-1">
-                          <button
-                            className="text-[#7a160e]"
-                            onClick={() =>
-                              handleChangeQuantity(item.product.productid, -1)
-                            }
-                          >
-                            <Minus className="h-4 w-4" />
-                          </button>
-                          <input
-                            type="number"
-                            min={1}
-                            className="w-12 bg-transparent text-center text-sm font-semibold text-[#4a0d06] focus:outline-none"
-                            value={item.quantity}
-                            onChange={(event) =>
-                              handleSetQuantity(
-                                item.product.productid,
-                                Number(event.target.value) || 1,
-                              )
-                            }
-                          />
-                          <button
-                            className="text-[#7a160e]"
-                            onClick={() =>
-                              handleChangeQuantity(item.product.productid, 1)
-                            }
-                          >
-                            <Plus className="h-4 w-4" />
-                          </button>
+                        <div className="mt-3 flex items-center gap-3">
+                          <span className="text-xs text-[#8a5b4f]">Số lượng:</span>
+                          <div className="flex items-center gap-2 rounded-full border border-[#f1e1d6] bg-white px-2 py-1">
+                            <button className="text-[#7a160e]" onClick={() => handleChangeQuantity(item.product.productid, -1)}>
+                              <Minus className="h-4 w-4" />
+                            </button>
+                            <input
+                              type="number"
+                              min={1}
+                              className="w-12 bg-transparent text-center text-sm font-semibold text-[#4a0d06] focus:outline-none"
+                              value={item.quantity}
+                              onChange={(event) =>
+                                handleSetQuantity(item.product.productid, Number(event.target.value) || 1)
+                              }
+                            />
+                            <button className="text-[#7a160e]" onClick={() => handleChangeQuantity(item.product.productid, 1)}>
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 
               <div className="mt-5 border-t border-[#f1e1d6] pt-4 text-sm text-[#7b5a4c]">
-                <div className="flex justify-between">
-                  <span>Tổng sản phẩm:</span>
-                  <span className="font-semibold">{totalItems}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tổng số lượng:</span>
-                  <span className="font-semibold">{totalQuantity}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Ước tính:</span>
-                  <span className="font-semibold">
-                    {totalPrice.toLocaleString("vi-VN")}đ
-                  </span>
-                </div>
+                <div className="flex justify-between"><span>Tổng sản phẩm:</span><span className="font-semibold">{totalItems}</span></div>
+                <div className="flex justify-between"><span>Tổng số lượng:</span><span className="font-semibold">{totalQuantity}</span></div>
+                <div className="flex justify-between"><span>Ước tính:</span><span className="font-semibold">{totalPrice.toLocaleString("vi-VN")}đ</span></div>
               </div>
 
               <div className="mt-4 flex items-center gap-2 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3 text-xs text-[#8a5b4f]">
@@ -514,65 +522,15 @@ export default function QuotationCreatePage() {
 
               <div className="mt-6 space-y-4">
                 <h3 className="text-sm font-semibold">Thông tin công ty</h3>
-                <input
-                  className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none"
-                  placeholder="Tên công ty *"
-                  value={form.company}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, company: event.target.value }))
-                  }
-                />
-                <input
-                  className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none"
-                  placeholder="Địa chỉ *"
-                  value={form.address}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, address: event.target.value }))
-                  }
-                />
-                <input
-                  className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none"
-                  placeholder="Email *"
-                  value={form.email}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, email: event.target.value }))
-                  }
-                />
-                <input
-                  className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none"
-                  placeholder="Số điện thoại *"
-                  value={form.phone}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, phone: event.target.value }))
-                  }
-                />
-                <input
-                  className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none"
-                  placeholder="Ghi chú về ngân sách (tuỳ chọn)"
-                  value={form.desiredPriceNote}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      desiredPriceNote: event.target.value,
-                    }))
-                  }
-                />
-                <textarea
-                  rows={4}
-                  className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none"
-                  placeholder="Ghi chú thêm (tuỳ chọn)"
-                  value={form.note}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, note: event.target.value }))
-                  }
-                />
+                <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Tên công ty *" value={form.company} onChange={(event) => setForm((prev) => ({ ...prev, company: event.target.value }))} />
+                <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Địa chỉ *" value={form.address} onChange={(event) => setForm((prev) => ({ ...prev, address: event.target.value }))} />
+                <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Email *" value={form.email} onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))} />
+                <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Số điện thoại *" value={form.phone} onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))} />
+                <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Ghi chú về ngân sách (tuỳ chọn)" value={form.desiredPriceNote} onChange={(event) => setForm((prev) => ({ ...prev, desiredPriceNote: event.target.value }))} />
+                <textarea rows={4} className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Ghi chú thêm (tuỳ chọn)" value={form.note} onChange={(event) => setForm((prev) => ({ ...prev, note: event.target.value }))} />
               </div>
 
-              {formError && (
-                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600">
-                  {formError}
-                </div>
-              )}
+              {formError && <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600">{formError}</div>}
 
               <div className="mt-6 space-y-3">
                 <button
@@ -582,7 +540,7 @@ export default function QuotationCreatePage() {
                   disabled={submitting}
                 >
                   <FileText className="h-4 w-4" />
-                  {submitting ? "Đang gửi..." : "Gửi yêu cầu báo giá"}
+                  {submitting ? "Đang tạo nháp..." : "Tạo nháp báo giá"}
                 </button>
                 <button
                   type="button"

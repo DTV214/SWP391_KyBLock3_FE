@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+﻿import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -6,6 +6,7 @@ import {
   Settings,
   Gift,
   ShoppingCart,
+  FileText,
   Users,
   LogOut,
   Home,
@@ -22,6 +23,7 @@ export default function AdminSidebar() {
       navigate("/login");
     }
   };
+
   const menuItems = [
     {
       path: "/admin/overview",
@@ -49,6 +51,16 @@ export default function AdminSidebar() {
       icon: <Gift size={18} />,
     },
     {
+      path: "/admin/quotations",
+      label: "Quotations",
+      icon: <FileText size={18} />,
+    },
+    {
+      path: "/admin/reviewing-quotations",
+      label: "Reviewing Quotations",
+      icon: <FileText size={18} />,
+    },
+    {
       path: "/admin/orders",
       label: "Đơn hàng",
       icon: <ShoppingCart size={18} />,
@@ -62,7 +74,6 @@ export default function AdminSidebar() {
 
   return (
     <aside className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-      {/* Header */}
       <div className="bg-gradient-to-br from-tet-primary to-tet-accent p-6 text-white">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
@@ -75,7 +86,6 @@ export default function AdminSidebar() {
         </div>
       </div>
 
-      {/* Menu Items */}
       <nav className="p-3">
         {menuItems.map((item) => (
           <NavLink
@@ -94,10 +104,8 @@ export default function AdminSidebar() {
           </NavLink>
         ))}
 
-        {/* Divider */}
         <div className="my-2 border-t border-gray-200"></div>
 
-        {/* Back to Home Button */}
         <NavLink
           to="/home"
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mb-1 text-blue-600 hover:bg-blue-50"
@@ -106,7 +114,6 @@ export default function AdminSidebar() {
           <span>Về trang chủ</span>
         </NavLink>
 
-        {/* Logout Button */}
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all"
