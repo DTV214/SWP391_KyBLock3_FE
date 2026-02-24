@@ -46,6 +46,7 @@ import ProductDetailPage from "@/feature/product/pages/ProductDetailPage";
 import CheckoutPage from "@/feature/checkout/pages/CheckoutPage";
 import PaymentSuccess from "@/feature/checkout/pages/PaymentSuccess";
 import PaymentFailure from "@/feature/checkout/pages/PaymentFailure";
+import VNPayReturn from "@/feature/checkout/pages/VNPayReturn";
 
 // --- CÁC COMPONENT GÁC CỔNG (ROUTE GUARDS) ---
 
@@ -153,6 +154,7 @@ function App() {
               />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/payment-failure" element={<PaymentFailure />} />
+              <Route path="/payments/vnpay-return" element={<VNPayReturn />} />
             </Routes>
           </main>
           <Footer />

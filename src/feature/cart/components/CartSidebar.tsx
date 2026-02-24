@@ -1,7 +1,9 @@
 import { X, Plus, Minus, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
 export default function CartSidebar() {
+    const navigate = useNavigate();
     const { items, isOpen, closeCart, removeFromCart, updateQuantity, getTotalPrice, getTotalItems } = useCart();
 
     if (!isOpen) return null;
@@ -136,9 +138,8 @@ export default function CartSidebar() {
                         <button
                             className="w-full py-3 bg-linear-to-r bg-tet-primary text-white rounded-lg font-bold hover:shadow-lg transition-all active:scale-95"
                             onClick={() => {
-                                // TODO: Redirect to checkout page
-                                console.log('Thanh toán:', { items, totalPrice, totalItems });
-                                alert('Chuyển tới trang thanh toán...');
+                                closeCart();
+                                navigate('/checkout');
                             }}
                         >
                             Thanh toán

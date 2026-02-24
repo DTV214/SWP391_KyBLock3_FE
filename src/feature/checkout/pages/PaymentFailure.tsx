@@ -33,24 +33,17 @@ export default function PaymentFailure() {
             Thanh toán lại
           </Button>
 
-          <Button
-            variant="outline"
-            className="border-2 border-tet-secondary text-tet-primary bg-tet-secondary/20 py-7 rounded-2xl text-base font-bold hover:bg-tet-secondary transition-all"
-          >
-            Đổi phương thức thanh toán
-          </Button>
-
           <Link
             to="/home"
             className="text-tet-primary font-bold hover:underline transition-all pt-2"
           >
-            Go to Homepage
+            Trở về trang chủ
           </Link>
 
           <div className="text-xs text-gray-400 font-medium">
-            Need help?{" "}
+            Cần giúp đỡ?{" "}
             <Link to="/contact" className="text-red-800 hover:underline">
-              Contact Support
+              Liên hệ chúng tôi
             </Link>
           </div>
         </div>

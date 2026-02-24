@@ -100,6 +100,25 @@ export const API_ENDPOINTS = {
     UPDATE_ITEM: (cartDetailId: string | number) => `${BASE_URL}/carts/items/${cartDetailId}`,
     REMOVE_ITEM: (cartDetailId: string | number) => `${BASE_URL}/carts/items/${cartDetailId}`,
     CLEAR: `${BASE_URL}/carts/clear`
+  },
+
+  // Orders endpoints
+  ORDERS: {
+    CREATE: `${BASE_URL}/orders`,
+    LIST: `${BASE_URL}/orders`,
+    DETAIL: (orderId: string | number) => `${BASE_URL}/orders/${orderId}`,
+    MY_ORDERS: `${BASE_URL}/orders/my-orders`,
+  },
+
+  // Payments endpoints
+  PAYMENTS: {
+    CREATE: `${BASE_URL}/payments`,
+    BY_ORDER: (orderId: string | number) => `${BASE_URL}/payments/order/${orderId}`,
+  },
+
+  // Promotions endpoints
+  PROMOTIONS: {
+    GET_BY_CODE: (code: string) => `${BASE_URL}/promotions/code/${code}`,
   }
 };
 

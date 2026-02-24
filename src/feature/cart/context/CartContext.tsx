@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Product } from '@/api/productService';
-import { cartService, type CartResponse, type AddToCartRequest } from '@/api/cartService';
+import { cartService, type CartResponse, type AddToCartRequest } from '@/feature/cart/services/cartService';
 
 export interface CartItem extends Product {
     cartQuantity: number;
@@ -55,9 +55,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const token = getToken();
         if (token) {
             try {
-                console.log('✅ Cart count fetching...');
                 const count = await cartService.getCartCount(token);
-                console.log('✅ Cart count fetched:', count);
                 setItemCount(count);
             } catch (err: any) {
                 console.error(err.response?.data || err.message || 'Error fetching cart count');

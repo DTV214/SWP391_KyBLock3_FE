@@ -1,5 +1,5 @@
-import axiosClient from './axiosClient';
-import { API_ENDPOINTS } from './apiConfig';
+import axiosClient from '../../../api/axiosClient';
+import { API_ENDPOINTS } from '../../../api/apiConfig';
 
 // DTO interfaces
 export interface AddToCartRequest {
