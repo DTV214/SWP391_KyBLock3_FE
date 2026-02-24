@@ -6,11 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { Wallet, Loader2 } from 'lucide-react';
+import { Wallet, Loader2, AlertCircle } from 'lucide-react';
 import { cartService, type CartItemResponse } from '@/feature/cart/services/cartService';
 import { orderService } from '@/feature/checkout/services/orderService';
 import { paymentService } from '@/feature/checkout/services/paymentService';
+import { walletService, type WalletResponse } from '@/feature/checkout/services/walletService';
 import promotionService, { type PromotionResponse } from '@/feature/checkout/services/promotionService';
+import PaymentSuccessModal from '../components/PaymentSuccessModal';
 
 interface FormData {
   customerName: string;
@@ -19,7 +21,7 @@ interface FormData {
   customerAddress: string;
   note: string;
   promotionCode: string;
-  paymentMethod: 'VNPAY';
+  paymentMethod: 'VNPAY' | 'WALLET';
   province: string;
   district: string;
   ward: string;
@@ -33,6 +35,10 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [promotion, setPromotion] = useState<PromotionResponse | null>(null);
   const [promoLoading, setPromoLoading] = useState(false);
+  const [wallet, setWallet] = useState<WalletResponse | null>(null);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [successOrderId, setSuccessOrderId] = useState<number | undefined>();
 
   const [formData, setFormData] = useState<FormData>({
     customerName: '',
@@ -47,9 +53,9 @@ export default function CheckoutPage() {
     ward: '',
   });
 
-  // Load cart items on mount
+  // Load cart items and wallet on mount
   useEffect(() => {
-    const loadCart = async () => {
+    const loadData = async () => {
       try {
         setIsLoading(true);
         const token = localStorage.getItem('token');
@@ -59,17 +65,26 @@ export default function CheckoutPage() {
           return;
         }
 
+        // Load cart
         const cartResponse = await cartService.getCart(token);
         setCartItems(cartResponse.items);
+
+        // Load wallet
+        setWalletLoading(true);
+        const walletResponse = await walletService.getWallet(token);
+        if (walletResponse) {
+          setWallet(walletResponse);
+        }
       } catch (err: any) {
-        console.error('Error loading cart:', err);
-        setError('Không thể tải giỏ hàng. Vui lòng thử lại.');
+        console.error('Error loading data:', err);
+        setError('Không thể tải dữ liệu. Vui lòng thử lại.');
       } finally {
         setIsLoading(false);
+        setWalletLoading(false);
       }
     };
 
-    loadCart();
+    loadData();
   }, [navigate]);
 
   const handleInputChange = (
@@ -85,7 +100,7 @@ export default function CheckoutPage() {
   const handlePaymentMethodChange = (value: string) => {
     setFormData((prev) => ({
       ...prev,
-      paymentMethod: value as 'VNPAY',
+      paymentMethod: value as 'VNPAY' | 'WALLET',
     }));
   };
 
@@ -151,6 +166,14 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Check wallet balance if paying by wallet
+    if (formData.paymentMethod === 'WALLET') {
+      if (!wallet || wallet.balance < finalPrice) {
+        setError(`Số dư ví không đủ. Bạn cần ${(finalPrice - (wallet?.balance || 0)).toLocaleString()}đ nữa.`);
+        return;
+      }
+    }
+
     try {
       setIsSubmitting(true);
       setError(null);
@@ -177,27 +200,39 @@ export default function CheckoutPage() {
       );
       console.log('✅ Order created:', orderResponse);
 
-      // Step 2: Create payment
-      console.log('💳 Creating payment...');
-      const paymentResponse = await paymentService.createPayment(
-        {
-          orderId: orderResponse.orderId,
-          paymentMethod: formData.paymentMethod,
-        },
-        token
-      );
-      console.log('✅ Payment created:', paymentResponse);
+      // Step 2: Pay based on selected method
+      if (formData.paymentMethod === 'WALLET') {
+        // Wallet payment
+        console.log('💳 Processing wallet payment...');
+        await paymentService.paymentByWallet(orderResponse.orderId, token);
+        console.log('✅ Wallet payment successful');
 
-      // Step 3: Redirect to payment URL
-      if (paymentResponse.paymentUrl || paymentResponse.paymentLink) {
-        const paymentUrl = paymentResponse.paymentUrl || paymentResponse.paymentLink;
-        console.log('🔗 Redirecting to payment URL:', paymentUrl);
-        window.location.href = paymentUrl;
+        // Show success modal
+        setSuccessOrderId(orderResponse.orderId);
+        setPaymentSuccess(true);
       } else {
-        // If no payment URL, show success page
-        navigate('/checkout/success', {
-          state: { orderId: orderResponse.orderId }
-        });
+        // VNPAY payment
+        console.log('💳 Creating payment...');
+        const paymentResponse = await paymentService.createPayment(
+          {
+            orderId: orderResponse.orderId,
+            paymentMethod: formData.paymentMethod,
+          },
+          token
+        );
+        console.log('✅ Payment created:', paymentResponse);
+
+        // Step 3: Redirect to payment URL
+        if (paymentResponse.paymentUrl || paymentResponse.paymentLink) {
+          const paymentUrl = paymentResponse.paymentUrl || paymentResponse.paymentLink;
+          console.log('🔗 Redirecting to payment URL:', paymentUrl);
+          window.location.href = paymentUrl;
+        } else {
+          // If no payment URL, show success page
+          navigate('/checkout/success', {
+            state: { orderId: orderResponse.orderId }
+          });
+        }
       }
     } catch (err: any) {
       console.error('Error during checkout:', err);
@@ -369,6 +404,47 @@ export default function CheckoutPage() {
                       <Wallet size={20} className="text-gray-400" />
                     </div>
 
+                    <div
+                      className={`flex items-center justify-between p-4 border rounded-2xl cursor-pointer hover:bg-gray-50 transition-all ${wallet && wallet.balance < finalPrice
+                        ? 'opacity-60 border-red-200'
+                        : ''
+                        }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <RadioGroupItem
+                          value="WALLET"
+                          id="wallet"
+                          disabled={!wallet || wallet.balance < finalPrice}
+                        />
+                        <div className="flex-1">
+                          <Label
+                            htmlFor="wallet"
+                            className="font-bold text-sm cursor-pointer block"
+                          >
+                            Thanh toán bằng ví
+                          </Label>
+                          {wallet && (
+                            <p className={`text-xs mt-1 ${wallet.balance >= finalPrice
+                              ? 'text-green-600 font-medium'
+                              : 'text-red-600 font-medium'
+                              }`}>
+                              Số dư: {wallet.balance.toLocaleString()}đ
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Wallet size={20} className={wallet && wallet.balance >= finalPrice ? 'text-tet-primary' : 'text-gray-400'} />
+                    </div>
+
+                    {wallet && wallet.balance < finalPrice && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex gap-2">
+                        <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                        <div className="text-sm text-red-700">
+                          <p className="font-bold">Số dư ví không đủ</p>
+                          <p>Bạn cần thêm {(finalPrice - wallet.balance).toLocaleString()}đ</p>
+                        </div>
+                      </div>
+                    )}
                   </RadioGroup>
                 </section>
               </div>
@@ -376,6 +452,38 @@ export default function CheckoutPage() {
 
             {/* CỘT PHẢI: TÓM TẮT ĐƠN HÀNG (Sticky) */}
             <aside className="w-full lg:w-1/3 sticky top-28">
+              {/* Wallet Balance Panel */}
+              {wallet && (
+                <div className={`mb-6 p-6 rounded-2xl shadow-md border-2 ${wallet.balance >= finalPrice
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-orange-50 border-orange-200'
+                  }`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className={`text-lg font-bold ${wallet.balance >= finalPrice
+                      ? 'text-green-900'
+                      : 'text-orange-900'
+                      }`}>
+                      💳 Ví của bạn
+                    </h4>
+                    {walletLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  </div>
+                  <p className={`text-3xl font-black ${wallet.balance >= finalPrice
+                    ? 'text-green-600'
+                    : 'text-orange-600'
+                    }`}>
+                    {wallet.balance.toLocaleString()}đ
+                  </p>
+                  <p className={`text-sm mt-2 ${wallet.balance >= finalPrice
+                    ? 'text-green-700'
+                    : 'text-orange-700'
+                    }`}>
+                    {wallet.balance >= finalPrice
+                      ? '✅ Đủ để thanh toán'
+                      : `⚠️ Thiếu ${(finalPrice - wallet.balance).toLocaleString()}đ`}
+                  </p>
+                </div>
+              )}
+
               <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-100 space-y-8">
                 <h3 className="text-xl font-serif font-bold text-tet-primary">
                   Đơn hàng của bạn
@@ -512,6 +620,16 @@ export default function CheckoutPage() {
           </div>
         </form>
       </div>
+
+      {/* Payment Success Modal */}
+      <PaymentSuccessModal
+        isOpen={paymentSuccess}
+        orderId={successOrderId}
+        onClose={() => {
+          setPaymentSuccess(false);
+          setSuccessOrderId(undefined);
+        }}
+      />
     </div>
   );
 }

@@ -118,6 +118,12 @@ export const API_ENDPOINTS = {
   PAYMENTS: {
     CREATE: `${BASE_URL}/payments`,
     BY_ORDER: (orderId: string | number) => `${BASE_URL}/payments/order/${orderId}`,
+    PAY_BY_WALLET: `${BASE_URL}/payments/wallet/pay`,
+  },
+
+  // Wallet endpoints
+  WALLET: {
+    GET: `${BASE_URL}/wallet`,
   },
 
   // Promotions endpoints

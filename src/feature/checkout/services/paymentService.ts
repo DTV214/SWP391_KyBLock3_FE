@@ -70,8 +70,27 @@ export const getPaymentsByOrder = async (
     }
 }
 
+/**
+ * Thanh toán bằng ví
+ * POST /api/payments/wallet/pay
+ */
+export const paymentByWallet = async (
+    orderId: number,
+    token?: string
+): Promise<PaymentTransaction> => {
+    const response = await axiosClient.post<PaymentTransaction>(
+        API_ENDPOINTS.PAYMENTS.PAY_BY_WALLET,
+        { orderId },
+        {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        }
+    );
+    return response.data;
+};
+
 // Export all as object for easier importing
 export const paymentService = {
     createPayment,
     getPaymentsByOrder,
+    paymentByWallet,
 };
