@@ -128,11 +128,17 @@ export const getDateRangeOptions = (): DateRangeOption[] => {
 // Format date for display
 export const formatOrderDate = (dateString: string | null) => {
     if (!dateString) return 'Không xác định';
-    return new Date(dateString).toLocaleString('vi-VN', {
+
+    // Chuyển chuỗi thành đối tượng Date
+    const date = new Date(dateString);
+
+    return date.toLocaleString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh', // Ép buộc hiển thị giờ VN
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        hour12: false
     });
 };

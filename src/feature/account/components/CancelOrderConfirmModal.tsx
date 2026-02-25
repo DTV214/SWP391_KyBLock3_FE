@@ -86,7 +86,7 @@ export default function CancelOrderConfirmModal({
 
                                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                         <p className="text-sm text-blue-900">
-                                            <span className="font-bold">💳 Hoàn tiền:</span> Sau khi hủy, số tiền{' '}
+                                            <span className="font-bold">💳 Hoàn tiền:</span> Sau khi hủy, nếu đã thanh toán thì số tiền{' '}
                                             <span className="font-bold text-blue-600">{order.finalPrice.toLocaleString('vi-VN')}₫</span>{' '}
                                             sẽ được hoàn ngay về ví của bạn.
                                         </p>
