@@ -187,14 +187,14 @@ export default function Navbar() {
 
         <div className="relative group">
           <button className="relative hover:text-tet-secondary transition-colors after:content-[''] after:absolute after:w-0 after:h-[1px] after:bg-tet-secondary after:bottom-[-4px] after:left-0 group-hover:after:w-full after:transition-all">
-            Báo giá
+            BÁO GIÁ
           </button>
           <div className="invisible absolute left-1/2 top-full z-50 mt-3 w-52 -translate-x-1/2 rounded-xl bg-white py-2 text-xs font-semibold text-tet-primary shadow-xl opacity-0 transition-all duration-200 group-hover:visible group-hover:opacity-100">
             <Link
               to="/quotation"
               className="block px-4 py-2 hover:bg-[#FBF5E8] transition-colors"
             >
-              Trang giới thiệu
+              Giới thiệu
             </Link>
             <Link
               to="/quotation/create"
