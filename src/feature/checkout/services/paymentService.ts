@@ -88,9 +88,44 @@ export const paymentByWallet = async (
     return response.data;
 };
 
+/**
+ * Xác thực kết quả thanh toán VNPay
+ * GET /api/payments/vnpay-return?vnp_Amount=...&vnp_BankCode=...
+ */
+export const verifyVNPayReturn = async (
+    queryParams: URLSearchParams,
+    token?: string
+): Promise<{ success: boolean; data?: any; error?: string }> => {
+    try {
+        const response = await axiosClient.get(
+            `${API_ENDPOINTS.PAYMENTS.VNPAY_RETURN}?${queryParams.toString()}`,
+            {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+            }
+        );
+
+        console.log('VNPay verification response:', response);
+
+        const isSuccess = response.data?.success === true;
+
+        return {
+            success: isSuccess,
+            data: response.data,
+            error: isSuccess ? undefined : (response.data?.message || 'Payment verification failed'),
+        };
+    } catch (error: any) {
+        // Nếu có lỗi, trả về error
+        return {
+            success: false,
+            error: error.response?.data?.message || 'Payment verification failed',
+        };
+    }
+};
+
 // Export all as object for easier importing
 export const paymentService = {
     createPayment,
     getPaymentsByOrder,
     paymentByWallet,
+    verifyVNPayReturn,
 };

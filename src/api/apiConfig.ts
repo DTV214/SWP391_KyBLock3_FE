@@ -119,6 +119,7 @@ export const API_ENDPOINTS = {
     CREATE: `${BASE_URL}/payments`,
     BY_ORDER: (orderId: string | number) => `${BASE_URL}/payments/order/${orderId}`,
     PAY_BY_WALLET: `${BASE_URL}/payments/wallet/pay`,
+    VNPAY_RETURN: `${BASE_URL}/payments/vnpay-return`,
   },
 
   // Wallet endpoints

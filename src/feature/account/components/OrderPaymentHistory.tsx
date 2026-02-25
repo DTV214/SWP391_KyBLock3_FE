@@ -6,6 +6,7 @@ import {
     getPaymentStatusColorClass,
     getPaymentStatusIcon
 } from '../utils/paymentStatusUtils';
+import { formatOrderDate } from '../utils/orderFilterUtils';
 
 interface OrderPaymentHistoryProps {
     payments: PaymentTransaction[];
@@ -21,17 +22,6 @@ export default function OrderPaymentHistory({
     orderStatus
 }: OrderPaymentHistoryProps) {
     const [isRetrying, setIsRetrying] = useState(false);
-
-    const formatDate = (dateString: string | null) => {
-        if (!dateString) return 'Không xác định';
-        return new Date(dateString).toLocaleString('vi-VN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
 
     const handleRetryPayment = async () => {
         if (!orderId) {
@@ -110,7 +100,7 @@ export default function OrderPaymentHistory({
                                         </p>
                                         <p className="text-xs opacity-75">
                                             {translatePaymentStatus(payment.status)}
-                                            {payment.createdDate && ` • ${formatDate(payment.createdDate)}`}
+                                            {payment.createdDate && ` • ${formatOrderDate(payment.createdDate)}`}
                                         </p>
                                         {payment.transactionNo && (
                                             <p className="text-xs opacity-75 mt-1 font-mono">
