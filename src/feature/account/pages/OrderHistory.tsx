@@ -6,6 +6,7 @@ import OrderFilters from '../components/OrderFilters';
 import OrderCard from '../components/OrderCard';
 import OrderDetailModal from '../components/OrderDetailModal';
 import CancelOrderConfirmModal from '../components/CancelOrderConfirmModal';
+import CancelOrderSuccessModal from '../components/CancelOrderSuccessModal';
 import { orderService, type OrderResponse } from '@/feature/checkout/services/orderService';
 import type { SortBy } from '../utils/orderFilterUtils';
 
@@ -13,6 +14,8 @@ export default function OrderHistory() {
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<OrderResponse | null>(null);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [cancelledOrder, setCancelledOrder] = useState<OrderResponse | null>(null);
   const {
     filteredOrders,
     isLoading,
@@ -50,6 +53,10 @@ export default function OrderHistory() {
       const token = localStorage.getItem('token');
       const updatedOrder = await orderService.cancelOrder(orderId, token || undefined);
       updateOrderInList(updatedOrder);
+      setCancelledOrder(updatedOrder);
+      setSuccessModalOpen(true);
+      setCancelModalOpen(false);
+      setOrderToCancel(null);
     } catch (err: any) {
       throw new Error(err.message || 'Không thể hủy đơn hàng');
     }
@@ -149,6 +156,13 @@ export default function OrderHistory() {
           setOrderToCancel(null);
         }}
         onConfirm={handleConfirmCancel}
+      />
+
+      {/* Cancel Order Success Modal */}
+      <CancelOrderSuccessModal
+        order={cancelledOrder}
+        isOpen={successModalOpen}
+        onClose={() => setSuccessModalOpen(false)}
       />
     </motion.div>
   );

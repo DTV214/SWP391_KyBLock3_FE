@@ -7,7 +7,7 @@ const ENV_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL as string | und
 
 // Fallback to current production server if env is not set
 const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5000/api").replace(/\/+$/, "");
-// const BASE_URL = (ENV_BASE_URL?.trim() || "http://localhost:5280/api").replace(/\/+$/, "");
+// const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(/\/+$/, "");
 
 // Điều này giúp bạn chỉ cần đổi file .env khi chạy local / deploy.
 export const API_ENDPOINTS = {
