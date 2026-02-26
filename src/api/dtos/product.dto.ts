@@ -33,6 +33,7 @@ export interface ProductDetailResponseDto {
   productdetailid?: number;
   productparentid?: number;
   productid?: number;
+  categoryid?: number;
   productname?: string;
   unit?: number;
   price?: number;

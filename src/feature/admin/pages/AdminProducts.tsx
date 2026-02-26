@@ -1,7 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
 import { productService, type Product } from "../../../api/productService";
 import { categoryService, type Category } from "../../../api/categoryService";
+import axiosClient from "../../../api/axiosClient";
+import { API_ENDPOINTS } from "../../../api/apiConfig";
+
+const PAGE_SIZE = 20;
 
 
 export default function AdminProducts() {
@@ -16,6 +20,12 @@ export default function AdminProducts() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+
   const [formData, setFormData] = useState<Product>({
     productname: "",
     description: "",
@@ -31,28 +41,61 @@ export default function AdminProducts() {
   // Get token from localStorage
   const getToken = () => localStorage.getItem("token") || "";
 
-  // Fetch products and categories
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  // Fetch products with server-side pagination & search
+  // Server returns: ApiResponse<PagedResponse<ProductDto>>
+  // axiosClient unwraps to: { status, msg, data: { data: [...], currentPage, totalPages, totalItems, pageSize } }
+  const fetchProducts = useCallback(async (page: number, search: string) => {
     try {
       setLoading(true);
       setError(null);
-      const [productsRes, categoriesRes] = await Promise.all([
-        productService.getAll(),
-        categoryService.getAll(),
-      ]);
-      setProducts(productsRes.data || []);
-      setCategories(categoriesRes.data || []);
+      const params = new URLSearchParams({
+        pageNumber: String(page),
+        pageSize: String(PAGE_SIZE),
+        ...(search ? { search } : {}),
+      });
+      const res: any = await axiosClient.get(`${API_ENDPOINTS.PRODUCTS.LIST}?${params.toString()}`);
+      const paged = res?.data;
+      setProducts(Array.isArray(paged?.data) ? paged.data : []);
+      setCurrentPage(paged?.currentPage ?? page);
+      setTotalPages(paged?.totalPages ?? 1);
+      setTotalItems(paged?.totalItems ?? 0);
     } catch (err: any) {
-      console.error("Error fetching data:", err);
-      setError(err.response?.data?.message || "Không thể tải dữ liệu");
+      console.error("Error fetching products:", err);
+      setError(err.response?.data?.message || "Không thể tải sản phẩm");
+      setProducts([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch categories (plain array response)
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res: any = await categoryService.getAll();
+      setCategories(Array.isArray(res?.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  // Debounced search — reset to page 1 on new search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+      fetchProducts(1, searchTerm);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm, fetchProducts]);
+
+  // Re-fetch when page changes
+  useEffect(() => {
+    fetchProducts(currentPage, searchTerm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   // Open modal for create/edit
   const handleOpenModal = (product?: Product) => {
@@ -152,7 +195,7 @@ export default function AdminProducts() {
       }
 
       handleCloseModal();
-      await fetchData(); // Auto refresh
+      await fetchProducts(currentPage, searchTerm);
     } catch (err: any) {
       console.error("Error saving product:", err);
       setError(err.response?.data?.message || "Không thể lưu sản phẩm");
@@ -170,7 +213,7 @@ export default function AdminProducts() {
     try {
       setError(null);
       await productService.delete(id, getToken());
-      await fetchData(); // Auto refresh
+      await fetchProducts(currentPage, searchTerm);
     } catch (err: any) {
       console.error("Error deleting product:", err);
       setError(err.response?.data?.message || "Không thể xóa sản phẩm");
@@ -184,14 +227,11 @@ export default function AdminProducts() {
     return category?.categoryname || "-";
   };
 
-  // Filter products
+  // Client-side filter by status/category on top of server-paged data
   const filteredProducts = products.filter(product => {
-    const matchSearch = product.productname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       product.sku?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = !filterStatus || product.status === filterStatus;
     const matchCategory = !filterCategory || product.categoryid?.toString() === filterCategory;
-    
-    return matchSearch && matchStatus && matchCategory;
+    return matchStatus && matchCategory;
   });
 
   const getStatusBadge = (status: string) => {
@@ -430,19 +470,48 @@ export default function AdminProducts() {
           </div>
 
           {/* Pagination */}
-          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
             <p className="text-sm text-gray-600">
-              Hiển thị <span className="font-bold">1-{filteredProducts.length}</span> trong tổng số{" "}
-              <span className="font-bold">{products.length}</span> sản phẩm
+              Trang <span className="font-bold">{currentPage}</span> /{" "}
+              <span className="font-bold">{totalPages}</span> — Tổng{" "}
+              <span className="font-bold">{totalItems}</span> sản phẩm
             </p>
             <div className="flex gap-2">
-              <button className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage <= 1 || loading}
+                className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 Trước
               </button>
-              <button className="px-4 py-2 bg-tet-primary text-white rounded-lg text-sm font-medium">
-                1
-              </button>
-              <button className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50">
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                const page =
+                  totalPages <= 5
+                    ? i + 1
+                    : currentPage <= 3
+                    ? i + 1
+                    : currentPage >= totalPages - 2
+                    ? totalPages - 4 + i
+                    : currentPage - 2 + i;
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                      page === currentPage
+                        ? "bg-tet-primary text-white"
+                        : "border border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages || loading}
+                className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 Sau
               </button>
             </div>
