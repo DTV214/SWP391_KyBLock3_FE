@@ -1,8 +1,20 @@
 import { useState, useEffect } from 'react';
 import type { OrderResponse } from '@/feature/checkout/services/orderService';
 import { orderService } from '@/feature/checkout/services/orderService';
+import { ORDER_STATUS } from '../utils/orderStatusUtils';
 import type { OrderFilters, SortBy } from '../utils/orderFilterUtils';
 import { processOrders, getDateRangeOptions } from '../utils/orderFilterUtils';
+
+const normalizeOrderForOrdersPage = (order: OrderResponse): OrderResponse => {
+    if (order.status !== ORDER_STATUS.PAID_WAITING_STOCK) {
+        return order;
+    }
+
+    return {
+        ...order,
+        status: ORDER_STATUS.CONFIRMED,
+    };
+};
 
 export const useOrderHistory = () => {
     const [orders, setOrders] = useState<OrderResponse[]>([]);
@@ -25,7 +37,7 @@ export const useOrderHistory = () => {
                     return;
                 }
                 const data = await orderService.getMyOrders(token);
-                setOrders(data);
+                setOrders(data.map(normalizeOrderForOrdersPage));
             } catch (err: any) {
                 console.error('Error loading orders:', err);
                 setError('Không thể tải danh sách đơn hàng');
@@ -83,9 +95,11 @@ export const useOrderHistory = () => {
     };
 
     const updateOrderInList = (updatedOrder: OrderResponse) => {
-        setOrders(prevOrders =>
-            prevOrders.map(order =>
-                order.orderId === updatedOrder.orderId ? updatedOrder : order
+        const normalizedOrder = normalizeOrderForOrdersPage(updatedOrder);
+
+        setOrders((prevOrders) =>
+            prevOrders.map((order) =>
+                order.orderId === normalizedOrder.orderId ? normalizedOrder : order
             )
         );
     };
