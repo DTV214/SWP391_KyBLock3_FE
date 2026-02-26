@@ -198,7 +198,7 @@ export function LoginForm() {
       {/* COMPONENT ALERT DIALOG */}
       <AlertDialog
         open={dialogConfig.open}
-        onOpenChange={(open) => setDialogConfig((prev) => ({ ...prev, open }))}
+        onOpenChange={(open: boolean) => setDialogConfig((prev) => ({ ...prev, open }))}
       >
         <AlertDialogContent className="rounded-2xl max-w-sm">
           <AlertDialogHeader className="flex flex-col items-center text-center">
