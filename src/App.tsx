@@ -47,6 +47,7 @@ import AdminQuotationsPage from "@/feature/admin/pages/AdminQuotationsPage";
 import AdminQuotationDetailPage from "@/feature/admin/pages/AdminQuotationDetailPage";
 import AdminApprovalQuotationsPage from "@/feature/admin/pages/AdminApprovalQuotationsPage";
 import AdminApprovalQuotationDetailPage from "@/feature/admin/pages/AdminApprovalQuotationDetailPage";
+import AdminOrderHistory from "@/feature/admin/pages/AdminOrderHistory";
 
 // Product & Checkout Module
 import ProductPage from "@/feature/product/pages/ProductPage";
@@ -141,6 +142,7 @@ function App() {
                 <Route path="categories" element={<AdminCategories />} />
                 <Route path="configs" element={<AdminConfigs />} />
                 <Route path="templates" element={<AdminTemplates />} />
+                <Route path="orders" element={<AdminOrderHistory />} />
                 <Route path="quotations" element={<AdminApprovalQuotationsPage />} />
                 <Route path="quotations/:id" element={<AdminApprovalQuotationDetailPage />} />
                 <Route path="reviewing-quotations" element={<AdminQuotationsPage />} />

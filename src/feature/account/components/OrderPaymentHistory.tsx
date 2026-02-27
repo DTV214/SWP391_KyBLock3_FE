@@ -14,13 +14,15 @@ interface OrderPaymentHistoryProps {
     isLoading: boolean;
     orderId?: number;
     orderStatus?: string;
+    isAdmin?: boolean;
 }
 
 export default function OrderPaymentHistory({
     payments,
     isLoading,
     orderId,
-    orderStatus
+    orderStatus,
+    isAdmin = false
 }: OrderPaymentHistoryProps) {
     const [isRetrying, setIsRetrying] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -116,7 +118,7 @@ export default function OrderPaymentHistory({
                 <h3 className="text-lg font-serif font-bold text-tet-primary">
                     Lịch sử giao dịch
                 </h3>
-                {orderStatus === 'PENDING' && orderId && (
+                {orderStatus === 'PENDING' && orderId && !isAdmin && (
                     <button
                         onClick={handleOpenPaymentModal}
                         disabled={isRetrying}
@@ -241,8 +243,8 @@ export default function OrderPaymentHistory({
                             {/* Wallet Option */}
                             <label
                                 className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${wallet && wallet.balance > 0
-                                        ? 'hover:bg-green-50'
-                                        : 'opacity-50 cursor-not-allowed'
+                                    ? 'hover:bg-green-50'
+                                    : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 style={{
                                     borderColor: selectedPaymentMethod === 'WALLET' ? '#10b981' : '#e5e7eb'

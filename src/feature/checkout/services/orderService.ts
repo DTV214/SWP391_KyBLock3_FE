@@ -79,6 +79,20 @@ export const getMyOrders = async (token?: string): Promise<OrderResponse[]> => {
     return response.data;
 };
 
+/**
+ * Lấy danh sách tất cả đơn hàng (Admin)
+ * GET /api/orders
+ */
+export const getAllOrders = async (token?: string): Promise<OrderResponse[]> => {
+    const response = await axiosClient.get<OrderResponse[]>(
+        API_ENDPOINTS.ORDERS.LIST,
+        {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        }
+    );
+    return response.data;
+};
+
 // Cập nhật thông tin giao hàng của order
 export const updateOrderShippingInfo = async (
     orderId: number,
@@ -117,6 +131,7 @@ export const cancelOrder = async (
 export const orderService = {
     createOrder,
     getMyOrders,
+    getAllOrders,
     updateOrderShippingInfo,
     cancelOrder
 };

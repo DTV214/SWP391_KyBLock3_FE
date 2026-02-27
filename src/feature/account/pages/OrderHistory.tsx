@@ -144,6 +144,7 @@ export default function OrderHistory() {
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onUpdate={updateOrderInList}
+          isAdmin={false}
         />
       )}
 
