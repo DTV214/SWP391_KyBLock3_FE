@@ -51,6 +51,7 @@ import AdminOrderHistory from "@/feature/admin/pages/AdminOrderHistory";
 
 // Product & Checkout Module
 import ProductPage from "@/feature/product/pages/ProductPage";
+import AllProductsPage from "@/feature/product/pages/AllProductsPage";
 import ProductDetailPage from "@/feature/product/pages/ProductDetailPage";
 import CheckoutPage from "@/feature/checkout/pages/CheckoutPage";
 import PaymentSuccess from "@/feature/checkout/pages/PaymentSuccess";
@@ -91,6 +92,7 @@ function App() {
               <Route path="/quotation/history" element={<QuotationHistoryPage />} />
               <Route path="/quotation/status/:id" element={<QuotationStatusPage />} />
               <Route path="/products" element={<ProductPage />} />
+              <Route path="/all-products" element={<AllProductsPage />} />
               <Route path="/product/:id" element={<ProductDetailPage />} />
 
               <Route

@@ -12,6 +12,7 @@ import {
   Eye,
   Edit,
   Trash2,
+  ShoppingCart,
 } from "lucide-react";
 import type { ProfileData } from "../services/accountService";
 import accountService from "../services/accountService";
@@ -355,6 +356,16 @@ export default function AccountOverview() {
                             <Trash2 size={14} />
                           </button>
                         </div>
+                        <button
+                          onClick={() => {
+                            // TODO: implement payment logic
+                            alert('Chức năng thanh toán đang được phát triển');
+                          }}
+                          className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-bold hover:shadow-lg transition-all text-sm"
+                        >
+                          <ShoppingCart size={14} />
+                          Thanh toán
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -516,6 +527,16 @@ export default function AccountOverview() {
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-tet-primary to-tet-accent text-white rounded-full font-bold hover:shadow-lg transition-all"
               >
                 Chỉnh sửa giỏ quà
+              </button>
+              <button
+                onClick={() => {
+                  // TODO: implement payment logic
+                  alert('Chức năng thanh toán đang được phát triển');
+                }}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+              >
+                <ShoppingCart size={16} />
+                Thanh toán
               </button>
             </div>
           </div>
