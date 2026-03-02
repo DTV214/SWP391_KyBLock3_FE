@@ -9,7 +9,6 @@ import Footer from "./layouts/components/Footer";
 import BackToTop from "./components/common/BackToTop";
 import { CartProvider } from "./feature/cart/context/CartContext";
 import CartSidebar from "./feature/cart/components/CartSidebar";
-import { KeyboardShortcutsHint } from "./lib/hooks/useKeyboardShortcuts";
 import "./App.css";
 
 // Auth & Home
@@ -48,6 +47,7 @@ import AdminQuotationDetailPage from "@/feature/admin/pages/AdminQuotationDetail
 import AdminApprovalQuotationsPage from "@/feature/admin/pages/AdminApprovalQuotationsPage";
 import AdminApprovalQuotationDetailPage from "@/feature/admin/pages/AdminApprovalQuotationDetailPage";
 import AdminOrderHistory from "@/feature/admin/pages/AdminOrderHistory";
+import AdminChatPage from "@/feature/chat/pages/AdminChatPage";
 
 // Product & Checkout Module
 import ProductPage from "@/feature/product/pages/ProductPage";
@@ -57,6 +57,7 @@ import CheckoutPage from "@/feature/checkout/pages/CheckoutPage";
 import PaymentSuccess from "@/feature/checkout/pages/PaymentSuccess";
 import PaymentFailure from "@/feature/checkout/pages/PaymentFailure";
 import VNPayReturn from "@/feature/checkout/pages/VNPayReturn";
+import CustomerChatWidget from "@/feature/chat/components/CustomerChatWidget";
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem("token");
@@ -145,6 +146,7 @@ function App() {
                 <Route path="configs" element={<AdminConfigs />} />
                 <Route path="templates" element={<AdminTemplates />} />
                 <Route path="orders" element={<AdminOrderHistory />} />
+                <Route path="chats" element={<AdminChatPage />} />
                 <Route path="quotations" element={<AdminApprovalQuotationsPage />} />
                 <Route path="quotations/:id" element={<AdminApprovalQuotationDetailPage />} />
                 <Route path="reviewing-quotations" element={<AdminQuotationsPage />} />
@@ -167,7 +169,7 @@ function App() {
           <Footer />
           <BackToTop />
           <CartSidebar />
-          <KeyboardShortcutsHint />
+          <CustomerChatWidget />
         </div>
       </Router>
     </CartProvider>

@@ -150,6 +150,17 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string | number) => `${BASE_URL}/blogs/${id}`,
     DELETE: (id: string | number) => `${BASE_URL}/blogs/${id}`,
   },
+  CHAT: {
+    USER_CONVERSATION: `${BASE_URL}/chat/conversation`,
+    USER_MESSAGES: (conversationId: string | number) =>
+      `${BASE_URL}/chat/messages/me/${conversationId}`,
+    USER_SEND: `${BASE_URL}/chat/send`,
+    ADMIN_ALL_CONVERSATIONS: `${BASE_URL}/chat/all`,
+    ADMIN_MESSAGES: (conversationId: string | number) =>
+      `${BASE_URL}/chat/messages/${conversationId}`,
+    ADMIN_REPLY: (conversationId: string | number) =>
+      `${BASE_URL}/chat/reply/${conversationId}`,
+  },
 };
 
 export default BASE_URL;

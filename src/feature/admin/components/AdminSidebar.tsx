@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   FileText,
   Users,
+  MessageSquare,
   LogOut,
   Home,
 } from "lucide-react";
@@ -64,6 +65,11 @@ export default function AdminSidebar() {
       path: "/admin/orders",
       label: "Đơn hàng",
       icon: <ShoppingCart size={18} />,
+    },
+    {
+      path: "/admin/chats",
+      label: "Chat khách hàng",
+      icon: <MessageSquare size={18} />,
     },
     {
       path: "/admin/customers",

@@ -66,11 +66,14 @@ export function LoginForm() {
       )) as unknown as AuthResponse;
 
       if (response.status === 200) {
-        const { token, username, email, role } = response.data;
+        const { token, accountId, username, email, role } = response.data;
 
         localStorage.setItem("token", token);
         localStorage.setItem("role", role); // Lưu role riêng để dễ check
-        localStorage.setItem("user", JSON.stringify({ username, email, role }));
+        localStorage.setItem(
+          "user",
+          JSON.stringify({ accountId, username, email, role }),
+        );
 
         // HIỂN THỊ DIALOG THÀNH CÔNG THAY VÌ ALERT
         setDialogConfig({
