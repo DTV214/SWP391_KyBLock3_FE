@@ -1,9 +1,11 @@
 
-import { Gift, Eye, Trash2, Star, X, Edit, Save, Package, Plus } from "lucide-react";
+import { Gift, Eye, Trash2, Star, X, Edit, Save, Package, Plus, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 import { productService, type Product, type UpdateComboProductRequest, type ProductDetailRequest, type CreateComboProductRequest } from "@/api/productService";
 import { configService, type ProductConfig } from "@/api/configService";
 import { categoryService, type Category } from "@/api/categoryService";
+import { configDetailServiceAPI } from "@/api";
+import type { ConfigDetailDto, CreateConfigDetailRequest, UpdateConfigDetailRequest } from "@/api/dtos/productConfig.dto";
 
 interface ProductDetailWithChild extends ProductDetailRequest {
   childProduct?: Product;
@@ -45,29 +47,40 @@ export default function AdminTemplates() {
   const [status, setStatus] = useState("DRAFT");
   const [productDetails, setProductDetails] = useState<ProductDetailWithChild[]>([]);
 
+  // ConfigDetail management state (for edit modal)
+  const [editConfigDetails, setEditConfigDetails] = useState<ConfigDetailDto[]>([]);
+  const [editDetailForm, setEditDetailForm] = useState<{ categoryid: number; quantity: number }>({ categoryid: 0, quantity: 1 });
+  const [savingConfigDetail, setSavingConfigDetail] = useState(false);
+  const [editingDetailInline, setEditingDetailInline] = useState<number | null>(null); // configdetailid
+  const [inlineQuantity, setInlineQuantity] = useState<number>(1);
+  
+  // Details modal config (for showing ConfigDetails in view modal)
+  const [detailsModalConfig, setDetailsModalConfig] = useState<ProductConfig | null>(null);
+
   const fetchTemplates = async () => {
-    console.log('=== FETCH TEMPLATES ===');
+    console.log('=== FETCH ADMIN BASKETS ===');
     
     try {
       setLoading(true);
-      console.log('Calling API: GET /products/templates');
+      console.log('Calling API: GET /products/admin-baskets');
       
-      const response = await productService.templates.getAll();
+      const response = await productService.templates.getAdminBaskets();
       
-      console.log('Templates response:', response);
-      console.log('Templates count:', response.data?.length || 0);
+      console.log('Admin baskets response:', response);
+      const list: Product[] = (response as any)?.data?.data ?? (response as any)?.data ?? [];
+      console.log('Admin baskets count:', list.length);
       
-      setTemplates(response.data || []);
-      console.log('✅ Templates loaded successfully');
+      setTemplates(list);
+      console.log('✅ Admin baskets loaded successfully');
     } catch (error: any) {
-      console.error('❌ Error fetching templates:', error);
+      console.error('❌ Error fetching admin baskets:', error);
       console.error('Error response:', error.response);
       console.error('Error message:', error.response?.data?.message || error.message);
       
-      alert('Không thể tải danh sách giỏ mẫu');
+      alert('Không thể tải danh sách giỏ quà');
     } finally {
       setLoading(false);
-      console.log('=== END FETCH TEMPLATES ===');
+      console.log('=== END FETCH ADMIN BASKETS ===');
     }
   };
 
@@ -268,9 +281,19 @@ export default function AdminTemplates() {
     }
   };
 
-  const handleViewDetails = (template: Product) => {
+  const handleViewDetails = async (template: Product) => {
     setSelectedTemplate(template);
+    setDetailsModalConfig(null);
     setShowDetailsModal(true);
+    // Fetch config for details modal (to show ConfigDetails)
+    if (template.configid) {
+      try {
+        const configData = await configService.getById(template.configid);
+        setDetailsModalConfig(configData);
+      } catch (err) {
+        console.warn('Could not load config for details modal:', err);
+      }
+    }
   };
 
   const handleRemoveTemplate = async (productId: number) => {
@@ -404,13 +427,18 @@ export default function AdminTemplates() {
           const configData = await configService.getById(data.configid);
           setEditProductConfig(configData);
           console.log('Config loaded:', configData?.configname);
+          // Also load configDetails for editing
+          const details = await configDetailServiceAPI.getByConfig(data.configid);
+          setEditConfigDetails(details || []);
         } catch (configError: any) {
           console.warn('⚠️ Could not load config:', configError.response?.status, configError.message);
           setEditProductConfig(null);
+          setEditConfigDetails([]);
         }
       } else {
         console.log('No configid found, resetting editProductConfig');
         setEditProductConfig(null);
+        setEditConfigDetails([]);
       }
       
       // Fetch categories for filtering
@@ -470,6 +498,12 @@ export default function AdminTemplates() {
     setCategoriesForEdit([]);
     setProductSearchForEdit("");
     setSelectedCategoryForEdit(0);
+    // Reset ConfigDetail states
+    setEditConfigDetails([]);
+    setEditDetailForm({ categoryid: 0, quantity: 1 });
+    setSavingConfigDetail(false);
+    setEditingDetailInline(null);
+    setInlineQuantity(1);
   };
 
   const handleQuantityChange = (index: number, newQuantity: number) => {
@@ -605,12 +639,102 @@ export default function AdminTemplates() {
     }
   };
 
+  // ===== ConfigDetail Management Functions =====
+  const loadEditConfigDetails = async (configId: number) => {
+    try {
+      const details = await configDetailServiceAPI.getByConfig(configId);
+      setEditConfigDetails(details || []);
+    } catch (err) {
+      console.error('Error loading config details:', err);
+      setEditConfigDetails([]);
+    }
+  };
+
+  const handleAddConfigDetailInEdit = async () => {
+    if (!editProduct?.configid) return;
+    if (!editDetailForm.categoryid) {
+      alert('Vui lòng chọn danh mục');
+      return;
+    }
+    if (editDetailForm.quantity <= 0) {
+      alert('Số lượng phải lớn hơn 0');
+      return;
+    }
+    if (editConfigDetails.some(d => d.categoryid === editDetailForm.categoryid)) {
+      alert('Danh mục này đã có trong cấu hình');
+      return;
+    }
+    const token = localStorage.getItem('token') || '';
+    const category = categoriesForEdit.find(c => c.categoryid === editDetailForm.categoryid);
+    try {
+      setSavingConfigDetail(true);
+      const payload: CreateConfigDetailRequest = {
+        Configid: editProduct.configid,
+        Categoryid: editDetailForm.categoryid,
+        Quantity: editDetailForm.quantity,
+        CategoryName: category?.categoryname || '',
+      };
+      await configDetailServiceAPI.create(payload, token);
+      await loadEditConfigDetails(editProduct.configid);
+      const configData = await configService.getById(editProduct.configid);
+      setEditProductConfig(configData);
+      setEditDetailForm({ categoryid: 0, quantity: 1 });
+      alert('Đã thêm ConfigDetail thành công');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Không thể thêm ConfigDetail');
+    } finally {
+      setSavingConfigDetail(false);
+    }
+  };
+
+  const handleUpdateConfigDetailInEdit = async (detail: ConfigDetailDto) => {
+    const token = localStorage.getItem('token') || '';
+    const category = categoriesForEdit.find(c => c.categoryid === detail.categoryid);
+    try {
+      setSavingConfigDetail(true);
+      const payload: UpdateConfigDetailRequest = {
+        Configdetailid: detail.configdetailid!,
+        Configid: detail.configid,
+        Categoryid: detail.categoryid,
+        Quantity: inlineQuantity,
+        CategoryName: category?.categoryname || detail.categoryName || '',
+      };
+      await configDetailServiceAPI.update(payload, token);
+      await loadEditConfigDetails(detail.configid);
+      const configData = await configService.getById(detail.configid);
+      setEditProductConfig(configData);
+      setEditingDetailInline(null);
+      alert('Cập nhật ConfigDetail thành công');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Không thể cập nhật ConfigDetail');
+    } finally {
+      setSavingConfigDetail(false);
+    }
+  };
+
+  const handleDeleteConfigDetailInEdit = async (detail: ConfigDetailDto) => {
+    if (!confirm(`Bạn có chắc muốn xóa ConfigDetail "${detail.categoryName}" khỏi cấu hình?`)) return;
+    const token = localStorage.getItem('token') || '';
+    try {
+      setSavingConfigDetail(true);
+      await configDetailServiceAPI.delete(detail.configdetailid!, token);
+      await loadEditConfigDetails(detail.configid);
+      const configData = await configService.getById(detail.configid);
+      setEditProductConfig(configData);
+      alert('Đã xóa ConfigDetail thành công');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Không thể xóa ConfigDetail');
+    } finally {
+      setSavingConfigDetail(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-tet-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">Đang tải giỏ mẫu...</p>
+          <p className="text-gray-500">Đang tải giỏ quà...</p>
         </div>
       </div>
     );
@@ -623,10 +747,10 @@ export default function AdminTemplates() {
         <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-2xl font-serif font-bold text-tet-primary">
-              Quản lý giỏ mẫu
+              Quản lý giỏ quà Admin/Staff
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Giỏ quà mẫu cho khách hàng clone • {templates.filter(t => statusFilter === 'ALL' || t.status === statusFilter).length} mẫu
+              Tất cả giỏ quà được tạo bởi Admin/Staff • {templates.filter(t => statusFilter === 'ALL' || t.status === statusFilter).length} giỏ
             </p>
           </div>
           <button
@@ -659,8 +783,8 @@ export default function AdminTemplates() {
       {templates.length === 0 ? (
         <div className="bg-white p-12 rounded-3xl shadow-sm border border-gray-100 text-center">
           <Gift size={48} className="mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-500 text-lg">Chưa có giỏ mẫu nào</p>
-          <p className="text-gray-400 text-sm mt-2">Đặt sản phẩm làm template để hiển thị ở đây</p>
+          <p className="text-gray-500 text-lg">Chưa có giỏ quà nào</p>
+          <p className="text-gray-400 text-sm mt-2">Admin/Staff tạo giỏ quà để hiển thị ở đây</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -767,10 +891,10 @@ export default function AdminTemplates() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-tet-primary mb-2">
-              Thống kê template {statusFilter !== 'ALL' && `(${statusFilter})`}
+              Thống kê giỏ quà Admin/Staff {statusFilter !== 'ALL' && `(${statusFilter})`}
             </h3>
             <p className="text-sm text-gray-600">
-              Tổng số giỏ mẫu: <span className="font-bold">{templates.filter(t => statusFilter === 'ALL' || t.status === statusFilter).length} mẫu</span>
+              Tổng số giỏ quà: <span className="font-bold">{templates.filter(t => statusFilter === 'ALL' || t.status === statusFilter).length} giỏ</span>
             </p>
             <p className="text-sm text-gray-600">
               Tổng số sản phẩm: <span className="font-bold">{templates.filter(t => statusFilter === 'ALL' || t.status === statusFilter).reduce((sum, t) => sum + (t.productDetails?.length || 0), 0)} món</span>
@@ -829,7 +953,7 @@ export default function AdminTemplates() {
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto p-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
               {/* Summary */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                 <div className="bg-blue-50 p-4 rounded-xl">
                   <p className="text-xs text-gray-600 mb-1">Giá tiền</p>
                   <p className="text-lg font-bold text-blue-600">{(selectedTemplate.price || 0).toLocaleString()}đ</p>
@@ -846,7 +970,41 @@ export default function AdminTemplates() {
                   <p className="text-xs text-gray-600 mb-1">Tồn kho</p>
                   <p className="text-lg font-bold text-amber-600">{selectedTemplate.totalQuantity || 0}</p>
                 </div>
+                <div className="p-4 rounded-xl" style={{ background: selectedTemplate.status === 'TEMPLATE' ? '#f5f3ff' : selectedTemplate.status === 'ACTIVE' ? '#f0fdf4' : selectedTemplate.status === 'DRAFT' ? '#fefce8' : '#f9fafb' }}>
+                  <p className="text-xs text-gray-600 mb-1">Trạng thái</p>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                    selectedTemplate.status === 'TEMPLATE' ? 'bg-purple-500 text-white' :
+                    selectedTemplate.status === 'ACTIVE' ? 'bg-green-500 text-white' :
+                    selectedTemplate.status === 'DRAFT' ? 'bg-yellow-500 text-white' :
+                    selectedTemplate.status === 'INACTIVE' ? 'bg-gray-500 text-white' :
+                    'bg-blue-500 text-white'
+                  }`}>
+                    {selectedTemplate.status}
+                  </span>
+                </div>
               </div>
+
+              {/* ConfigDetail View (read-only) */}
+              {detailsModalConfig && detailsModalConfig.configDetails && detailsModalConfig.configDetails.length > 0 && (
+                <div className="mb-6 border border-indigo-200 rounded-xl overflow-hidden">
+                  <div className="bg-indigo-50 px-4 py-2 flex items-center gap-2">
+                    <Settings size={14} className="text-indigo-600" />
+                    <span className="text-sm font-bold text-indigo-800">
+                      Cấu hình: {detailsModalConfig.configname}
+                    </span>
+                  </div>
+                  <div className="p-3 grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {detailsModalConfig.configDetails.map((detail) => (
+                      <div key={detail.configdetailid} className="flex items-center justify-between bg-white border rounded-lg p-2">
+                        <span className="text-sm text-gray-700 truncate flex-1">{detail.categoryName || `Cat #${detail.categoryid}`}</span>
+                        <span className="ml-2 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs font-bold whitespace-nowrap">
+                          × {detail.quantity}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Product Details */}
               <div>
@@ -1019,9 +1177,10 @@ export default function AdminTemplates() {
                         onChange={(e) => setStatus(e.target.value as any)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
-                        <option value="DRAFT">DRAFT</option>
-                        <option value="AVAILABLE">AVAILABLE</option>
-                        <option value="UNAVAILABLE">UNAVAILABLE</option>
+                        <option value="TEMPLATE">TEMPLATE – Giỏ mẫu</option>
+                        <option value="ACTIVE">ACTIVE – Đang bán</option>
+                        <option value="INACTIVE">INACTIVE – Tạm ẩn</option>
+                        <option value="DRAFT">DRAFT – Bản nháp</option>
                       </select>
                     </div>
 
@@ -1110,6 +1269,117 @@ export default function AdminTemplates() {
                             </div>
                           </>
                         )}
+                      </div>
+                    )}
+
+                    {/* ConfigDetail Management Section */}
+                    {editProduct?.configid && (
+                      <div className="border border-indigo-200 rounded-lg overflow-hidden">
+                        <div className="bg-indigo-50 px-4 py-2 flex items-center gap-2">
+                          <Settings size={14} className="text-indigo-600" />
+                          <span className="text-sm font-bold text-indigo-800">Sửa ConfigDetail</span>
+                          {savingConfigDetail && (
+                            <span className="ml-auto text-xs text-indigo-500 flex items-center gap-1">
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-indigo-500" />
+                              Đang xử lý...
+                            </span>
+                          )}
+                        </div>
+                        <div className="p-3 space-y-2">
+                          {/* Existing ConfigDetails */}
+                          {editConfigDetails.length === 0 ? (
+                            <p className="text-xs text-gray-500 italic text-center py-2">Chưa có ConfigDetail</p>
+                          ) : (
+                            editConfigDetails.map((detail) => (
+                              <div key={detail.configdetailid} className="flex items-center gap-2 bg-white border rounded p-2">
+                                <span className="flex-1 text-sm font-medium text-gray-700 truncate">
+                                  {detail.categoryName || `Cat #${detail.categoryid}`}
+                                </span>
+                                {editingDetailInline === detail.configdetailid ? (
+                                  <>
+                                    <input
+                                      type="number"
+                                      value={inlineQuantity}
+                                      onChange={(e) => setInlineQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                                      className="w-16 px-2 py-1 border border-blue-400 rounded text-center text-sm"
+                                      min="1"
+                                    />
+                                    <button
+                                      onClick={() => handleUpdateConfigDetailInEdit(detail)}
+                                      disabled={savingConfigDetail}
+                                      className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 disabled:opacity-50"
+                                    >
+                                      <Save size={12} />
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingDetailInline(null)}
+                                      disabled={savingConfigDetail}
+                                      className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs hover:bg-gray-300 disabled:opacity-50"
+                                    >
+                                      <X size={12} />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs font-bold">
+                                      SL: {detail.quantity}
+                                    </span>
+                                    <button
+                                      onClick={() => { setEditingDetailInline(detail.configdetailid!); setInlineQuantity(detail.quantity); }}
+                                      disabled={savingConfigDetail}
+                                      className="p-1 text-blue-500 hover:bg-blue-50 rounded disabled:opacity-50"
+                                      title="Sửa số lượng"
+                                    >
+                                      <Edit size={12} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteConfigDetailInEdit(detail)}
+                                      disabled={savingConfigDetail}
+                                      className="p-1 text-red-500 hover:bg-red-50 rounded disabled:opacity-50"
+                                      title="Xóa ConfigDetail"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            ))
+                          )}
+                          {/* Add new ConfigDetail */}
+                          <div className="flex items-center gap-2 pt-2 border-t border-dashed border-indigo-200">
+                            <select
+                              value={editDetailForm.categoryid}
+                              onChange={(e) => setEditDetailForm(f => ({ ...f, categoryid: parseInt(e.target.value) }))}
+                              className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-indigo-400"
+                              disabled={savingConfigDetail}
+                            >
+                              <option value={0}>-- Chọn danh mục --</option>
+                              {categoriesForEdit
+                                .filter(c => !editConfigDetails.some(d => d.categoryid === c.categoryid))
+                                .map(cat => (
+                                  <option key={cat.categoryid} value={cat.categoryid}>
+                                    {cat.categoryname}
+                                  </option>
+                                ))}
+                            </select>
+                            <input
+                              type="number"
+                              value={editDetailForm.quantity}
+                              onChange={(e) => setEditDetailForm(f => ({ ...f, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
+                              className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm focus:ring-1 focus:ring-indigo-400"
+                              min="1"
+                              disabled={savingConfigDetail}
+                              placeholder="SL"
+                            />
+                            <button
+                              onClick={handleAddConfigDetailInEdit}
+                              disabled={savingConfigDetail || !editDetailForm.categoryid}
+                              className="px-3 py-1 bg-indigo-500 text-white rounded text-sm hover:bg-indigo-600 disabled:opacity-50 flex items-center gap-1"
+                            >
+                              <Plus size={12} /> Thêm
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     )}
 
@@ -1489,6 +1759,22 @@ export default function AdminTemplates() {
                       />
                     </div>
                   )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Trạng thái
+                    </label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="TEMPLATE">TEMPLATE – Giỏ mẫu</option>
+                      <option value="ACTIVE">ACTIVE – Đang bán</option>
+                      <option value="INACTIVE">INACTIVE – Tạm ẩn</option>
+                      <option value="DRAFT">DRAFT – Bản nháp</option>
+                    </select>
+                  </div>
 
                   <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                     <div className="flex justify-between">
