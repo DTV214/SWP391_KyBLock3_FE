@@ -44,8 +44,14 @@ export default function AdminProducts() {
         productService.getAll(),
         categoryService.getAll(),
       ]);
-      setProducts(productsRes.data || []);
-      setCategories(categoriesRes.data || []);
+      
+      // Ensure products is always an array
+      const productsData = productsRes?.data;
+      setProducts(Array.isArray(productsData) ? productsData : []);
+      
+      // Ensure categories is always an array
+      const categoriesData = categoriesRes?.data;
+      setCategories(Array.isArray(categoriesData) ? categoriesData : []);
     } catch (err: any) {
       console.error("Error fetching data:", err);
       setError(err.response?.data?.message || "Không thể tải dữ liệu");
@@ -185,7 +191,7 @@ export default function AdminProducts() {
   };
 
   // Filter products
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = (Array.isArray(products) ? products : []).filter(product => {
     const matchSearch = product.productname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                        product.sku?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = !filterStatus || product.status === filterStatus;

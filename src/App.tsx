@@ -7,6 +7,7 @@
 import Navbar from "./layouts/components/Navbar";
 import Footer from "./layouts/components/Footer";
 import BackToTop from "./components/common/BackToTop";
+import ChatBot from "./components/common/ChatBot";
 import { CartProvider } from "./feature/cart/context/CartContext";
 import CartSidebar from "./feature/cart/components/CartSidebar";
 import { KeyboardShortcutsHint } from "./lib/hooks/useKeyboardShortcuts";
@@ -162,6 +163,7 @@ function App() {
           </main>
           <Footer />
           <BackToTop />
+          <ChatBot />
           <CartSidebar />
           <KeyboardShortcutsHint />
         </div>
