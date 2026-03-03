@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Gift, X, Eye, Copy, Save, Trash2, Package, ShoppingCart } from "lucide-react";
 import ProductHero from "../components/ProductHero";
 import ProductSidebar from "../components/ProductSidebar";
@@ -23,6 +23,7 @@ export default function ProductPage() {
 
   const [templates, setTemplates] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState("popular");
   const [selectedTemplate, setSelectedTemplate] = useState<Product | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
@@ -36,6 +37,25 @@ export default function ProductPage() {
   const [productDetails, setProductDetails] = useState<ProductDetailWithChild[]>([]);
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
   const [saving, setSaving] = useState(false);
+  const [basketSaved, setBasketSaved] = useState(false);
+
+  const sortedTemplates = useMemo(() => {
+    const list = [...templates];
+    switch (sortBy) {
+      case "price-asc":
+        return list.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+      case "price-desc":
+        return list.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+      case "name":
+        return list.sort((a, b) =>
+          (a.productname ?? "").localeCompare(b.productname ?? "", "vi")
+        );
+      default:
+        return list.sort(
+          (a, b) => (b.totalQuantity ?? 0) - (a.totalQuantity ?? 0)
+        );
+    }
+  }, [templates, sortBy]);
 
   // Fetch templates from API
   useEffect(() => {
@@ -95,7 +115,12 @@ export default function ProductPage() {
       // Fetch available products for adding more
       console.log('Fetching products...');
       const productsResponse = await productService.getAll();
-      const products = productsResponse.data || [];
+      const rawData = productsResponse.data;
+      const products: Product[] = Array.isArray(rawData)
+        ? rawData
+        : Array.isArray(rawData?.items)
+          ? rawData.items
+          : [];
       const filtered = products.filter((p: Product) =>
         p.status === 'ACTIVE' && !p.configid
       );
@@ -121,6 +146,7 @@ export default function ProductPage() {
     setCustomName('');
     setProductDetails([]);
     setAvailableProducts([]);
+    setBasketSaved(false);
   };
 
   const handleAddProduct = (product: Product) => {
@@ -304,8 +330,7 @@ export default function ProductPage() {
       console.log('✅ Update successful');
 
       alert('Lưu giỏ quà thành công!');
-      handleCloseCloneModal();
-      setShowDetailsModal(false);
+      setBasketSaved(true);
     } catch (error: any) {
       console.error('❌ Error updating basket:', error);
       alert(error.response?.data?.message || error.message || 'Không thể cập nhật giỏ quà');
@@ -327,14 +352,14 @@ export default function ProductPage() {
         <div className="flex-1 space-y-8">
           <div className="flex justify-between items-center border-b pb-6">
             <p className="text-sm font-bold text-gray-500 italic">
-              Hiển thị {templates.length} sản phẩm
+              Hiển thị {sortedTemplates.length} sản phẩm
             </p>
             <div className="flex items-center gap-4">
               <span className="text-sm font-bold text-tet-primary hidden sm:block">
                 Sắp xếp:
               </span>
 
-              <Select defaultValue="popular">
+              <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-[180px] rounded-xl border-gray-200 focus:ring-tet-secondary bg-white shadow-sm">
                   <SelectValue placeholder="Sắp xếp" />
                 </SelectTrigger>
@@ -342,6 +367,7 @@ export default function ProductPage() {
                   <SelectItem value="popular">Phổ biến nhất</SelectItem>
                   <SelectItem value="price-asc">Giá tăng dần</SelectItem>
                   <SelectItem value="price-desc">Giá giảm dần</SelectItem>
+                  <SelectItem value="name">Tên A → Z</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -363,7 +389,7 @@ export default function ProductPage() {
           ) : (
             /* Grid sản phẩm */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {templates.map((template) => (
+              {sortedTemplates.map((template) => (
                 <div key={template.productid} className="group">
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all">
                     {/* Image */}
@@ -815,7 +841,7 @@ export default function ProductPage() {
                         </>
                       )}
                     </button>
-                  ) : (
+                  ) : !basketSaved ? (
                     <button
                       onClick={handleSaveCustomBasket}
                       disabled={saving || productDetails.length === 0}
@@ -832,6 +858,17 @@ export default function ProductPage() {
                           Lưu giỏ quà
                         </>
                       )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        // TODO: implement payment logic
+                        alert('Chức năng thanh toán đang được phát triển');
+                      }}
+                      className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg flex items-center gap-2 font-bold"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                      Thanh toán
                     </button>
                   )}
                 </div>

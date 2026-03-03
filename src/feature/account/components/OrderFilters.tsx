@@ -83,7 +83,9 @@ export default function OrderFilters({
                             <option value={ORDER_STATUS.PENDING}>Chờ xác nhận</option>
                             <option value={ORDER_STATUS.CONFIRMED}>Đã xác nhận</option>
                             <option value={ORDER_STATUS.PROCESSING}>Đang xử lý</option>
-                            <option value={ORDER_STATUS.COMPLETED}>Đã giao</option>
+                            <option value={ORDER_STATUS.SHIPPED}>Đã gửi</option>
+                            <option value={ORDER_STATUS.DELIVERED}>Đã giao</option>
+                            <option value={ORDER_STATUS.COMPLETED}>Hoàn thành</option>
                             <option value={ORDER_STATUS.CANCELLED}>Đã hủy</option>
                         </select>
                     </div>

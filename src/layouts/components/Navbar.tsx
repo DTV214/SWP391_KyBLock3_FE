@@ -20,7 +20,7 @@ const LOGO_URL =
 const navItems = [
   { name: "Trang chủ", path: "/home" },
   { name: "Quà tặng", path: "/products" },
-  { name: "Hộp quà Tết", path: "/products" },
+  { name: "Hộp quà Tết", path: "/all-products" },
   { name: "Giới thiệu", path: "/introduce" },
   { name: "Tin tức", path: "/blogs" },
   { name: "Liên hệ", path: "/contact" },

@@ -15,13 +15,15 @@ interface OrderDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
     onUpdate?: (updatedOrder: OrderResponse) => void;
+    isAdmin?: boolean;
 }
 
 export default function OrderDetailModal({
     order,
     isOpen,
     onClose,
-    onUpdate
+    onUpdate,
+    isAdmin = false
 }: OrderDetailModalProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [payments, setPayments] = useState<PaymentTransaction[]>([]);
@@ -179,7 +181,7 @@ export default function OrderDetailModal({
                             <h3 className="text-lg font-serif font-bold text-tet-primary">
                                 Thông tin giao hàng
                             </h3>
-                            {!isEditing && (
+                            {!isEditing && !isAdmin && (
                                 <button
                                     onClick={() => setIsEditing(true)}
                                     className="flex items-center gap-2 px-4 py-2 bg-tet-primary text-white rounded-xl hover:bg-tet-accent transition-all text-sm font-bold"
@@ -414,6 +416,7 @@ export default function OrderDetailModal({
                         isLoading={paymentsLoading}
                         orderId={displayOrder.orderId}
                         orderStatus={displayOrder.status}
+                        isAdmin={isAdmin}
                     />
                 </div>
 

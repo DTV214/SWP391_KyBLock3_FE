@@ -66,22 +66,27 @@ export function LoginForm() {
       )) as unknown as AuthResponse;
 
       if (response.status === 200) {
-        const { token, username, email, role } = response.data;
+        const { token, accountId, username, email, role } = response.data;
 
         localStorage.setItem("token", token);
-        localStorage.setItem("role", role); // Lưu role riêng để dễ check
-        localStorage.setItem("user", JSON.stringify({ username, email, role }));
+        localStorage.setItem("role", role); // Lưu role riêng để check bảo mật
+        localStorage.setItem(
+          "user",
+          JSON.stringify({ accountId, username, email, role }),
+        );
 
-        // HIỂN THỊ DIALOG THÀNH CÔNG THAY VÌ ALERT
+        // HIỂN THỊ DIALOG THÀNH CÔNG
         setDialogConfig({
           open: true,
           title: "Đăng nhập thành công!",
           message: `Chào mừng ${username} đã quay trở lại hệ thống.`,
           isSuccess: true,
           onConfirm: () => {
-            // Redirect dựa trên role sau khi người dùng bấm Đồng ý
-            if (role === "ADMIN" || role === "STAFF") {
+            // Redirect dựa trên role
+            if (role === "ADMIN") {
               navigate("/admin");
+            } else if (role === "STAFF") {
+              navigate("/staff");
             } else {
               navigate("/home");
             }
@@ -89,19 +94,20 @@ export function LoginForm() {
         });
       }
     } catch (error: unknown) {
-      // Xử lý lỗi một cách chuyên nghiệp không dùng any
       const axiosError = error as AxiosError<ApiError>;
       const errorMessage =
         axiosError.response?.data?.msg ||
         "Tên đăng nhập hoặc mật khẩu không chính xác";
 
-      // HIỂN THỊ DIALOG LỖI THAY VÌ ALERT
+      // HIỂN THỊ DIALOG LỖI
       setDialogConfig({
         open: true,
         title: "Đăng nhập thất bại",
         message: errorMessage,
         isSuccess: false,
-        onConfirm: () => {}, // Đóng dialog, không làm gì thêm
+        onConfirm: () => {
+          setDialogConfig((prev) => ({ ...prev, open: false })); // Đóng dialog
+        },
       });
     } finally {
       setLoading(false);
@@ -162,7 +168,6 @@ export function LoginForm() {
           {loading ? "Đang xử lý..." : "Đăng Nhập"}
         </button>
 
-        {/* Các phần UI bên dưới giữ nguyên 100% */}
         <div className="relative my-8 text-center">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-200"></div>
@@ -198,7 +203,9 @@ export function LoginForm() {
       {/* COMPONENT ALERT DIALOG */}
       <AlertDialog
         open={dialogConfig.open}
-        onOpenChange={(open) => setDialogConfig((prev) => ({ ...prev, open }))}
+        onOpenChange={(open: boolean) =>
+          setDialogConfig((prev) => ({ ...prev, open }))
+        }
       >
         <AlertDialogContent className="rounded-2xl max-w-sm">
           <AlertDialogHeader className="flex flex-col items-center text-center">

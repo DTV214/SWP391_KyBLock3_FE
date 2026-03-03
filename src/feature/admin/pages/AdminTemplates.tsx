@@ -90,7 +90,7 @@ export default function AdminTemplates() {
       // Fetch available products
       console.log('Fetching products...');
       const productsResponse = await productService.getAll();
-      const products = productsResponse.data || [];
+      const products: Product[] = (productsResponse as any)?.data?.data ?? (productsResponse as any)?.data ?? [];
       // Filter only ACTIVE single products (not baskets)
       const filtered = products.filter((p: Product) => 
         p.status === 'ACTIVE' && !p.configid
@@ -351,23 +351,36 @@ export default function AdminTemplates() {
       setImageUrl(data.imageUrl || "");
       setStatus(data.status || "DRAFT");
       
-      // Fetch child products if not included
+      // Build child products from embedded fields in ProductDetailResponse
       const details: ProductDetailWithChild[] = [];
       for (const pd of data.productDetails || []) {
-        let childProduct = pd.childProduct;
-        
-        // If childProduct is not included, fetch it
+        let childProduct: Product | undefined = pd.childProduct ?? undefined;
+
         if (!childProduct && pd.productid) {
-          console.log('Fetching child product ID:', pd.productid);
-          try {
-            const childResponse = await productService.getById(pd.productid);
-            childProduct = childResponse.data;
-            console.log('Child product loaded:', childProduct?.productname);
-          } catch (childError) {
-            console.warn('⚠️ Could not load child product:', pd.productid);
+          if (pd.productname) {
+            // Use embedded fields (categoryid, productname, price, unit, imageurl are now included)
+            childProduct = {
+              productid: pd.productid,
+              categoryid: pd.categoryid,
+              productname: pd.productname,
+              price: pd.price,
+              unit: pd.unit,
+              imageUrl: pd.imageurl,
+            } as Product;
+            console.log('Child product built from embedded fields:', childProduct.productname, '(categoryid:', childProduct.categoryid + ')');
+          } else {
+            // Fallback: fetch if no embedded data available
+            try {
+              console.log('Fetching child product ID:', pd.productid);
+              const childResponse = await productService.getById(pd.productid);
+              childProduct = (childResponse as any)?.data as Product;
+              console.log('Child product fetched:', childProduct?.productname);
+            } catch (childError) {
+              console.warn('⚠️ Could not load child product:', pd.productid);
+            }
           }
         }
-        
+
         details.push({
           productid: pd.productid,
           quantity: pd.quantity,
@@ -403,14 +416,14 @@ export default function AdminTemplates() {
       // Fetch categories for filtering
       console.log('Fetching categories...');
       const categoriesResponse = await categoryService.getAll();
-      const categories = categoriesResponse.data || [];
+      const categories: Category[] = (categoriesResponse as any)?.data ?? [];
       setCategoriesForEdit(categories);
       console.log('Categories loaded:', categories.length);
       
       // Fetch available products
       console.log('Fetching products...');
       const productsResponse = await productService.getAll();
-      const products = productsResponse.data || [];
+      const products: Product[] = (productsResponse as any)?.data?.data ?? (productsResponse as any)?.data ?? [];
       // Filter only ACTIVE single products (not baskets)
       const filtered = products.filter((p: Product) => 
         p.status === 'ACTIVE' && !p.configid
@@ -840,15 +853,22 @@ export default function AdminTemplates() {
                 <h4 className="text-lg font-bold text-tet-primary mb-4">Sản phẩm trong giỏ</h4>
                 {selectedTemplate.productDetails && selectedTemplate.productDetails.length > 0 ? (
                   <div className="space-y-3">
-                    {selectedTemplate.productDetails.map((detail, index) => (
+                    {selectedTemplate.productDetails.map((detail, index) => {
+                      // Use childProduct fields if available, otherwise fall back to embedded fields
+                      const displayName = detail.childProduct?.productname ?? detail.productname;
+                      const displayPrice = detail.childProduct?.price ?? detail.price;
+                      const displayImage = detail.childProduct?.imageUrl ?? (detail as any).imageurl;
+                      const displaySku = detail.childProduct?.sku;
+                      const displayStock = detail.childProduct?.totalQuantity;
+                      return (
                       <div
                         key={index}
                         className="bg-gray-50 p-4 rounded-xl flex items-center gap-4 hover:shadow-md transition-all"
                       >
-                        {detail.childProduct?.imageUrl ? (
+                        {displayImage ? (
                           <img
-                            src={detail.childProduct.imageUrl}
-                            alt={detail.childProduct.productname}
+                            src={displayImage}
+                            alt={displayName}
                             className="w-16 h-16 rounded-lg object-cover"
                           />
                         ) : (
@@ -858,18 +878,20 @@ export default function AdminTemplates() {
                         )}
                         <div className="flex-1">
                           <h5 className="font-bold text-tet-primary">
-                            {detail.childProduct?.productname || 'Unknown'}
+                            {displayName || 'Unknown'}
                           </h5>
                           <p className="text-xs text-gray-500">
-                            SKU: {detail.childProduct?.sku || 'N/A'}
+                            SKU: {displaySku || 'N/A'}
                           </p>
                           <div className="flex gap-4 mt-1">
                             <span className="text-xs text-gray-600">
-                              Giá: <span className="font-bold text-tet-accent">{(detail.childProduct?.price || 0).toLocaleString()}đ</span>
+                              Giá: <span className="font-bold text-tet-accent">{(displayPrice || 0).toLocaleString()}đ</span>
                             </span>
-                            <span className="text-xs text-gray-600">
-                              Stock: <span className="font-bold">{detail.childProduct?.totalQuantity || 0}</span>
-                            </span>
+                            {displayStock !== undefined && (
+                              <span className="text-xs text-gray-600">
+                                Stock: <span className="font-bold">{displayStock}</span>
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="text-right">
@@ -877,7 +899,8 @@ export default function AdminTemplates() {
                           <p className="text-2xl font-bold text-tet-primary">x{detail.quantity || 1}</p>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-400">

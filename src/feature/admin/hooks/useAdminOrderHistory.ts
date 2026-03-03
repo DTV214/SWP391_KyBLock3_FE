@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import type { OrderResponse } from '@/feature/checkout/services/orderService';
 import { orderService } from '@/feature/checkout/services/orderService';
-import { ORDER_STATUS } from '../utils/orderStatusUtils';
-import type { OrderFilters, SortBy } from '../utils/orderFilterUtils';
-import { processOrders, getDateRangeOptions } from '../utils/orderFilterUtils';
+import { ORDER_STATUS } from '@/feature/account/utils/orderStatusUtils';
+import type { OrderFilters, SortBy } from '@/feature/account/utils/orderFilterUtils';
+import { processOrders, getDateRangeOptions } from '@/feature/account/utils/orderFilterUtils';
 
 const normalizeOrderForOrdersPage = (order: OrderResponse): OrderResponse => {
     if (order.status !== ORDER_STATUS.PAID_WAITING_STOCK) {
@@ -16,7 +16,7 @@ const normalizeOrderForOrdersPage = (order: OrderResponse): OrderResponse => {
     };
 };
 
-export const useOrderHistory = () => {
+export const useAdminOrderHistory = () => {
     const [orders, setOrders] = useState<OrderResponse[]>([]);
     const [filteredOrders, setFilteredOrders] = useState<OrderResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +36,7 @@ export const useOrderHistory = () => {
                     setError('Vui lòng đăng nhập');
                     return;
                 }
-                const data = await orderService.getMyOrders(token);
+                const data = await orderService.getAllOrders(token);
                 setOrders(data.map(normalizeOrderForOrdersPage));
             } catch (err: any) {
                 console.error('Error loading orders:', err);

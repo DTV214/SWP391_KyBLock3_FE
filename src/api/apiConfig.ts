@@ -3,11 +3,18 @@
 // Prefer configuring via Vite env:
 // - VITE_API_BASE_URL=http://localhost:5280/api
 // - VITE_API_BASE_URL=http://14.225.207.221:5000/api
-const ENV_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
 
+// 1. Định nghĩa Interface chuẩn cho biến môi trường của Vite
+interface ViteEnv {
+  VITE_API_BASE_URL?: string;
+}
+// const ENV_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
+const ENV_BASE_URL = (import.meta as unknown as { env: ViteEnv }).env
+  ?.VITE_API_BASE_URL;
 // Fallback to current production server if env is not set
 const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5000/api").replace(/\/+$/, "");
-// const BASE_URL = (ENV_BASE_URL?.trim() || "http://localhost:5280/api").replace(/\/+$/, "");
+
+// const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(/\/+$/, "");
 
 // Điều này giúp bạn chỉ cần đổi file .env khi chạy local / deploy.
 export const API_ENDPOINTS = {
@@ -44,7 +51,8 @@ export const API_ENDPOINTS = {
     // Template endpoints
     TEMPLATES: `${BASE_URL}/products/templates`,
     ADMIN_BASKETS: `${BASE_URL}/products/admin-baskets`,
-    CUSTOM_PRODUCT_BY_ID: (id: string | number) => `${BASE_URL}/products/custom/${id}`,
+    CUSTOM_PRODUCT_BY_ID: (id: string | number) =>
+      `${BASE_URL}/products/custom/${id}`,
     CLONE_TEMPLATE: (templateId: string | number) =>
       `${BASE_URL}/products/templates/${templateId}/clone`,
     SET_AS_TEMPLATE: (id: string | number) =>
@@ -97,9 +105,11 @@ export const API_ENDPOINTS = {
     GET: `${BASE_URL}/carts`,
     GET_ITEMS_COUNT: `${BASE_URL}/carts/count`,
     ADD_TO_CART: `${BASE_URL}/carts/items`,
-    UPDATE_ITEM: (cartDetailId: string | number) => `${BASE_URL}/carts/items/${cartDetailId}`,
-    REMOVE_ITEM: (cartDetailId: string | number) => `${BASE_URL}/carts/items/${cartDetailId}`,
-    CLEAR: `${BASE_URL}/carts/clear`
+    UPDATE_ITEM: (cartDetailId: string | number) =>
+      `${BASE_URL}/carts/items/${cartDetailId}`,
+    REMOVE_ITEM: (cartDetailId: string | number) =>
+      `${BASE_URL}/carts/items/${cartDetailId}`,
+    CLEAR: `${BASE_URL}/carts/clear`,
   },
 
   // Orders endpoints
@@ -117,7 +127,8 @@ export const API_ENDPOINTS = {
   // Payments endpoints
   PAYMENTS: {
     CREATE: `${BASE_URL}/payments`,
-    BY_ORDER: (orderId: string | number) => `${BASE_URL}/payments/order/${orderId}`,
+    BY_ORDER: (orderId: string | number) =>
+      `${BASE_URL}/payments/order/${orderId}`,
     PAY_BY_WALLET: `${BASE_URL}/payments/wallet/pay`,
     VNPAY_RETURN: `${BASE_URL}/payments/vnpay-return`,
   },
@@ -130,7 +141,26 @@ export const API_ENDPOINTS = {
   // Promotions endpoints
   PROMOTIONS: {
     GET_BY_CODE: (code: string) => `${BASE_URL}/promotions/code/${code}`,
-  }
+  },
+  // Thêm vào bên trong const API_ENDPOINTS = { ... }
+  BLOGS: {
+    LIST: `${BASE_URL}/blogs`,
+    DETAIL: (id: string | number) => `${BASE_URL}/blogs/${id}`,
+    CREATE: `${BASE_URL}/blogs`,
+    UPDATE: (id: string | number) => `${BASE_URL}/blogs/${id}`,
+    DELETE: (id: string | number) => `${BASE_URL}/blogs/${id}`,
+  },
+  CHAT: {
+    USER_CONVERSATION: `${BASE_URL}/chat/conversation`,
+    USER_MESSAGES: (conversationId: string | number) =>
+      `${BASE_URL}/chat/messages/me/${conversationId}`,
+    USER_SEND: `${BASE_URL}/chat/send`,
+    ADMIN_ALL_CONVERSATIONS: `${BASE_URL}/chat/all`,
+    ADMIN_MESSAGES: (conversationId: string | number) =>
+      `${BASE_URL}/chat/messages/${conversationId}`,
+    ADMIN_REPLY: (conversationId: string | number) =>
+      `${BASE_URL}/chat/reply/${conversationId}`,
+  },
 };
 
 export default BASE_URL;
