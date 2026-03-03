@@ -9,7 +9,6 @@ import Footer from "./layouts/components/Footer";
 import BackToTop from "./components/common/BackToTop";
 import { CartProvider } from "./feature/cart/context/CartContext";
 import CartSidebar from "./feature/cart/components/CartSidebar";
-import { KeyboardShortcutsHint } from "./lib/hooks/useKeyboardShortcuts";
 import "./App.css";
 
 // Auth & Home
@@ -43,11 +42,19 @@ import AdminProducts from "@/feature/admin/pages/AdminProducts";
 import AdminCategories from "@/feature/admin/pages/AdminCategories";
 import AdminConfigs from "@/feature/admin/pages/AdminConfigs";
 import AdminTemplates from "@/feature/admin/pages/AdminTemplates";
-import AdminQuotationsPage from "@/feature/admin/pages/AdminQuotationsPage";
-import AdminQuotationDetailPage from "@/feature/admin/pages/AdminQuotationDetailPage";
+import AdminQuotationsPage from "@/feature/admin/pages/AdminQuotationsPage"; // Admin duyệt list
+import AdminQuotationDetailPage from "@/feature/admin/pages/AdminQuotationDetailPage"; // Admin duyệt chi tiết
 import AdminApprovalQuotationsPage from "@/feature/admin/pages/AdminApprovalQuotationsPage";
 import AdminApprovalQuotationDetailPage from "@/feature/admin/pages/AdminApprovalQuotationDetailPage";
 import AdminOrderHistory from "@/feature/admin/pages/AdminOrderHistory";
+import AdminChatPage from "@/feature/chat/pages/AdminChatPage";
+
+// Staff Module
+import StaffLayout from "@/feature/staff/layout/StaffLayout";
+import StaffQuotationsPage from "@/feature/staff/page/StaffQuotationsPage";
+import StaffDashboardPage from "@/feature/staff/page/StaffDashboardPage";
+import StaffQuotationDetailPage from "@/feature/staff/page/StaffQuotationDetailPage";
+import StaffOrdersPage from "@/feature/staff/page/StaffOrdersPage";
 
 // Product & Checkout Module
 import ProductPage from "@/feature/product/pages/ProductPage";
@@ -57,10 +64,19 @@ import CheckoutPage from "@/feature/checkout/pages/CheckoutPage";
 import PaymentSuccess from "@/feature/checkout/pages/PaymentSuccess";
 import PaymentFailure from "@/feature/checkout/pages/PaymentFailure";
 import VNPayReturn from "@/feature/checkout/pages/VNPayReturn";
+import CustomerChatWidget from "@/feature/chat/components/CustomerChatWidget";
 
+// --- MIDDLEWARES ---
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem("token");
-  return token ? <Navigate to="/home" /> : children;
+  const role = localStorage.getItem("role");
+
+  if (token) {
+    if (role === "ADMIN") return <Navigate to="/admin" replace />;
+    if (role === "STAFF") return <Navigate to="/staff" replace />;
+    return <Navigate to="/home" replace />;
+  }
+  return children;
 };
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -71,7 +87,18 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
-  return token && (role === "ADMIN" || role === "STAFF") ? children : <Navigate to="/home" />;
+  return token && role === "ADMIN" ? children : <Navigate to="/home" />;
+};
+
+const StaffRoute = ({ children }: { children: React.ReactNode }) => {
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+  // Cho phép ADMIN truy cập cả trang STAFF nếu cần thiết, hoặc có thể chỉ giới hạn "STAFF"
+  return token && (role === "STAFF" || role === "ADMIN") ? (
+    children
+  ) : (
+    <Navigate to="/home" />
+  );
 };
 
 function App() {
@@ -82,15 +109,25 @@ function App() {
           <Navbar />
           <main className="flex-grow">
             <Routes>
+              {/* --- PUBLIC ROUTES --- */}
               <Route path="/home" element={<HomePage />} />
               <Route path="/introduce" element={<IntroducePage />} />
               <Route path="/blogs" element={<BlogPage />} />
               <Route path="/blog/:id" element={<BlogDetailPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/quotation" element={<QuotationIntroPage />} />
-              <Route path="/quotation/create" element={<QuotationCreatePage />} />
-              <Route path="/quotation/history" element={<QuotationHistoryPage />} />
-              <Route path="/quotation/status/:id" element={<QuotationStatusPage />} />
+              <Route
+                path="/quotation/create"
+                element={<QuotationCreatePage />}
+              />
+              <Route
+                path="/quotation/history"
+                element={<QuotationHistoryPage />}
+              />
+              <Route
+                path="/quotation/status/:id"
+                element={<QuotationStatusPage />}
+              />
               <Route path="/products" element={<ProductPage />} />
               <Route path="/all-products" element={<AllProductsPage />} />
               <Route path="/product/:id" element={<ProductDetailPage />} />
@@ -113,6 +150,7 @@ function App() {
               />
               <Route path="/" element={<Navigate to="/home" />} />
 
+              {/* --- CUSTOMER ACCOUNT ROUTES --- */}
               <Route
                 path="/account"
                 element={
@@ -130,6 +168,26 @@ function App() {
                 <Route path="vouchers" element={<AccountVouchers />} />
               </Route>
 
+              {/* --- STAFF ROUTES --- */}
+              <Route
+                path="/staff"
+                element={
+                  <StaffRoute>
+                    <StaffLayout />
+                  </StaffRoute>
+                }
+              >
+                <Route index element={<Navigate to="dashboard" />} />
+                <Route path="dashboard" element={<StaffDashboardPage />} />
+                <Route path="quotations" element={<StaffQuotationsPage />} />
+                <Route
+                  path="quotations/:id"
+                  element={<StaffQuotationDetailPage />}
+                />
+                <Route path="orders" element={<StaffOrdersPage />} />
+              </Route>
+
+              {/* --- ADMIN ROUTES --- */}
               <Route
                 path="/admin"
                 element={
@@ -145,12 +203,26 @@ function App() {
                 <Route path="configs" element={<AdminConfigs />} />
                 <Route path="templates" element={<AdminTemplates />} />
                 <Route path="orders" element={<AdminOrderHistory />} />
-                <Route path="quotations" element={<AdminApprovalQuotationsPage />} />
-                <Route path="quotations/:id" element={<AdminApprovalQuotationDetailPage />} />
-                <Route path="reviewing-quotations" element={<AdminQuotationsPage />} />
-                <Route path="reviewing-quotations/:id" element={<AdminQuotationDetailPage />} />
+                <Route path="chats" element={<AdminChatPage />} />
+                <Route
+                  path="quotations"
+                  element={<AdminApprovalQuotationsPage />}
+                />
+                <Route
+                  path="quotations/:id"
+                  element={<AdminApprovalQuotationDetailPage />}
+                />
+                <Route
+                  path="reviewing-quotations"
+                  element={<AdminQuotationsPage />}
+                />
+                <Route
+                  path="reviewing-quotations/:id"
+                  element={<AdminQuotationDetailPage />}
+                />
               </Route>
 
+              {/* --- CHECKOUT ROUTES --- */}
               <Route
                 path="/checkout"
                 element={
@@ -167,7 +239,7 @@ function App() {
           <Footer />
           <BackToTop />
           <CartSidebar />
-          <KeyboardShortcutsHint />
+          <CustomerChatWidget />
         </div>
       </Router>
     </CartProvider>

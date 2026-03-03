@@ -14,6 +14,7 @@ export default function AdminLayout() {
     if (path.includes("reviewing-quotations")) return "Reviewing Quotations";
     if (path.includes("quotations")) return "Quotations";
     if (path.includes("orders")) return "Quản lý đơn hàng";
+    if (path.includes("chats")) return "Chat khách hàng";
     if (path.includes("customers")) return "Quản lý khách hàng";
     return "Quản trị";
   };

@@ -1,14 +1,64 @@
-// src/feature/blog/pages/BlogDetailPage.tsx
+// src/features/blog/pages/BlogDetailPage.tsx
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
-import { mockBlogs } from "../data/mockBlogs";
+import { blogService, type BlogDto } from "../services/blogService";
 
 import BlogSidebar from "../components/BlogSidebar";
 import BlogContent from "@/feature/blog/components/BlogContent";
+// Cẩn thận đường dẫn import nhé
 
 export default function BlogDetailPage() {
-  const { id } = useParams();
-  const blog = mockBlogs.find((b) => b.id === Number(id)) || mockBlogs[0];
+  const { id } = useParams<{ id: string }>();
+  const [blog, setBlog] = useState<BlogDto | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchBlogDetail = async () => {
+      if (!id) return;
+      try {
+        setIsLoading(true);
+        const data = await blogService.getBlogById(id);
+        if (data) {
+          setBlog(data);
+        } else {
+          setError("Không tìm thấy bài viết.");
+        }
+      } catch (err) {
+        console.error("Lỗi tải chi tiết bài viết", err);
+        setError("Đã xảy ra lỗi khi tải bài viết.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBlogDetail();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-[#FBF5E8]/30 py-20">
+        <div className="w-10 h-10 border-4 border-tet-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (error || !blog) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center bg-[#FBF5E8]/30 py-20 space-y-4">
+        <p className="text-red-500 font-bold">
+          {error || "Bài viết không tồn tại."}
+        </p>
+        <Link
+          to="/blogs"
+          className="text-tet-primary underline hover:text-tet-accent"
+        >
+          Quay lại danh sách
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#FBF5E8]/30 min-h-screen py-10">
