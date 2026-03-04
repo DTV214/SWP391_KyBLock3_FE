@@ -34,12 +34,17 @@ export default function AdminSidebar() {
       icon: <LayoutDashboard size={18} />,
     },
     {
+      path: "/admin/accounts",
+      label: "Quản lý Tài khoản",
+      icon: <Users size={18} />,
+    },
+    {
       path: "/admin/products",
       label: "Sản phẩm",
       icon: <Package size={18} />,
     },
     {
-      path: "/admin/inventory", 
+      path: "/admin/inventory",
       label: "Kho hàng",
       icon: <PackageOpen size={18} />,
     },

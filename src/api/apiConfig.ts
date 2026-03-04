@@ -182,6 +182,15 @@ export const API_ENDPOINTS = {
     ADMIN_REPLY: (conversationId: string | number) =>
       `${BASE_URL}/chat/reply/${conversationId}`,
   },
+  // Admin Accounts endpoints
+  ADMIN_ACCOUNTS: {
+    LIST: `${BASE_URL}/admin/accounts`,
+    CREATE: `${BASE_URL}/admin/accounts`,
+    DETAIL: (id: string | number) => `${BASE_URL}/admin/accounts/${id}`,
+    DELETE: (id: string | number) => `${BASE_URL}/admin/accounts/${id}`,
+    UPDATE_STATUS: (id: string | number) =>
+      `${BASE_URL}/admin/accounts/${id}/status`,
+  },
 };
 
 export default BASE_URL;

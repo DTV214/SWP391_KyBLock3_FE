@@ -68,6 +68,7 @@ import VNPayReturn from "@/feature/checkout/pages/VNPayReturn";
 import CustomerChatWidget from "@/feature/chat/components/CustomerChatWidget";
 import AdminBlogs from "@/feature/admin/pages/AdminBlogs";
 import AdminInventory from "@/feature/admin/pages/AdminInventory";
+import AdminAccounts from "@/feature/admin/pages/AdminAccounts";
 
 // --- MIDDLEWARES ---
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
@@ -209,6 +210,7 @@ function App() {
                 <Route path="chats" element={<AdminChatPage />} />
                 <Route path="blogs" element={<AdminBlogs />} />
                 <Route path="inventory" element={<AdminInventory />} />
+                <Route path="accounts" element={<AdminAccounts />} />
                 <Route
                   path="quotations"
                   element={<AdminApprovalQuotationsPage />}

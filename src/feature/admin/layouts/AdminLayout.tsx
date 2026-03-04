@@ -7,6 +7,7 @@ export default function AdminLayout() {
 
   const getBreadcrumbName = (path: string) => {
     if (path.includes("overview")) return "Tổng quan";
+    if (path.includes("accounts")) return "Quản lý tài khoản";
     if (path.includes("products")) return "Quản lý sản phẩm";
     if (path.includes("inventory")) return "Quản lý kho hàng";
     if (path.includes("categories")) return "Quản lý danh mục";
@@ -17,7 +18,6 @@ export default function AdminLayout() {
     if (path.includes("quotations")) return "Quotations";
     if (path.includes("orders")) return "Quản lý đơn hàng";
     if (path.includes("chats")) return "Chat khách hàng";
-    if (path.includes("customers")) return "Quản lý khách hàng";
     return "Quản trị";
   };
 
