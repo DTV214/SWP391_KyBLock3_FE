@@ -66,6 +66,8 @@ import PaymentSuccess from "@/feature/checkout/pages/PaymentSuccess";
 import PaymentFailure from "@/feature/checkout/pages/PaymentFailure";
 import VNPayReturn from "@/feature/checkout/pages/VNPayReturn";
 import CustomerChatWidget from "@/feature/chat/components/CustomerChatWidget";
+import AdminBlogs from "@/feature/admin/pages/AdminBlogs";
+import AdminInventory from "@/feature/admin/pages/AdminInventory";
 
 // --- MIDDLEWARES ---
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
@@ -205,6 +207,8 @@ function App() {
                 <Route path="templates" element={<AdminTemplates />} />
                 <Route path="orders" element={<AdminOrderHistory />} />
                 <Route path="chats" element={<AdminChatPage />} />
+                <Route path="blogs" element={<AdminBlogs />} />
+                <Route path="inventory" element={<AdminInventory />} />
                 <Route
                   path="quotations"
                   element={<AdminApprovalQuotationsPage />}
