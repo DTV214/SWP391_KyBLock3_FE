@@ -92,10 +92,9 @@ export default function AdminSidebar() {
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mb-1 ${
-                isActive
-                  ? "bg-tet-secondary text-tet-primary font-bold shadow-sm"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-tet-primary"
+              `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mb-1 ${isActive
+                ? "bg-tet-secondary text-tet-primary font-bold shadow-sm"
+                : "text-gray-600 hover:bg-gray-50 hover:text-tet-primary"
               }`
             }
           >
