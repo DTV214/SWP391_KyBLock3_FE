@@ -1,14 +1,14 @@
 // src/feature/homepage/components/ProductGridHome.tsx
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ProductCard from "../../../components/common/ProductCard";
+import { productService, type Product } from "@/api/productService";
 
-// Dữ liệu mẫu (sau này sẽ thay thế bằng dữ liệu từ API .NET)
-const products = Array(9).fill({
-  title: "Hộp quà Tết truyền thống",
-  price: "1,250,000",
-  image:
-      "https://res.cloudinary.com/dratbz8bh/image/upload/v1769521638/HOP-BANH-TRUNG-THU-VEN-TRON-3_get5up.jpg",
-});
+const DEFAULT_IMAGE =
+  "https://res.cloudinary.com/dratbz8bh/image/upload/v1769521638/HOP-BANH-TRUNG-THU-VEN-TRON-3_get5up.jpg";
+
+const MAX_DISPLAY = 9;
 
 // Hiệu ứng cho Container (Stagger)
 const containerVariants = {
@@ -30,6 +30,30 @@ const itemVariants = {
 };
 
 export default function ProductGridHome() {
+  const navigate = useNavigate();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBaskets = async () => {
+      try {
+        const response = await productService.templates.getAll();
+        const all: Product[] = (response as any)?.data ?? [];
+        const active = all.filter(
+          (p) =>
+            p.status?.toUpperCase() === "ACTIVE" ||
+            p.status?.toUpperCase() === "TEMPLATE"
+        );
+        setProducts(active.slice(0, MAX_DISPLAY));
+      } catch (err) {
+        console.error("Không thể tải giỏ quà:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBaskets();
+  }, []);
+
   return (
     <section className="py-16 md:py-24 px-6 md:px-10 bg-white relative overflow-hidden">
       {/* Container căn giữa nội dung */}
@@ -65,11 +89,24 @@ export default function ProductGridHome() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
         >
-          {products.map((p, index) => (
-            <motion.div key={index} variants={itemVariants}>
-              <ProductCard {...p} />
-            </motion.div>
-          ))}
+          {loading
+            ? Array(3)
+                .fill(null)
+                .map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-2xl bg-gray-100 animate-pulse aspect-[3/4]"
+                  />
+                ))
+            : products.map((p) => (
+                <motion.div key={p.productid} variants={itemVariants}>
+                  <ProductCard
+                    title={p.productname ?? "Giỏ quà Tết"}
+                    price={(p.price ?? 0).toLocaleString("vi-VN")}
+                    image={p.imageUrl?.trim() ? p.imageUrl : DEFAULT_IMAGE}
+                  />
+                </motion.div>
+              ))}
         </motion.div>
 
         {/* Nút Xem thêm phong cách Tết */}
@@ -79,7 +116,10 @@ export default function ProductGridHome() {
           transition={{ delay: 0.5 }}
           className="mt-16 md:mt-20 text-center"
         >
-          <button className="bg-tet-primary text-white px-10 md:px-12 py-3 md:py-4 rounded-full font-bold text-base md:text-lg hover:bg-[#4a0d06] hover:scale-105 transition-all shadow-[0_10px_30px_rgba(90,17,7,0.2)]">
+          <button
+            onClick={() => { navigate("/all-products"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            className="bg-tet-primary text-white px-10 md:px-12 py-3 md:py-4 rounded-full font-bold text-base md:text-lg hover:bg-[#4a0d06] hover:scale-105 transition-all shadow-[0_10px_30px_rgba(90,17,7,0.2)]"
+          >
             Xem thêm sản phẩm
           </button>
         </motion.div>
