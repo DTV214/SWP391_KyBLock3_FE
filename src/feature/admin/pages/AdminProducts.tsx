@@ -1,14 +1,20 @@
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Plus, Search, Edit, Trash2, Eye, Package, Gift } from "lucide-react";
 import { productService, type Product } from "../../../api/productService";
 import { categoryService, type Category } from "../../../api/categoryService";
 import axiosClient from "../../../api/axiosClient";
 import { API_ENDPOINTS } from "../../../api/apiConfig";
 
 const PAGE_SIZE = 20;
-
+type MainTab = "single" | "baskets";
+type BasketFilter = "all" | "admin" | "customer";
 
 export default function AdminProducts() {
+  // ── Tab State ──────────────────────────────────────────────────────────────
+  const [mainTab, setMainTab] = useState<MainTab>("single");
+  const [basketFilter, setBasketFilter] = useState<BasketFilter>("all");
+
+  // ── Single products (paginated) ────────────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -21,10 +27,23 @@ export default function AdminProducts() {
   const [submitting, setSubmitting] = useState(false);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
 
-  // Pagination state
+  // Pagination state (single products)
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+
+  // ── Basket lists ────────────────────────────────────────────────────────────
+  const [adminBaskets, setAdminBaskets] = useState<Product[]>([]);
+  const [basketsLoading, setBasketsLoading] = useState(false);
+  const adminBasketIdsRef = useRef<Set<number>>(new Set());
+
+  // Customer baskets = paginated products with isCustom=true, not in adminBaskets
+  const [customerBaskets, setCustomerBaskets] = useState<Product[]>([]);
+  const [basketSearchTerm, setBasketSearchTerm] = useState("");
+  const [basketPage, setBasketPage] = useState(1);
+  const [basketTotalPages, setBasketTotalPages] = useState(1);
+  const [basketTotalItems, setBasketTotalItems] = useState(0);
+  const [customerBasketsLoading, setCustomerBasketsLoading] = useState(false);
 
   const [formData, setFormData] = useState<Product>({
     productname: "",
@@ -41,9 +60,7 @@ export default function AdminProducts() {
   // Get token from localStorage
   const getToken = () => localStorage.getItem("token") || "";
 
-  // Fetch products with server-side pagination & search
-  // Server returns: ApiResponse<PagedResponse<ProductDto>>
-  // axiosClient unwraps to: { status, msg, data: { data: [...], currentPage, totalPages, totalItems, pageSize } }
+  // ── Fetch: paginated single products ──────────────────────────────────────
   const fetchProducts = useCallback(async (page: number, search: string) => {
     try {
       setLoading(true);
@@ -68,7 +85,48 @@ export default function AdminProducts() {
     }
   }, []);
 
-  // Fetch categories (plain array response)
+  // ── Fetch: admin baskets (non-paginated) ──────────────────────────────────
+  const fetchAdminBaskets = useCallback(async () => {
+    try {
+      setBasketsLoading(true);
+      const res: any = await productService.templates.getAdminBaskets();
+      const list: Product[] = (res as any)?.data?.data ?? (res as any)?.data ?? [];
+      setAdminBaskets(list);
+      adminBasketIdsRef.current = new Set(list.map((p: Product) => p.productid!).filter(Boolean));
+    } catch (err: any) {
+      console.error("Error fetching admin baskets:", err);
+    } finally {
+      setBasketsLoading(false);
+    }
+  }, []);
+
+  // ── Fetch: customer baskets (paginated, isCustom=true, exclude admin IDs) ─
+  const fetchCustomerBaskets = useCallback(async (page: number, search: string) => {
+    try {
+      setCustomerBasketsLoading(true);
+      const params = new URLSearchParams({
+        pageNumber: String(page),
+        pageSize: String(PAGE_SIZE),
+        ...(search ? { search } : {}),
+      });
+      const res: any = await axiosClient.get(`${API_ENDPOINTS.PRODUCTS.LIST}?${params.toString()}`);
+      const paged = res?.data;
+      const all: Product[] = Array.isArray(paged?.data) ? paged.data : [];
+      const filtered = all.filter(
+        (p) => p.isCustom === true && !adminBasketIdsRef.current.has(p.productid!)
+      );
+      setCustomerBaskets(filtered);
+      setBasketPage(paged?.currentPage ?? page);
+      setBasketTotalPages(paged?.totalPages ?? 1);
+      setBasketTotalItems(paged?.totalItems ?? 0);
+    } catch (err: any) {
+      console.error("Error fetching customer baskets:", err);
+    } finally {
+      setCustomerBasketsLoading(false);
+    }
+  }, []);
+
+  // ── Fetch categories ───────────────────────────────────────────────────────
   const fetchCategories = useCallback(async () => {
     try {
       const res: any = await categoryService.getAll();
@@ -82,7 +140,7 @@ export default function AdminProducts() {
     fetchCategories();
   }, [fetchCategories]);
 
-  // Debounced search — reset to page 1 on new search
+  // Debounced search (single products) — reset to page 1 on new search
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentPage(1);
@@ -91,11 +149,37 @@ export default function AdminProducts() {
     return () => clearTimeout(timer);
   }, [searchTerm, fetchProducts]);
 
-  // Re-fetch when page changes
+  // Re-fetch single products when page changes
   useEffect(() => {
     fetchProducts(currentPage, searchTerm);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
+
+  // Fetch baskets when Giỏ quà tab is first opened
+  useEffect(() => {
+    if (mainTab === "baskets") {
+      fetchAdminBaskets();
+    }
+  }, [mainTab, fetchAdminBaskets]);
+
+  // Fetch customer baskets after adminBaskets are loaded (IDs available)
+  useEffect(() => {
+    if (mainTab === "baskets" && (basketFilter === "customer" || basketFilter === "all")) {
+      fetchCustomerBaskets(1, basketSearchTerm);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminBaskets, basketFilter]);
+
+  // Debounced basket search
+  useEffect(() => {
+    if (mainTab !== "baskets") return;
+    const timer = setTimeout(() => {
+      if (basketFilter === "admin" || basketFilter === "all") fetchAdminBaskets();
+      if (basketFilter === "customer" || basketFilter === "all")
+        fetchCustomerBaskets(1, basketSearchTerm);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [basketSearchTerm, mainTab, basketFilter, fetchAdminBaskets, fetchCustomerBaskets]);
 
   // Open modal for create/edit
   const handleOpenModal = (product?: Product) => {
@@ -166,13 +250,21 @@ export default function AdminProducts() {
       setError(null);
 
       if (editingProduct?.productid) {
-        // Update - only normal products should be updated here
         if (formData.isCustom) {
-          setError("Không thể cập nhật sản phẩm tùy chỉnh ở đây. Vui lòng sử dụng trang Cấu hình giỏ quà.");
-          setSubmitting(false);
-          return;
+          // Update basket/combo product — only header fields (name, desc, image, status)
+          await productService.updateCustom(
+            editingProduct.productid,
+            {
+              productname: formData.productname,
+              description: formData.description,
+              imageUrl: formData.imageUrl,
+              status: formData.status,
+            },
+            getToken()
+          );
+        } else {
+          await productService.updateNormal(editingProduct.productid, formData, getToken());
         }
-        await productService.updateNormal(editingProduct.productid, formData, getToken());
       } else {
         // Create - normal product only
         if (formData.isCustom) {
@@ -227,12 +319,25 @@ export default function AdminProducts() {
     return category?.categoryname || "-";
   };
 
-  // Client-side filter by status/category on top of server-paged data
+  // Client-side filter (all products — single & baskets)
   const filteredProducts = products.filter(product => {
     const matchStatus = !filterStatus || product.status === filterStatus;
     const matchCategory = !filterCategory || product.categoryid?.toString() === filterCategory;
     return matchStatus && matchCategory;
   });
+
+  // Displayed baskets based on sub-filter
+  const displayedBaskets: Product[] =
+    basketFilter === "admin"
+      ? adminBaskets
+      : basketFilter === "customer"
+      ? customerBaskets
+      : [
+          ...adminBaskets,
+          ...customerBaskets.filter(
+            (c) => !adminBasketIdsRef.current.has(c.productid!)
+          ),
+        ];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -264,259 +369,318 @@ export default function AdminProducts() {
     }
   };
 
+  // ── Shared table row renderer ──────────────────────────────────────────────
+  const renderProductRow = (product: Product, origin?: "admin" | "customer") => (
+    <tr key={product.productid} className="hover:bg-gray-50 transition-colors">
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="w-14 h-14 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0 bg-gray-100">
+            {product.imageUrl ? (
+              <img
+                src={product.imageUrl}
+                alt={product.productname}
+                className="w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/80?text=No+Image"; }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                No Image
+              </div>
+            )}
+          </div>
+          <div>
+            <p className="font-bold text-sm text-tet-primary">{product.productname || "Chưa đặt tên"}</p>
+            <p className="text-xs text-gray-500">ID: {product.productid}</p>
+            {origin && (
+              <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                origin === "admin" ? "bg-indigo-100 text-indigo-700" : "bg-orange-100 text-orange-700"
+              }`}>
+                {origin === "admin" ? "Admin/Staff" : "Khách"}
+              </span>
+            )}
+          </div>
+        </div>
+      </td>
+      <td className="px-6 py-4 text-sm text-gray-600 font-mono">{product.sku || "-"}</td>
+      <td className="px-6 py-4 text-sm text-gray-600">{getCategoryName(product.categoryid)}</td>
+      <td className="px-6 py-4">
+        <span className="text-sm font-bold text-tet-accent">
+          {product.price ? product.price.toLocaleString() : "0"}đ
+        </span>
+      </td>
+      <td className="px-6 py-4 text-sm text-gray-600">{product.unit || 0}g</td>
+      <td className="px-6 py-4">
+        <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(product.status || "")}`}>
+          {getStatusText(product.status || "")}
+        </span>
+      </td>
+      <td className="px-6 py-4">
+        <div className="flex items-center justify-end gap-2">
+          <button onClick={() => handleViewProduct(product)} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors">
+            <Eye size={16} />
+          </button>
+          <button onClick={() => handleOpenModal(product)} className="p-2 hover:bg-yellow-50 rounded-lg text-yellow-600 transition-colors">
+            <Edit size={16} />
+          </button>
+          <button onClick={() => handleDelete(product.productid!)} className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors" disabled={loading}>
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-serif font-bold text-tet-primary">
-              Quản lý sản phẩm
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Quản lý tất cả sản phẩm và giỏ quà
-            </p>
+            <h2 className="text-2xl font-serif font-bold text-tet-primary">Quản lý sản phẩm</h2>
+            <p className="text-sm text-gray-500 mt-1">Tất cả sản phẩm: đơn lẻ &amp; giỏ quà</p>
           </div>
-          <button 
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-tet-primary text-white px-6 py-3 rounded-full font-bold hover:bg-tet-accent transition-all shadow-md"
-            disabled={loading}
+          {mainTab === "single" && (
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 bg-tet-primary text-white px-6 py-3 rounded-full font-bold hover:bg-tet-accent transition-all shadow-md"
+              disabled={loading}
+            >
+              <Plus size={20} />
+              Thêm sản phẩm
+            </button>
+          )}
+        </div>
+
+        {/* ── Main Tab Switcher ──────────────────────────────────────────────── */}
+        <div className="mt-5 flex gap-2">
+          <button
+            onClick={() => setMainTab("single")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
+              mainTab === "single"
+                ? "bg-tet-primary text-white shadow"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
           >
-            <Plus size={20} />
-            Thêm sản phẩm
+            <Package size={16} />
+            Sản phẩm đơn
+          </button>
+          <button
+            onClick={() => setMainTab("baskets")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
+              mainTab === "baskets"
+                ? "bg-tet-primary text-white shadow"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            <Gift size={16} />
+            Giỏ quà
           </button>
         </div>
 
-        {/* Search & Filters */}
-        <div className="mt-6 flex flex-col md:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Search
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Tìm kiếm sản phẩm..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-full focus:ring-2 focus:ring-tet-accent focus:border-transparent"
-            />
+        {/* ── Single products filters ────────────────────────────────────────── */}
+        {mainTab === "single" && (
+          <div className="mt-4 flex flex-col md:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Tìm kiếm sản phẩm đơn..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-full focus:ring-2 focus:ring-tet-accent focus:border-transparent"
+              />
+            </div>
+            <select
+              className="px-6 py-3 border border-gray-200 rounded-full focus:ring-2 focus:ring-tet-accent"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="ACTIVE">Hoạt động</option>
+              <option value="INACTIVE">Tạm dừng</option>
+              <option value="TEMPLATE">Giỏ mẫu</option>
+              <option value="DRAFT">Nháp</option>
+            </select>
+            <select
+              className="px-6 py-3 border border-gray-200 rounded-full focus:ring-2 focus:ring-tet-accent"
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+            >
+              <option value="">Tất cả danh mục</option>
+              {categories.map((cat) => (
+                <option key={cat.categoryid} value={cat.categoryid}>
+                  {cat.categoryname}
+                </option>
+              ))}
+            </select>
           </div>
-          <select 
-            className="px-6 py-3 border border-gray-200 rounded-full focus:ring-2 focus:ring-tet-accent"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="ACTIVE">Hoạt động</option>
-            <option value="INACTIVE">Tạm dừng</option>
-            <option value="TEMPLATE">Giỏ mẫu</option>
-            <option value="DRAFT">Nháp</option>
-          </select>
-          <select 
-            className="px-6 py-3 border border-gray-200 rounded-full focus:ring-2 focus:ring-tet-accent"
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-          >
-            <option value="">Tất cả danh mục</option>
-            {categories.map(cat => (
-              <option key={cat.categoryid} value={cat.categoryid}>
-                {cat.categoryname}
-              </option>
-            ))}
-          </select>
-        </div>
+        )}
+
+        {/* ── Basket sub-filter ─────────────────────────────────────────────── */}
+        {mainTab === "baskets" && (
+          <div className="mt-4 space-y-3">
+            {/* Segment control */}
+            <div className="flex gap-2 flex-wrap">
+              {(["all", "admin", "customer"] as BasketFilter[]).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setBasketFilter(f)}
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+                    basketFilter === f
+                      ? f === "admin"
+                        ? "bg-indigo-600 text-white border-indigo-600"
+                        : f === "customer"
+                        ? "bg-orange-500 text-white border-orange-500"
+                        : "bg-tet-primary text-white border-tet-primary"
+                      : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  {f === "all" ? "Tất cả" : f === "admin" ? "Admin / Staff tạo" : "Khách tạo"}
+                </button>
+              ))}
+            </div>
+            {/* Basket search */}
+            <div className="relative max-w-md">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Tìm kiếm giỏ quà..."
+                value={basketSearchTerm}
+                onChange={(e) => setBasketSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-full focus:ring-2 focus:ring-tet-accent focus:border-transparent"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Global Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
           <div className="flex-1 text-red-700 text-sm">{error}</div>
-          <button
-            onClick={() => setError(null)}
-            className="text-red-500 hover:text-red-700 font-bold"
-          >
-            ✕
-          </button>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700 font-bold">✕</button>
         </div>
       )}
 
-      {/* Products Table */}
-      {loading ? (
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-12 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tet-primary"></div>
-        </div>
-      ) : filteredProducts.length === 0 ? (
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-12 text-center">
-          <p className="text-gray-500 text-lg">Không tìm thấy sản phẩm nào</p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Sản phẩm
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    SKU
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Danh mục
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Giá
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Khối lượng
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Trạng thái
-                  </th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Thao tác
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredProducts.map((product) => (
-                  <tr
-                    key={product.productid}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0 bg-gray-100">
-                          {product.imageUrl ? (
-                            <img
-                              src={product.imageUrl}
-                              alt={product.productname}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = "https://via.placeholder.com/80?text=No+Image";
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                              No Image
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm text-tet-primary">
-                            {product.productname || "Chưa đặt tên"}
-                          </p>
-                          <p className="text-xs text-gray-500">ID: {product.productid}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-600 font-mono">
-                        {product.sku || "-"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-600">
-                        {getCategoryName(product.categoryid)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-bold text-tet-accent">
-                        {product.price ? product.price.toLocaleString() : "0"}đ
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-600">
-                        {product.unit || 0}g
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(
-                          product.status || ""
-                        )}`}
-                      >
-                        {getStatusText(product.status || "")}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button 
-                          onClick={() => handleViewProduct(product)}
-                          className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors"
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleOpenModal(product)}
-                          className="p-2 hover:bg-yellow-50 rounded-lg text-yellow-600 transition-colors"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(product.productid!)}
-                          className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
-                          disabled={loading}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {/* ══════════════════════════════════════════════════════════════════════
+          TAB: SẢN PHẨM ĐƠN
+      ══════════════════════════════════════════════════════════════════════ */}
+      {mainTab === "single" && (
+        <>
+          {loading ? (
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-12 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tet-primary" />
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-12 text-center">
+              <Package size={48} className="mx-auto text-gray-300 mb-3" />
+              <p className="text-gray-500 text-lg">Không tìm thấy sản phẩm nào</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      {["Sản phẩm", "SKU", "Danh mục", "Giá", "Khối lượng", "Trạng thái", "Thao tác"].map((h) => (
+                        <th key={h} className={`px-6 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider ${h === "Thao tác" ? "text-right" : "text-left"}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredProducts.map((p) => renderProductRow(p))}
+                  </tbody>
+                </table>
+              </div>
+              {/* Pagination */}
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+                <p className="text-sm text-gray-600">
+                  Trang <span className="font-bold">{currentPage}</span> / <span className="font-bold">{totalPages}</span> — Tổng <span className="font-bold">{totalItems}</span> sản phẩm
+                </p>
+                <div className="flex gap-2">
+                  <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1 || loading} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Trước</button>
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    const page = totalPages <= 5 ? i + 1 : currentPage <= 3 ? i + 1 : currentPage >= totalPages - 2 ? totalPages - 4 + i : currentPage - 2 + i;
+                    return (
+                      <button key={page} onClick={() => setCurrentPage(page)} className={`px-4 py-2 rounded-lg text-sm font-medium ${page === currentPage ? "bg-tet-primary text-white" : "border border-gray-200 hover:bg-gray-50"}`}>{page}</button>
+                    );
+                  })}
+                  <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages || loading} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Sau</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
-          {/* Pagination */}
-          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
-            <p className="text-sm text-gray-600">
-              Trang <span className="font-bold">{currentPage}</span> /{" "}
-              <span className="font-bold">{totalPages}</span> — Tổng{" "}
-              <span className="font-bold">{totalItems}</span> sản phẩm
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage <= 1 || loading}
-                className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Trước
-              </button>
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                const page =
-                  totalPages <= 5
-                    ? i + 1
-                    : currentPage <= 3
-                    ? i + 1
-                    : currentPage >= totalPages - 2
-                    ? totalPages - 4 + i
-                    : currentPage - 2 + i;
-                return (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                      page === currentPage
-                        ? "bg-tet-primary text-white"
-                        : "border border-gray-200 hover:bg-gray-50"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage >= totalPages || loading}
-                className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Sau
-              </button>
+      {/* ══════════════════════════════════════════════════════════════════════
+          TAB: GIỎ QUÀ (ADMIN + CUSTOMER BASKETS)
+      ══════════════════════════════════════════════════════════════════════ */}
+      {mainTab === "baskets" && (
+        <>
+          {/* Stats bar */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center">
+              <p className="text-xs text-gray-500 mb-1">Tổng giỏ quà</p>
+              <p className="text-2xl font-bold text-tet-primary">{adminBaskets.length + customerBaskets.length}</p>
+            </div>
+            <div className="bg-indigo-50 rounded-2xl p-4 border border-indigo-100 text-center">
+              <p className="text-xs text-indigo-500 mb-1">Admin / Staff tạo</p>
+              <p className="text-2xl font-bold text-indigo-700">{adminBaskets.length}</p>
+            </div>
+            <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100 text-center">
+              <p className="text-xs text-orange-500 mb-1">Khách tạo</p>
+              <p className="text-2xl font-bold text-orange-600">{basketTotalItems || customerBaskets.length}</p>
             </div>
           </div>
-        </div>
+
+          {/* Basket table */}
+          {basketsLoading || customerBasketsLoading ? (
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-12 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tet-primary" />
+            </div>
+          ) : displayedBaskets.length === 0 ? (
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-12 text-center">
+              <Gift size={48} className="mx-auto text-gray-300 mb-3" />
+              <p className="text-gray-500 text-lg">Không tìm thấy giỏ quà nào</p>
+              <p className="text-gray-400 text-sm mt-1">
+                {basketFilter === "admin" ? "Chưa có giỏ quà do Admin/Staff tạo" : basketFilter === "customer" ? "Chưa có giỏ quà do khách tạo" : "Chưa có giỏ quà nào"}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      {["Giỏ quà", "SKU", "Danh mục", "Giá", "Khối lượng", "Trạng thái", "Thao tác"].map((h) => (
+                        <th key={h} className={`px-6 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider ${h === "Thao tác" ? "text-right" : "text-left"}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {basketFilter === "all" && adminBaskets.map((p) => renderProductRow(p, "admin"))}
+                    {basketFilter === "all" && customerBaskets.map((p) => renderProductRow(p, "customer"))}
+                    {basketFilter === "admin" && adminBaskets.map((p) => renderProductRow(p, "admin"))}
+                    {basketFilter === "customer" && customerBaskets.map((p) => renderProductRow(p, "customer"))}
+                  </tbody>
+                </table>
+              </div>
+              {/* Customer basket pagination (when viewing customer or all tab) */}
+              {(basketFilter === "customer") && basketTotalPages > 1 && (
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+                  <p className="text-sm text-gray-600">
+                    Trang <span className="font-bold">{basketPage}</span> / <span className="font-bold">{basketTotalPages}</span>
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={() => { const p = Math.max(1, basketPage - 1); setBasketPage(p); fetchCustomerBaskets(p, basketSearchTerm); }} disabled={basketPage <= 1} className="px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Trước</button>
+                    <button onClick={() => { const p = Math.min(basketTotalPages, basketPage + 1); setBasketPage(p); fetchCustomerBaskets(p, basketSearchTerm); }} disabled={basketPage >= basketTotalPages} className="px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Sau</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {/* Create/Edit Modal */}
@@ -629,10 +793,10 @@ export default function AdminProducts() {
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent focus:border-transparent"
                     disabled={submitting}
                   >
-                    <option value="ACTIVE">Hoạt động</option>
-                    <option value="INACTIVE">Tạm dừng</option>
-                    <option value="TEMPLATE">Giỏ mẫu</option>
-                    <option value="DRAFT">Nháp</option>
+                    <option value="ACTIVE">ACTIVE – Hoạt động</option>
+                    <option value="INACTIVE">INACTIVE – Tạm dừng</option>
+                    <option value="TEMPLATE">TEMPLATE – Giỏ mẫu</option>
+                    <option value="DRAFT">DRAFT – Nháp</option>
                   </select>
                 </div>
 

@@ -162,7 +162,7 @@ export default function AllProductsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-50 via-white to-amber-50">
       {/* ── Hero Banner ── */}
-      <section className="relative bg-gradient-to-r from-red-700 via-red-600 to-amber-500 text-white overflow-hidden">
+      <section className="relative bg-gradient-to-r from-[#3D0B05] via-[#5A1107] to-[#9F3025] text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/oriental.png')]" />
         <div className="container mx-auto px-6 py-16 relative z-10 text-center">
           <div className="flex justify-center gap-3 mb-4 text-3xl">
