@@ -168,6 +168,9 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string | number) => `${BASE_URL}/promotions/${id}`,
     DELETE: (id: string | number) => `${BASE_URL}/promotions/${id}`,
     GET_BY_CODE: (code: string) => `${BASE_URL}/promotions/code/${code}`,
+    LIMITED: `${BASE_URL}/promotions/limited`,
+    LIMITED_PUBLIC: `${BASE_URL}/promotions/limited/public`,
+    SAVE_TO_ACCOUNT: `${BASE_URL}/promotions/accounts`,
   },
   // Thêm vào bên trong const API_ENDPOINTS = { ... }
   BLOGS: {

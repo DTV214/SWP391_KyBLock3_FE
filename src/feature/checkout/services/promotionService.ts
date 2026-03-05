@@ -1,4 +1,4 @@
-import axiosClient from '../../../api/axiosClient';
+import axiosClient, { axiosPublic } from '../../../api/axiosClient';
 import { API_ENDPOINTS } from '../../../api/apiConfig';
 
 // DTO interfaces
@@ -31,6 +31,13 @@ export interface CreatePromotionRequest {
 }
 
 export interface UpdatePromotionRequest extends CreatePromotionRequest { }
+
+export interface SavePromotionRequest {
+    promotionId: number;
+    quantity: number;
+    usedQuantity: number;
+}
+
 // ============ PROMOTION SERVICE ============
 
 const promotionService = {
@@ -151,6 +158,60 @@ const promotionService = {
         try {
             await axiosClient.delete(
                 API_ENDPOINTS.PROMOTIONS.DELETE(id),
+                {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                }
+            );
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    /**
+     * Lấy danh sách promotion giới hạn (public)
+     * GET /api/promotions/limited
+     */
+    getLimitedPromotions: async (token?: string): Promise<PromotionResponse[]> => {
+        try {
+            const response = await axiosClient.get<PromotionResponse[]>(
+                API_ENDPOINTS.PROMOTIONS.LIMITED,
+                {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                }
+            );
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    /**
+     * Lấy danh sách promotion giới hạn (public - có thể dùng token)
+     * GET /api/promotions/limited/public
+     */
+    getLimitedPublicPromotions: async (): Promise<PromotionResponse[]> => {
+        try {
+            const response = await axiosPublic.get<PromotionResponse[]>(
+                API_ENDPOINTS.PROMOTIONS.LIMITED_PUBLIC
+            );
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    /**
+     * Lưu promotion vào tài khoản
+     * POST /api/promotions/accounts
+     */
+    savePromotionToAccount: async (
+        data: SavePromotionRequest,
+        token?: string
+    ): Promise<void> => {
+        try {
+            await axiosClient.post(
+                API_ENDPOINTS.PROMOTIONS.SAVE_TO_ACCOUNT,
+                data,
                 {
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {},
                 }

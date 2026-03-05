@@ -1,10 +1,15 @@
 import { motion } from "framer-motion";
-import { Info, Clock } from "lucide-react";
+import { Info, Clock, Loader2 } from "lucide-react";
+import { useState } from "react";
 import type { PromotionResponse } from "../../checkout/services/promotionService";
+import promotionService from "../../checkout/services/promotionService";
+import { Button } from "../../../components/ui/button";
 
-interface VoucherCardProps {
+interface PromotionCardProps {
     promotion: PromotionResponse;
     color: string;
+    token?: string;
+    onSaveSuccess?: (promotionId: number) => void;
 }
 
 const formatDate = (dateStr: string | number | Date | null) => {
@@ -40,8 +45,16 @@ const getPromotionTitle = (promo: PromotionResponse) => {
     return `Giảm ${formatCurrency(promo.discountValue)}`;
 };
 
-export default function VoucherCard({ promotion, color }: VoucherCardProps) {
+export default function PromotionCard({
+    promotion,
+    color,
+    token,
+    onSaveSuccess,
+}: PromotionCardProps) {
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSaved, setIsSaved] = useState(promotion.isAlreadySave);
     const isActive = promotion.status === "ACTIVE";
+    const isLimitedReached = promotion.status === "LIMITED_REACHED";
 
     // Xác định ngày hiển thị dựa trên trạng thái
     const dateLabel =
@@ -63,6 +76,39 @@ export default function VoucherCard({ promotion, color }: VoucherCardProps) {
     const minPrice = promotion.minPriceToApply
         ? formatCurrency(promotion.minPriceToApply)
         : "0đ";
+
+    const handleSavePromotion = async () => {
+        if (isLoading || isSaved || isLimitedReached) return;
+
+        setIsLoading(true);
+        try {
+            await promotionService.savePromotionToAccount(
+                {
+                    promotionId: promotion.promotionId,
+                    quantity: 1,
+                    usedQuantity: 0,
+                },
+                token
+            );
+            setIsSaved(true);
+            onSaveSuccess?.(promotion.promotionId);
+        } catch (error) {
+            console.error("Failed to save promotion:", error);
+            // Optionally show error toast/notification here
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getButtonText = () => {
+        if (isLimitedReached) {
+            return "Đã hết mã";
+        }
+        if (isSaved) {
+            return "Đã lưu mã";
+        }
+        return "Lưu mã";
+    };
 
     return (
         <motion.div
@@ -118,7 +164,7 @@ export default function VoucherCard({ promotion, color }: VoucherCardProps) {
                 </div>
 
                 {/* Progress bar nếu isLimited là true */}
-                {!!promotion.isLimited && (
+                {promotion.isLimited && (
                     <div className="my-3 space-y-1">
                         <div className="flex items-center justify-between">
                             <p className="text-[10px] font-bold text-gray-600">
@@ -137,11 +183,21 @@ export default function VoucherCard({ promotion, color }: VoucherCardProps) {
                     </div>
                 )}
 
-                {/* Date info */}
-                <div className="flex items-center justify-between mt-2 border-t border-gray-50 pt-3">
+                {/* Save button + Date info */}
+                <div className="flex items-center justify-between mt-4 border-t border-gray-50 pt-3 gap-2">
                     <p className="text-[11px] text-gray-400 flex items-center gap-1.5 font-medium">
                         <Clock size={12} /> {dateLabel}: {dateValue}
                     </p>
+                    <Button
+                        onClick={handleSavePromotion}
+                        disabled={isLoading || isLimitedReached || isSaved}
+                        variant={isLimitedReached ? "secondary" : "default"}
+                        size="sm"
+                        className="text-[11px] font-bold whitespace-nowrap"
+                    >
+                        {isLoading && <Loader2 size={14} className="mr-1 animate-spin" />}
+                        {getButtonText()}
+                    </Button>
                 </div>
             </div>
         </motion.div>
