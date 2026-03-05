@@ -1,31 +1,32 @@
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { categoryService, type Category } from "@/api/categoryService";
 
-const categories = [
-  {
-    name: "Hộp Quà Da",
-    image:
-      "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=2000",
-  },
-  {
-    name: "Hộp Quà Gỗ",
-    image:
-      "https://images.unsplash.com/photo-1607344645866-009c320b63e0?q=80&w=2000",
-  },
-  {
-    name: "Giỏ Quà Cao Cấp",
-    image:
-      "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?q=80&w=2000",
-  },
-  {
-    name: "Quà Sức Khỏe",
-    image:
-      "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=2000",
-  },
+const CARD_GRADIENTS = [
+  "from-tet-primary to-tet-primary/70",
+  "from-tet-accent/80 to-tet-primary/90",
+  "from-tet-secondary/70 to-tet-primary/80",
+  "from-tet-primary/80 to-tet-accent/60",
 ];
 
 export default function CategoryGrid() {
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await categoryService.getAll();
+        const data: Category[] = (response as any)?.data ?? [];
+        setCategories(data);
+      } catch (err) {
+        console.error("Không thể tải danh mục:", err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   return (
-    <section className="relative py-16 md:py-28 bg-tet-bg/50 overflow-hidden border-t border-tet-secondary/20">
+    <section className="relative py-10 md:py-16 bg-tet-bg/50 overflow-hidden border-t border-tet-secondary/20">
       {/* Họa tiết mây toàn nền và icon trang trí sống động */}
       <div className="absolute inset-0 bg-cloud-pattern pointer-events-none opacity-40"></div>
       <div className="absolute top-10 left-10 opacity-10 pointer-events-none animate-pulse hidden md:block">
@@ -33,7 +34,7 @@ export default function CategoryGrid() {
       </div>
 
       <div className="container mx-auto max-w-7xl px-6 relative z-10">
-        <div className="text-center mb-12 md:mb-16">
+        <div className="text-center mb-8 md:mb-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -58,31 +59,29 @@ export default function CategoryGrid() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {categories.map((cat, index) => (
             <motion.div
-              key={cat.name}
+              key={cat.categoryid ?? index}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1, duration: 0.5 }}
               viewport={{ once: true }}
               className="group cursor-pointer"
             >
-              <div className="relative h-[380px] md:h-[450px] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden shadow-lg md:shadow-2xl border-4 border-white transition-all duration-500 group-hover:-translate-y-3 group-hover:shadow-[0_20px_50px_rgba(90,17,7,0.3)]">
-                {/* Hình ảnh với hiệu ứng Grayscale chuyên nghiệp */}
-                <img
-                  src={cat.image}
-                  className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110"
-                  alt={cat.name}
-                />
-
-                {/* Lớp phủ gradient sâu sắc */}
-                <div className="absolute inset-0 bg-gradient-to-t from-tet-primary/95 via-tet-primary/20 to-transparent opacity-70 group-hover:opacity-90 transition-opacity duration-500" />
+              <div className={`relative h-[140px] md:h-[160px] rounded-2xl overflow-hidden shadow-md border-2 border-white/20 transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-[0_12px_32px_rgba(90,17,7,0.3)] bg-gradient-to-br ${CARD_GRADIENTS[index % CARD_GRADIENTS.length]}`}>
+                {/* Họa tiết nền trang trí */}
+                <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_70%_50%,_white_1px,_transparent_1px)] bg-[length:18px_18px]" />
 
                 {/* Nội dung chữ trên Card */}
-                <div className="absolute bottom-6 left-6 right-6 md:bottom-8 md:left-8 md:right-8">
-                  <h3 className="text-white text-2xl md:text-3xl font-serif mb-3 transform group-hover:translate-x-2 transition-transform duration-300">
-                    {cat.name}
+                <div className="absolute inset-0 flex flex-col justify-center px-6">
+                  <h3 className="text-white text-lg md:text-xl font-serif mb-2 transform group-hover:translate-x-1 transition-transform duration-300">
+                    {cat.categoryname}
                   </h3>
-                  <div className="w-10 h-1 bg-tet-secondary group-hover:w-full transition-all duration-500 rounded-full"></div>
+                  <div className="w-8 h-0.5 bg-tet-secondary group-hover:w-16 transition-all duration-500 rounded-full"></div>
                 </div>
+
+                {/* Số thứ tự trang trí */}
+                <span className="absolute right-5 top-1/2 -translate-y-1/2 text-white/10 text-7xl font-serif font-bold select-none">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
               </div>
             </motion.div>
           ))}
