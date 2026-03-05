@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Loader2 } from "lucide-react";
+import { Bot, X, Send, Loader2 } from "lucide-react";
 import { chatService } from "@/api/chatService";
 
 export default function ChatBot() {
@@ -57,11 +57,11 @@ export default function ChatBot() {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-10 right-24 z-[100] bg-gradient-to-r from-tet-primary to-red-600 text-white p-4 rounded-full shadow-2xl border-2 border-tet-secondary/50 group transition-all ${
+        className={`fixed bottom-28 right-6 z-[300] bg-gradient-to-r from-tet-primary to-red-600 text-white p-4 rounded-full shadow-2xl border-2 border-tet-secondary/50 group transition-all ${
           isOpen ? "opacity-0 pointer-events-none" : ""
         }`}
       >
-        <MessageCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
+        <Bot className="w-6 h-6 group-hover:scale-110 transition-transform" />
       </motion.button>
 
       {/* Chat Window */}
@@ -71,13 +71,13 @@ export default function ChatBot() {
             initial={{ opacity: 0, y: 100, scale: 0.8 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.8 }}
-            className="fixed bottom-10 right-24 z-[100] w-96 h-[600px] bg-white rounded-2xl shadow-2xl border-2 border-tet-primary/30 flex flex-col overflow-hidden"
+            className="fixed bottom-28 right-6 z-[300] w-96 h-[600px] bg-white rounded-2xl shadow-2xl border-2 border-tet-primary/30 flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-tet-primary to-red-600 text-white p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="bg-white/20 p-2 rounded-full">
-                  <MessageCircle className="w-5 h-5" />
+                  <Bot className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="font-bold text-lg">AI Chatbot</h3>
@@ -96,7 +96,7 @@ export default function ChatBot() {
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
               {messages.length === 0 && (
                 <div className="text-center text-gray-500 mt-20">
-                  <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <Bot className="w-16 h-16 mx-auto mb-4 opacity-30" />
                   <p className="text-sm">Chào bạn! Tôi có thể giúp gì cho bạn?</p>
                   <p className="text-xs mt-2">Ví dụ: "Tôi muốn tìm bánh"</p>
                 </div>

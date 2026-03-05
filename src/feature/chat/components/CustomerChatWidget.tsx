@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MessageCircle, Send, X } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import {
   chatService,
   getCurrentUserId,
@@ -16,6 +17,7 @@ const formatTime = (iso: string): string =>
   });
 
 export default function CustomerChatWidget() {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [conversation, setConversation] = useState<ChatConversation | null>(
@@ -30,13 +32,12 @@ export default function CustomerChatWidget() {
   const role = localStorage.getItem("role");
   const token = localStorage.getItem("token");
   const isAdmin = role === "ADMIN" || role === "STAFF";
-  const pathname = window.location.pathname;
   const shouldRender =
     Boolean(token) &&
     !isAdmin &&
-    !pathname.startsWith("/admin") &&
-    !pathname.startsWith("/login") &&
-    !pathname.startsWith("/register");
+    !location.pathname.startsWith("/admin") &&
+    !location.pathname.startsWith("/login") &&
+    !location.pathname.startsWith("/register");
 
   const currentUserId = useMemo(() => getCurrentUserId(), []);
 
@@ -125,7 +126,7 @@ export default function CustomerChatWidget() {
   if (!shouldRender) return null;
 
   return (
-    <div className="fixed bottom-28 right-10 z-[200] max-md:bottom-24 max-md:right-6">
+    <div className="fixed bottom-28 right-24 z-[200] max-md:bottom-24 max-md:right-20">
       {isOpen ? (
         <div className="w-[90vw] max-w-[360px] h-[520px] bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden flex flex-col">
           <div className="bg-tet-primary text-white px-4 py-3 flex items-center justify-between">
