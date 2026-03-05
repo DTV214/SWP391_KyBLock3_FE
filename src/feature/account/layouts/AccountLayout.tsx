@@ -12,6 +12,7 @@ export default function AccountLayout() {
     if (path.includes("orders")) return "Lịch sử đơn hàng";
     if (path.includes("addresses")) return "Địa chỉ";
     if (path.includes("vouchers")) return "Voucher";
+    if (path.includes("baskets")) return "Giỏ quà của tôi";
     return "Tài khoản";
   };
 

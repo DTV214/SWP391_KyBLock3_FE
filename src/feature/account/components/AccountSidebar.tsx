@@ -5,6 +5,7 @@ import {
   Ticket,
   LogOut,
   Settings,
+  Gift,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -36,6 +37,7 @@ export default function AccountSidebar() {
     },
     { name: "Địa chỉ", path: "/account/addresses", icon: <MapPin size={20} /> },
     { name: "Voucher", path: "/account/vouchers", icon: <Ticket size={20} /> },
+    { name: "Giỏ quà của tôi", path: "/account/baskets", icon: <Gift size={20} /> },
   ];
 
   return (

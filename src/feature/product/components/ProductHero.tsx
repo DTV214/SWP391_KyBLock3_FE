@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 export default function ProductHero() {
   return (
@@ -20,12 +21,14 @@ export default function ProductHero() {
           <Button className="bg-tet-primary hover:bg-tet-accent text-white px-8 py-6 rounded-full font-bold shadow-lg">
             Shop Best Sellers
           </Button>
-          <Button
-            variant="outline"
-            className="border-2 border-tet-primary text-tet-primary px-8 py-6 rounded-full font-bold hover:bg-tet-primary hover:text-white transition-all"
-          >
-            Build Your Gift Box
-          </Button>
+          <Link to="/custom-basket">
+            <Button
+              variant="outline"
+              className="border-2 border-tet-primary text-tet-primary px-8 py-6 rounded-full font-bold hover:bg-tet-primary hover:text-white transition-all"
+            >
+              🎁 Build Your Gift Box
+            </Button>
+          </Link>
         </div>
       </div>
       <div className="absolute top-0 right-0 p-10 opacity-5 text-9xl">🌸</div>

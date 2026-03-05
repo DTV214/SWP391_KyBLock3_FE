@@ -211,7 +211,7 @@ export default function AccountOverview() {
           { label: "Thông tin cá nhân", icon: <User size={24} />, onClick: () => navigate('/account/profile') },
           { label: "Lịch sử đơn hàng", icon: <ClipboardList size={24} />, onClick: () => navigate('/account/orders') },
           { label: "Quản lý địa chỉ", icon: <MapPin size={24} />, onClick: () => navigate('/account/addresses') },
-          { label: "Tạo hộp quà Tết", icon: <Gift size={24} />, onClick: handleOpenBasketsModal },
+          { label: "Giỏ quà của tôi", icon: <Gift size={24} />, onClick: () => navigate('/account/baskets') },
         ].map((item, i) => (
           <div
             key={i}
@@ -382,7 +382,7 @@ export default function AccountOverview() {
                 Đóng
               </button>
               <button
-                onClick={() => navigate('/products')}
+                onClick={() => navigate('/custom-basket')}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-tet-primary to-tet-accent text-white rounded-full font-bold hover:shadow-lg transition-all"
               >
                 Tạo giỏ quà mới

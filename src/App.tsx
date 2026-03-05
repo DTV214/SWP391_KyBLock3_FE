@@ -31,6 +31,7 @@ import QuotationHistoryPage from "@/feature/quotation/pages/QuotationHistoryPage
 import AccountLayout from "@/feature/account/layouts/AccountLayout";
 import AccountOverview from "@/feature/account/pages/AccountOverview";
 import EditBasket from "@/feature/account/pages/EditBasket";
+import MyBasketsPage from "@/feature/account/pages/MyBasketsPage";
 import AccountProfile from "@/feature/account/pages/AccountProfile";
 import OrderHistory from "@/feature/account/pages/OrderHistory";
 import AccountAddresses from "@/feature/account/pages/AccountAddresses";
@@ -60,7 +61,7 @@ import StaffOrdersPage from "@/feature/staff/page/StaffOrdersPage";
 
 // Product & Checkout Module
 import ProductPage from "@/feature/product/pages/ProductPage";
-import AllProductsPage from "@/feature/product/pages/AllProductsPage";
+import CustomBasketPage from "@/feature/product/pages/CustomBasketPage";
 import ProductDetailPage from "@/feature/product/pages/ProductDetailPage";
 import CheckoutPage from "@/feature/checkout/pages/CheckoutPage";
 import PaymentSuccess from "@/feature/checkout/pages/PaymentSuccess";
@@ -134,7 +135,7 @@ function App() {
                 element={<QuotationStatusPage />}
               />
               <Route path="/products" element={<ProductPage />} />
-              <Route path="/all-products" element={<AllProductsPage />} />
+              <Route path="/custom-basket" element={<CustomBasketPage />} />
               <Route path="/product/:id" element={<ProductDetailPage />} />
 
               <Route
@@ -166,6 +167,7 @@ function App() {
               >
                 <Route index element={<Navigate to="overview" />} />
                 <Route path="overview" element={<AccountOverview />} />
+                <Route path="baskets" element={<MyBasketsPage />} />
                 <Route path="baskets/:id/edit" element={<EditBasket />} />
                 <Route path="profile" element={<AccountProfile />} />
                 <Route path="orders" element={<OrderHistory />} />
