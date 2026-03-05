@@ -1,70 +1,77 @@
 import { motion } from "framer-motion";
-import { Ticket, Info, Clock, Truck } from "lucide-react";
+import { Ticket } from "lucide-react";
+import { useState, useEffect } from "react";
+import promotionService from "../../checkout/services/promotionService";
+import type { PromotionResponse } from "../../checkout/services/promotionService";
+import VoucherCard from "../components/VoucherCard";
+
+const COLORS = [
+  "bg-[#9F3025]",
+  "bg-[#D97706]",
+  "bg-[#3B82F6]",
+  "bg-[#7C3AED]",
+  "bg-[#DB2777]",
+  "bg-[#0D9488]",
+];
 
 export default function AccountVouchers() {
-  const vouchers = [
-    {
-      id: "TET2025",
-      value: "10%",
-      label: "GIẢM GIÁ",
-      title: "Giảm 10% Quà Tết",
-      min: "500.000đ",
-      apply: "Quà Tết, Hộp quà",
-      date: "28/01/2025",
-      color: "bg-[#9F3025]",
-    },
-    {
-      id: "GIFT50K",
-      value: "50K",
-      label: "GIẢM GIÁ",
-      title: "Giảm 50.000đ",
-      min: "300.000đ",
-      apply: "Tất cả sản phẩm",
-      date: "31/01/2025",
-      color: "bg-[#D97706]",
-    },
-    {
-      id: "TETSHIP",
-      value: "FREESHIP",
-      label: "VẬN CHUYỂN",
-      title: "Miễn phí vận chuyển",
-      min: "200.000đ",
-      apply: "Toàn quốc",
-      date: "25/01/2025",
-      color: "bg-[#3B82F6]",
-      isShip: true,
-    },
-    {
-      id: "PREMIUM15",
-      value: "15%",
-      label: "GIẢM GIÁ",
-      title: "Giảm 15% Hộp quà cao cấp",
-      min: "1.000.000đ",
-      apply: "Hộp quà cao cấp",
-      date: "30/01/2025",
-      color: "bg-[#7C3AED]",
-    },
-    {
-      id: "MEGA100",
-      value: "100K",
-      label: "GIẢM GIÁ",
-      title: "Giảm 100.000đ",
-      min: "800.000đ",
-      apply: "Tất cả sản phẩm",
-      date: "27/01/2025",
-      color: "bg-[#DB2777]",
-    },
-    {
-      id: "NEWTET20",
-      value: "20%",
-      label: "GIẢM GIÁ",
-      title: "Giảm 20% Khách hàng mới",
-      min: "400.000đ",
-      apply: "Đơn đầu tiên",
-      date: "29/01/2025",
-      color: "bg-[#0D9488]",
-    },
-  ];
+  const [promotions, setPromotions] = useState<PromotionResponse[]>([]);
+  const [filteredPromotions, setFilteredPromotions] = useState<PromotionResponse[]>([]);
+  const [searchCode, setSearchCode] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch promotions on component mount
+  useEffect(() => {
+    fetchPromotions();
+  }, []);
+
+  // Filter, sort and search whenever promotions or search code changes
+  useEffect(() => {
+    filterAndSortPromotions();
+  }, [promotions, searchCode]);
+
+  const fetchPromotions = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const data = await promotionService.getPromotionsByAccount(token || undefined);
+      setPromotions(data);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching promotions:", err);
+      setError("Không thể tải mã giảm giá. Vui lòng thử lại.");
+      setPromotions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterAndSortPromotions = () => {
+    // 1. Filter by status (only ACTIVE and WAIT_FOR_ACTIVE)
+    let filtered = promotions.filter(
+      (p) => p.status === "ACTIVE" || p.status === "WAIT_FOR_ACTIVE"
+    );
+
+    // 2. Filter by search code
+    if (searchCode.trim()) {
+      filtered = filtered.filter((p) =>
+        p.code.toLowerCase().includes(searchCode.toLowerCase())
+      );
+    }
+
+    // 3. Sort by expiry date (ascending)
+    filtered.sort(
+      (a, b) =>
+        new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
+    );
+
+    setFilteredPromotions(filtered);
+  };
+
+  const getColorForPromotion = (index: number) => {
+    return COLORS[index % COLORS.length];
+  };
 
   return (
     <motion.div
@@ -72,6 +79,13 @@ export default function AccountVouchers() {
       animate={{ opacity: 1, scale: 1 }}
       className="space-y-6 pb-10"
     >
+      {/* Show error message if any */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl">
+          {error}
+        </div>
+      )}
+
       {/* 1. HEADER & NHẬP MÃ */}
       <section className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
         <div className="mb-6">
@@ -91,117 +105,44 @@ export default function AccountVouchers() {
             />
             <input
               type="text"
-              placeholder="Nhập mã giảm giá của bạn..."
+              placeholder="Tìm kiếm mã giảm giá..."
+              value={searchCode}
+              onChange={(e) => setSearchCode(e.target.value)}
               className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-tet-secondary transition-all"
             />
           </div>
-          <button className="bg-[#4a0d06] text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg hover:brightness-125 transition-all shrink-0">
-            Thêm mã
-          </button>
         </div>
       </section>
 
-      {/* 2. TABS PHÂN LOẠI */}
-      <div className="flex gap-8 border-b border-gray-100 px-2 overflow-x-auto no-scrollbar">
-        {[
-          { name: "Có thể dùng", count: 8 },
-          { name: "Đã dùng", count: 12 },
-          { name: "Hết hạn", count: 5 },
-        ].map((tab, i) => (
-          <button
-            key={i}
-            className={`flex items-center gap-2 pb-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${
-              i === 0
-                ? "border-tet-primary text-tet-primary"
-                : "border-transparent text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            {tab.name}{" "}
-            <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full text-[10px]">
-              {tab.count}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* 3. BỘ LỌC CHI TIẾT */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap gap-3">
-          <select className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-gray-600 outline-none">
-            <option>Tất cả danh mục</option>
-          </select>
-          <select className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-gray-600 outline-none">
-            <option>Đơn tối thiểu</option>
-          </select>
-          <button className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-gray-600">
-            <Truck size={14} /> Miễn phí ship
-          </button>
+      {/* 2. LOADING & EMPTY STATE */}
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-tet-primary"></div>
         </div>
-        <select className="bg-transparent text-xs font-bold text-gray-600 outline-none">
-          <option>Sắp hết hạn</option>
-        </select>
-      </div>
+      ) : filteredPromotions.length === 0 ? (
+        <div className="bg-white p-8 rounded-2xl border border-gray-100 text-center">
+          <p className="text-gray-500 font-medium">Không tìm thấy mã giảm giá</p>
+        </div>
+      ) : (
+        <>
+          {/* 3. INFO BAR */}
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <p>Tổng cộng: <span className="font-bold text-tet-primary">{filteredPromotions.length}</span> mã</p>
+            <p>Sắp xếp theo: Ngày hết hạn</p>
+          </div>
 
-      {/* 4. LƯỚI VOUCHER */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {vouchers.map((v) => (
-          <motion.div
-            key={v.id}
-            whileHover={{ y: -5 }}
-            className="flex h-36 bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl border border-gray-100 group transition-all"
-          >
-            {/* Phần màu trái (Value) */}
-            <div
-              className={`w-32 md:w-40 ${v.color} flex flex-col items-center justify-center text-white relative`}
-            >
-              {/* Ticket Cutouts (Mô phỏng đường xẻ vé) */}
-              <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#FBF5E8] rounded-full"></div>
-              <div className="absolute right-[-1px] top-0 bottom-0 w-[2px] border-l-2 border-dashed border-white/30"></div>
-
-              <div className="z-10 text-center px-2">
-                {v.isShip ? (
-                  <Truck size={36} className="mx-auto mb-2" />
-                ) : (
-                  <p className="text-2xl md:text-3xl font-black">{v.value}</p>
-                )}
-                <p className="text-[10px] font-bold uppercase tracking-widest opacity-80 mt-1">
-                  {v.label}
-                </p>
-              </div>
-            </div>
-
-            {/* Phần thông tin phải */}
-            <div className="flex-1 p-5 flex flex-col justify-between relative">
-              <span className="absolute top-4 right-4 bg-green-50 text-green-600 px-3 py-1 rounded-full text-[10px] font-bold border border-green-100">
-                Có thể dùng
-              </span>
-
-              <div className="space-y-1">
-                <h4 className="text-sm md:text-base font-bold text-tet-primary line-clamp-1">
-                  {v.title}
-                </h4>
-                <div className="flex flex-col gap-1">
-                  <p className="text-[11px] text-gray-500 flex items-center gap-1.5">
-                    <Info size={12} /> Đơn tối thiểu: {v.min}
-                  </p>
-                  <p className="text-[11px] text-gray-400 italic">
-                    Áp dụng: {v.apply}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mt-2 border-t border-gray-50 pt-3">
-                <p className="text-[11px] text-gray-400 flex items-center gap-1.5 font-medium">
-                  <Clock size={12} /> HSD: {v.date}
-                </p>
-                <button className="text-tet-accent text-xs font-black uppercase hover:underline">
-                  Dùng ngay
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+          {/* 4. LƯỚI VOUCHER */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {filteredPromotions.map((promo, index) => (
+              <VoucherCard
+                key={promo.promotionId}
+                promotion={promo}
+                color={getColorForPromotion(index)}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </motion.div>
   );
 }

@@ -1,4 +1,11 @@
 /* src/App.css */
+
+/* Luôn dành chỗ cho scrollbar, tránh shift nội dung */
+html,
+body {
+  scrollbar-gutter: stable;
+}
+
 #root {
   width: 100%;
   margin: 0 auto;

@@ -52,6 +52,11 @@ export default function AdminSidebar() {
       icon: <Gift size={18} />,
     },
     {
+      path: "/admin/promotions",
+      label: "Promotion",
+      icon: <Gift size={18} />,
+    },
+    {
       path: "/admin/quotations",
       label: "Quotations",
       icon: <FileText size={18} />,

@@ -42,6 +42,7 @@ import AdminProducts from "@/feature/admin/pages/AdminProducts";
 import AdminCategories from "@/feature/admin/pages/AdminCategories";
 import AdminConfigs from "@/feature/admin/pages/AdminConfigs";
 import AdminTemplates from "@/feature/admin/pages/AdminTemplates";
+import AdminPromotions from "@/feature/admin/pages/AdminPromotions";
 import AdminQuotationsPage from "@/feature/admin/pages/AdminQuotationsPage"; // Admin duyệt list
 import AdminQuotationDetailPage from "@/feature/admin/pages/AdminQuotationDetailPage"; // Admin duyệt chi tiết
 import AdminApprovalQuotationsPage from "@/feature/admin/pages/AdminApprovalQuotationsPage";
@@ -202,6 +203,7 @@ function App() {
                 <Route path="categories" element={<AdminCategories />} />
                 <Route path="configs" element={<AdminConfigs />} />
                 <Route path="templates" element={<AdminTemplates />} />
+                <Route path="promotions" element={<AdminPromotions />} />
                 <Route path="orders" element={<AdminOrderHistory />} />
                 <Route path="chats" element={<AdminChatPage />} />
                 <Route

@@ -12,9 +12,9 @@ interface ViteEnv {
 const ENV_BASE_URL = (import.meta as unknown as { env: ViteEnv }).env
   ?.VITE_API_BASE_URL;
 // Fallback to current production server if env is not set
-const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5000/api").replace(/\/+$/, "");
+// const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5000/api").replace(/\/+$/, "");
 
-// const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(/\/+$/, "");
+const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(/\/+$/, "");
 
 // Điều này giúp bạn chỉ cần đổi file .env khi chạy local / deploy.
 export const API_ENDPOINTS = {
@@ -140,6 +140,12 @@ export const API_ENDPOINTS = {
 
   // Promotions endpoints
   PROMOTIONS: {
+    LIST: `${BASE_URL}/promotions`,
+    BY_ACCOUNT: `${BASE_URL}/promotions/accounts`,
+    CREATE: `${BASE_URL}/promotions`,
+    DETAIL: (id: string | number) => `${BASE_URL}/promotions/${id}`,
+    UPDATE: (id: string | number) => `${BASE_URL}/promotions/${id}`,
+    DELETE: (id: string | number) => `${BASE_URL}/promotions/${id}`,
     GET_BY_CODE: (code: string) => `${BASE_URL}/promotions/code/${code}`,
   },
   // Thêm vào bên trong const API_ENDPOINTS = { ... }

@@ -11,8 +11,10 @@ import { cartService, type CartItemResponse } from '@/feature/cart/services/cart
 import { orderService } from '@/feature/checkout/services/orderService';
 import { paymentService } from '@/feature/checkout/services/paymentService';
 import { walletService, type WalletResponse } from '@/feature/checkout/services/walletService';
-import promotionService, { type PromotionResponse } from '@/feature/checkout/services/promotionService';
+import type { PromotionResponse } from '@/feature/checkout/services/promotionService';
 import PaymentSuccessModal from '../components/PaymentSuccessModal';
+import PromotionSelectionModal from '../components/PromotionSelectionModal';
+import { Ticket } from 'lucide-react';
 
 interface FormData {
   customerName: string;
@@ -34,11 +36,11 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [promotion, setPromotion] = useState<PromotionResponse | null>(null);
-  const [promoLoading, setPromoLoading] = useState(false);
   const [wallet, setWallet] = useState<WalletResponse | null>(null);
   const [walletLoading, setWalletLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [successOrderId, setSuccessOrderId] = useState<number | undefined>();
+  const [promotionModalOpen, setPromotionModalOpen] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
     customerName: '',
@@ -104,39 +106,40 @@ export default function CheckoutPage() {
     }));
   };
 
-  const handleApplyPromotion = async () => {
-    if (!formData.promotionCode.trim()) {
-      setError('Vui lòng nhập mã giảm giá');
-      return;
-    }
-
-    try {
-      setPromoLoading(true);
-      setError(null);
-      const response = await promotionService.getPromotionByCode(
-        formData.promotionCode
-      );
-
-      if (response && response.isActive) {
-        setPromotion(response);
-      } else {
-        setError('Mã giảm giá không hợp lệ hoặc đã hết hạn');
-        setPromotion(null);
-      }
-    } catch (err: any) {
-      console.error('Error applying promotion:', err);
-      const errorMessage =
-        err.response?.data?.msg || 'Mã giảm giá không tồn tại';
-      setError(errorMessage);
-      setPromotion(null);
-    } finally {
-      setPromoLoading(false);
+  const handleSelectPromotionFromModal = (selectedPromotion: PromotionResponse | null) => {
+    setPromotion(selectedPromotion);
+    if (selectedPromotion) {
+      setFormData(prev => ({
+        ...prev,
+        promotionCode: selectedPromotion.code
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        promotionCode: ''
+      }));
     }
   };
 
   const calculateTotals = () => {
     const totalPrice = cartItems.reduce((sum, item) => sum + item.subTotal, 0);
-    const discountValue = promotion ? promotion.discountValue : 0;
+    let discountValue = 0;
+
+    if (promotion) {
+      if (promotion.isPercentage) {
+        // Nếu là phần trăm, tính discount từ totalPrice
+        discountValue = totalPrice * (promotion.discountValue / 100);
+      } else {
+        // Nếu là số tiền cố định, dùng trực tiếp
+        discountValue = promotion.discountValue;
+      }
+
+      // Nếu discount vượt quá maxDiscountPrice, giới hạn ở maxDiscountPrice
+      if (promotion.maxDiscountPrice && discountValue > promotion.maxDiscountPrice) {
+        discountValue = promotion.maxDiscountPrice;
+      }
+    }
+
     const finalPrice = totalPrice - discountValue;
 
     return {
@@ -533,27 +536,30 @@ export default function CheckoutPage() {
 
                 {/* Mã giảm giá */}
                 {cartItems.length > 0 && (
-                  <div className="flex gap-2">
-                    <Input
-                      name="promotionCode"
-                      value={formData.promotionCode}
-                      onChange={handleInputChange}
-                      placeholder="Nhập mã giảm giá"
-                      className="rounded-xl"
-                      disabled={promoLoading}
-                    />
-                    <button
-                      type="button"
-                      className="bg-[#4a0d06] text-white px-4 py-2 rounded-xl text-xs font-bold hover:brightness-125 transition-all shrink-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                      onClick={handleApplyPromotion}
-                      disabled={promoLoading}
-                    >
-                      {promoLoading && (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      )}
-                      {promoLoading ? 'Đang kiểm tra...' : 'Áp dụng'}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPromotionModalOpen(true)}
+                    className="w-full flex items-center justify-between gap-3 bg-gradient-to-r from-tet-primary/10 to-tet-secondary/10 border-2 border-tet-primary/20 p-4 rounded-2xl hover:border-tet-primary/40 transition-all group"
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="p-2 bg-tet-primary/20 rounded-lg group-hover:bg-tet-primary/30 transition-all">
+                        <Ticket size={20} className="text-tet-primary" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-bold text-tet-primary">
+                          {promotion ? `Mã: ${promotion.code}` : 'Chọn mã giảm giá'}
+                        </p>
+                        {promotion && (
+                          <p className="text-xs text-gray-500">
+                            Giảm {promotion.isPercentage ? `${promotion.discountValue}%` : `${Math.round(promotion.discountValue / 1000)}K`}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-sm font-bold text-tet-primary px-3 py-1 bg-white rounded-lg">
+                      {promotion ? '✓' : '+'}
+                    </span>
+                  </button>
                 )}
 
                 {/* Tính toán tổng tiền */}
@@ -620,6 +626,14 @@ export default function CheckoutPage() {
           </div>
         </form>
       </div>
+
+      {/* Promotion Selection Modal */}
+      <PromotionSelectionModal
+        isOpen={promotionModalOpen}
+        onClose={() => setPromotionModalOpen(false)}
+        onSelect={handleSelectPromotionFromModal}
+        selectedPromotionId={promotion?.promotionId}
+      />
 
       {/* Payment Success Modal */}
       <PaymentSuccessModal
