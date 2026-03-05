@@ -11,6 +11,8 @@ import {
   MessageSquare,
   LogOut,
   Home,
+  BookOpen,
+  PackageOpen, // <-- Đã thêm icon BookOpen cho mục Bài viết
 } from "lucide-react";
 
 export default function AdminSidebar() {
@@ -32,9 +34,19 @@ export default function AdminSidebar() {
       icon: <LayoutDashboard size={18} />,
     },
     {
+      path: "/admin/accounts",
+      label: "Quản lý Tài khoản",
+      icon: <Users size={18} />,
+    },
+    {
       path: "/admin/products",
       label: "Sản phẩm",
       icon: <Package size={18} />,
+    },
+    {
+      path: "/admin/inventory",
+      label: "Kho hàng",
+      icon: <PackageOpen size={18} />,
     },
     {
       path: "/admin/categories",
@@ -55,6 +67,11 @@ export default function AdminSidebar() {
       path: "/admin/promotions",
       label: "Promotion",
       icon: <Gift size={18} />,
+    },
+    {
+      path: "/admin/blogs", // <-- BỔ SUNG MENU BÀI VIẾT TẠI ĐÂY
+      label: "Bài viết",
+      icon: <BookOpen size={18} />,
     },
     {
       path: "/admin/quotations",

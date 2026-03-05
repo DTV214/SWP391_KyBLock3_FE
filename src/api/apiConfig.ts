@@ -24,6 +24,27 @@ export const API_ENDPOINTS = {
     REGISTER_REQUEST_OTP: `${BASE_URL}/auth/register/request-otp`,
     REGISTER_VERIFY_OTP: `${BASE_URL}/auth/register/verify-otp`,
   },
+  // Thêm vào bên trong const API_ENDPOINTS = { ... }
+  // Inventory & Stocks endpoints
+  INVENTORY: {
+    // Sửa lại thành inventories (số nhiều)
+    LOW_STOCK: (threshold: number = 10) =>
+      `${BASE_URL}/inventories/low-stock?threshold=${threshold}`,
+
+    // Các endpoint CRUD cho lô hàng
+    STOCKS: `${BASE_URL}/inventories/stocks`,
+    STOCK_DETAIL: (id: string | number) =>
+      `${BASE_URL}/inventories/stocks/${id}`,
+    CREATE_STOCK: `${BASE_URL}/inventories/stocks`,
+    UPDATE_STOCK: (id: string | number) =>
+      `${BASE_URL}/inventories/stocks/${id}`,
+    DELETE_STOCK: (id: string | number) =>
+      `${BASE_URL}/inventories/stocks/${id}`,
+
+    // Lấy tồn kho theo Product
+    STOCKS_BY_PRODUCT: (productId: string | number) =>
+      `${BASE_URL}/inventories/products/${productId}/stocks`,
+  },
   // Products endpoints
   PRODUCTS: {
     LIST: `${BASE_URL}/products`,
@@ -166,6 +187,15 @@ export const API_ENDPOINTS = {
       `${BASE_URL}/chat/messages/${conversationId}`,
     ADMIN_REPLY: (conversationId: string | number) =>
       `${BASE_URL}/chat/reply/${conversationId}`,
+  },
+  // Admin Accounts endpoints
+  ADMIN_ACCOUNTS: {
+    LIST: `${BASE_URL}/admin/accounts`,
+    CREATE: `${BASE_URL}/admin/accounts`,
+    DETAIL: (id: string | number) => `${BASE_URL}/admin/accounts/${id}`,
+    DELETE: (id: string | number) => `${BASE_URL}/admin/accounts/${id}`,
+    UPDATE_STATUS: (id: string | number) =>
+      `${BASE_URL}/admin/accounts/${id}/status`,
   },
 };
 

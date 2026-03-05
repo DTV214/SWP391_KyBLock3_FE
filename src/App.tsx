@@ -7,6 +7,7 @@
 import Navbar from "./layouts/components/Navbar";
 import Footer from "./layouts/components/Footer";
 import BackToTop from "./components/common/BackToTop";
+import ChatBot from "./components/common/ChatBot";
 import { CartProvider } from "./feature/cart/context/CartContext";
 import CartSidebar from "./feature/cart/components/CartSidebar";
 import "./App.css";
@@ -66,6 +67,9 @@ import PaymentSuccess from "@/feature/checkout/pages/PaymentSuccess";
 import PaymentFailure from "@/feature/checkout/pages/PaymentFailure";
 import VNPayReturn from "@/feature/checkout/pages/VNPayReturn";
 import CustomerChatWidget from "@/feature/chat/components/CustomerChatWidget";
+import AdminBlogs from "@/feature/admin/pages/AdminBlogs";
+import AdminInventory from "@/feature/admin/pages/AdminInventory";
+import AdminAccounts from "@/feature/admin/pages/AdminAccounts";
 
 // --- MIDDLEWARES ---
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
@@ -206,6 +210,9 @@ function App() {
                 <Route path="promotions" element={<AdminPromotions />} />
                 <Route path="orders" element={<AdminOrderHistory />} />
                 <Route path="chats" element={<AdminChatPage />} />
+                <Route path="blogs" element={<AdminBlogs />} />
+                <Route path="inventory" element={<AdminInventory />} />
+                <Route path="accounts" element={<AdminAccounts />} />
                 <Route
                   path="quotations"
                   element={<AdminApprovalQuotationsPage />}
@@ -240,6 +247,7 @@ function App() {
           </main>
           <Footer />
           <BackToTop />
+          <ChatBot />
           <CartSidebar />
           <CustomerChatWidget />
         </div>
