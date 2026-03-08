@@ -24,7 +24,7 @@ export interface VerifyOtpPayload {
 
 export interface ForgotPasswordPayload {
   email: string;
-  username: string; // Thêm username để phân biệt các account dùng chung email
+  username?: string; // Thêm username để phân biệt các account dùng chung email
 }
 
 export interface ResetPasswordPayload {

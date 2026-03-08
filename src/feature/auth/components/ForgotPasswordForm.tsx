@@ -5,9 +5,10 @@ import {
   EyeOff,
   CheckCircle2,
   XCircle,
-  ArrowLeft,
+ 
   User,
   Mail,
+  Info,
 } from "lucide-react";
 import authService from "../services/authService";
 import { AxiosError } from "axios";
@@ -30,10 +31,10 @@ export function ForgotPasswordForm() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [needUsername, setNeedUsername] = useState(false); // State kiểm soát việc hiện ô Username
 
-  // --- STATE QUẢN LÝ DỮ LIỆU ---
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState(""); // Thêm state username
+  const [username, setUsername] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -45,37 +46,48 @@ export function ForgotPasswordForm() {
     isSuccess: true,
   });
 
-  // --- GIAI ĐOẠN 1: GỬI YÊU CẦU OTP (EMAIL + USERNAME) ---
   const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Gửi cả email và username để Backend định danh chính xác account
-      await authService.requestForgotPasswordOtp({ email, username });
+      await authService.requestForgotPasswordOtp({
+        email,
+        username: username || undefined,
+      });
       setStep(2);
     } catch (error: unknown) {
       const axiosError = error as AxiosError<ApiError>;
-      setDialog({
-        open: true,
-        title: "Yêu cầu thất bại",
-        message:
-          axiosError.response?.data?.msg ||
-          "Thông tin tài khoản không chính xác hoặc lỗi hệ thống.",
-        isSuccess: false,
-      });
+      const errorMsg = axiosError.response?.data?.msg || "";
+
+      // KIỂM TRA LỖI ĐẶC BIỆT: Nếu có nhiều account
+      if (errorMsg.includes("nhiều tài khoản")) {
+        setNeedUsername(true); // Hiện ô Username ngay lập tức
+        setDialog({
+          open: true,
+          title: "Thông báo quan trọng",
+          message: errorMsg, // Thông báo đã gửi danh sách username vào mail
+          isSuccess: true, // Để màu xanh cho dịu mắt vì đây là hướng dẫn
+        });
+      } else {
+        setDialog({
+          open: true,
+          title: "Yêu cầu thất bại",
+          message: errorMsg || "Đã có lỗi xảy ra, vui lòng thử lại.",
+          isSuccess: false,
+        });
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // --- GIAI ĐOẠN 2: RESET MẬT KHẨU ---
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
       setDialog({
         open: true,
-        title: "Lỗi nhập liệu",
-        message: "Mật khẩu xác nhận không khớp, vui lòng kiểm tra lại.",
+        title: "Lỗi",
+        message: "Mật khẩu xác nhận không khớp.",
         isSuccess: false,
       });
       return;
@@ -83,12 +95,11 @@ export function ForgotPasswordForm() {
 
     setLoading(true);
     try {
-      // Gửi đầy đủ Email, Username, OTP và Mật khẩu mới
       await authService.resetPassword({ email, username, otp, newPassword });
       setDialog({
         open: true,
         title: "Thành công!",
-        message: `Mật khẩu của tài khoản "${username}" đã được thay đổi thành công.`,
+        message: `Mật khẩu của tài khoản "${username}" đã được thay đổi.`,
         isSuccess: true,
       });
     } catch (error: unknown) {
@@ -96,9 +107,7 @@ export function ForgotPasswordForm() {
       setDialog({
         open: true,
         title: "Khôi phục thất bại",
-        message:
-          axiosError.response?.data?.msg ||
-          "Mã OTP không chính xác hoặc đã hết hạn.",
+        message: axiosError.response?.data?.msg || "Mã OTP không chính xác.",
         isSuccess: false,
       });
     } finally {
@@ -113,30 +122,15 @@ export function ForgotPasswordForm() {
           onSubmit={handleRequestOtp}
           className="space-y-5 animate-in fade-in duration-500"
         >
-          <div className="text-center">
-            <p className="text-sm text-gray-500 italic leading-relaxed">
-              Vui lòng nhập Email và Tên đăng nhập để nhận mã xác thực khôi phục
-              mật khẩu.
+          <div className="bg-blue-50/50 p-4 rounded-xl flex gap-3 border border-blue-100">
+            <Info className="text-blue-500 shrink-0" size={20} />
+            <p className="text-xs text-blue-700 leading-relaxed">
+              Bạn chỉ cần nhập Email. Nếu email của bạn có nhiều tài khoản,
+              chúng tôi sẽ gửi danh sách tên đăng nhập vào hộp thư cho bạn.
             </p>
           </div>
 
           <div className="space-y-4">
-            {/* INPUT USERNAME (MỚI) */}
-            <div>
-              <label className="block text-sm font-bold text-tet-primary mb-1.5 flex items-center gap-2">
-                <User size={14} /> Tên đăng nhập
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="Ví dụ: xoai_staff"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full p-3.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-tet-primary/20 focus:border-tet-primary transition-all shadow-sm text-sm"
-              />
-            </div>
-
-            {/* INPUT EMAIL */}
             <div>
               <label className="block text-sm font-bold text-tet-primary mb-1.5 flex items-center gap-2">
                 <Mail size={14} /> Email liên kết
@@ -147,28 +141,49 @@ export function ForgotPasswordForm() {
                 placeholder="example@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-3.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-tet-primary/20 focus:border-tet-primary transition-all shadow-sm text-sm"
+                className="w-full p-3.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-tet-primary/20 focus:border-tet-primary transition-all shadow-sm"
               />
             </div>
+
+            {/* Ô USERNAME CHỈ HIỆN KHI CẦN THIẾT HOẶC USER MUỐN NHẬP TRƯỚC */}
+            {(needUsername || username) && (
+              <div className="animate-in slide-in-from-top-2 duration-300">
+                <label className="block text-sm font-bold text-tet-primary mb-1.5 flex items-center gap-2">
+                  <User size={14} /> Tên đăng nhập
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Nhập tên đăng nhập từ Email của bạn"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full p-3.5 border border-tet-primary/30 bg-tet-primary/5 rounded-xl outline-none focus:ring-2 focus:ring-tet-primary/20"
+                />
+              </div>
+            )}
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full bg-tet-primary text-white py-4 rounded-xl font-bold shadow-lg hover:brightness-110 transition-all ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
+            className={`w-full bg-tet-primary text-white py-4 rounded-xl font-bold shadow-lg hover:brightness-110 transition-all ${loading ? "opacity-70" : ""}`}
           >
-            {loading ? "Đang kiểm tra..." : "Gửi mã xác thực"}
+            {loading
+              ? "Đang xử lý..."
+              : needUsername
+                ? "Xác nhận khôi phục"
+                : "Tiếp tục"}
           </button>
         </form>
       ) : (
         <form
           onSubmit={handleResetPassword}
-          className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300"
+          className="space-y-5 animate-in slide-in-from-right-4 duration-300"
         >
           <div className="bg-tet-secondary/10 p-4 rounded-xl text-center mb-4 border border-tet-secondary/20">
             <span className="text-xs text-tet-primary font-medium">
-              Khôi phục cho tài khoản: <strong>{username}</strong> <br />
-              Mã đã gửi đến Email: <strong>{email}</strong>
+              Đang khôi phục: <strong>{username}</strong> <br />
+              Mã đã gửi đến: <strong>{email}</strong>
             </span>
           </div>
 
@@ -183,68 +198,57 @@ export function ForgotPasswordForm() {
               placeholder="000000"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
-              className="w-full p-3.5 border border-gray-200 rounded-xl text-center tracking-[0.5em] text-xl font-bold focus:border-tet-primary outline-none shadow-inner"
+              className="w-full p-3.5 border border-gray-200 rounded-xl text-center tracking-[0.5em] text-xl font-bold focus:border-tet-primary outline-none"
             />
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-bold text-tet-primary mb-1.5">
-                Mật khẩu mới
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  placeholder="Tối thiểu 6 ký tự"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full p-3.5 border border-gray-200 rounded-xl focus:border-tet-primary outline-none text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-tet-primary transition-colors"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-tet-primary mb-1.5">
-                Xác nhận mật khẩu
-              </label>
+            <div className="relative">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
-                placeholder="Nhập lại mật khẩu mới"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full p-3.5 border border-gray-200 rounded-xl focus:border-tet-primary outline-none text-sm"
+                placeholder="Mật khẩu mới"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full p-3.5 border border-gray-200 rounded-xl outline-none focus:border-tet-primary"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
+            <input
+              type="password"
+              required
+              placeholder="Xác nhận mật khẩu mới"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full p-3.5 border border-gray-200 rounded-xl outline-none focus:border-tet-primary"
+            />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full bg-tet-primary text-white py-4 rounded-xl font-bold shadow-lg transition-all ${loading ? "opacity-70" : "hover:brightness-110"}`}
+            className="w-full bg-tet-primary text-white py-4 rounded-xl font-bold shadow-lg hover:brightness-110 transition-all"
           >
-            {loading ? "Đang cập nhật..." : "Xác nhận đổi mật khẩu"}
+            {loading ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
           </button>
 
           <button
             type="button"
             onClick={() => setStep(1)}
-            className="w-full flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-tet-primary transition-colors mt-2"
+            className="w-full text-xs text-gray-400 hover:text-tet-primary text-center"
           >
-            <ArrowLeft size={14} /> Quay lại nhập thông tin
+            Quay lại bước trước
           </button>
         </form>
       )}
 
-      {/* ALERT DIALOG */}
+      {/* AlertDialog */}
       <AlertDialog
         open={dialog.open}
         onOpenChange={(open) => setDialog({ ...dialog, open })}
@@ -270,12 +274,12 @@ export function ForgotPasswordForm() {
           <AlertDialogFooter className="sm:justify-center">
             <AlertDialogAction
               onClick={() => {
-                if (dialog.isSuccess) navigate("/login");
+                if (dialog.title === "Thành công!") navigate("/login");
                 else setDialog({ ...dialog, open: false });
               }}
               className="bg-tet-primary hover:bg-tet-primary/90 text-white px-12 py-6 rounded-2xl font-bold shadow-md"
             >
-              {dialog.isSuccess ? "Đăng nhập ngay" : "Thử lại"}
+              Đồng ý
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
