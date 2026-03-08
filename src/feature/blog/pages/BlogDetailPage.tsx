@@ -5,35 +5,50 @@ import { ChevronLeft } from "lucide-react";
 import { blogService, type BlogDto } from "../services/blogService";
 
 import BlogSidebar from "../components/BlogSidebar";
-import BlogContent from "@/feature/blog/components/BlogContent";
-// Cẩn thận đường dẫn import nhé
+import BlogContent from "../components/BlogContent"; // Sửa lại đường dẫn import cho đồng nhất
 
 export default function BlogDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [blog, setBlog] = useState<BlogDto | null>(null);
+  const [recentBlogs, setRecentBlogs] = useState<BlogDto[]>([]); // Thêm state để chứa bài viết liên quan
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchBlogDetail = async () => {
+    const fetchData = async () => {
       if (!id) return;
       try {
         setIsLoading(true);
-        const data = await blogService.getBlogById(id);
-        if (data) {
-          setBlog(data);
+
+        // Gọi song song 2 API: 1 lấy chi tiết, 1 lấy danh sách toàn bộ bài viết
+        const [detailData, allBlogsData] = await Promise.all([
+          blogService.getBlogById(id),
+          blogService.getAllBlogs(),
+        ]);
+
+        // Cập nhật state bài viết chi tiết
+        if (detailData) {
+          setBlog(detailData);
         } else {
           setError("Không tìm thấy bài viết.");
         }
+
+        // Cập nhật state bài viết liên quan (lọc bỏ bài viết hiện tại đang xem)
+        if (allBlogsData && allBlogsData.length > 0) {
+          const related = allBlogsData.filter(
+            (b) => b.blogId.toString() !== id,
+          );
+          setRecentBlogs(related);
+        }
       } catch (err) {
-        console.error("Lỗi tải chi tiết bài viết", err);
+        console.error("Lỗi tải dữ liệu bài viết", err);
         setError("Đã xảy ra lỗi khi tải bài viết.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchBlogDetail();
+    fetchData();
   }, [id]);
 
   if (isLoading) {
@@ -82,7 +97,8 @@ export default function BlogDetailPage() {
 
           {/* PHẦN 2: SIDEBAR (30%) */}
           <aside className="w-full lg:w-1/3 space-y-8">
-            <BlogSidebar />
+            {/* Truyền dữ liệu recentBlogs vào Sidebar */}
+            <BlogSidebar recentBlogs={recentBlogs} />
           </aside>
         </div>
       </div>

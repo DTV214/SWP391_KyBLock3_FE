@@ -1,7 +1,8 @@
 // src/features/blog/components/BlogContent.tsx
 
 import type { BlogDto } from "@/feature/blog/services/blogService";
-import { Calendar, Share2 } from "lucide-react";
+import { Calendar, Share2, Video } from "lucide-react";
+import BASE_URL from "@/api/apiConfig";
 
 interface BlogContentProps {
   blog: BlogDto;
@@ -23,12 +24,19 @@ export default function BlogContent({ blog }: BlogContentProps) {
     },
   );
 
+  // Hàm hỗ trợ lấy full URL ảnh/video
+  const getFullMediaUrl = (url: string | null) => {
+    if (!url) return defaultImage;
+    const serverUrl = BASE_URL.replace("/api", "");
+    return `${serverUrl}${url}`;
+  };
+
   return (
     <article className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
-      {/* 1. Ảnh bìa bài viết (Hero Image) - Fix cứng do BE không có */}
+      {/* 1. Ảnh bìa bài viết (Hero Image) - Đã cập nhật lấy từ BE */}
       <div className="w-full h-[300px] md:h-[450px] overflow-hidden relative bg-gray-100">
         <img
-          src={defaultImage}
+          src={getFullMediaUrl(blog.imageUrl)}
           className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
           alt={blog.title}
         />
@@ -68,6 +76,25 @@ export default function BlogContent({ blog }: BlogContentProps) {
           className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
           dangerouslySetInnerHTML={{ __html: blog.content }}
         />
+
+        {/* --- PHẦN MỚI THÊM: HIỂN THỊ VIDEO NẾU CÓ --- */}
+        {blog.videoUrl && (
+          <div className="mt-12 pt-10 border-t border-gray-100">
+            <h3 className="text-2xl font-serif font-bold text-tet-primary mb-6 flex items-center gap-3">
+              <Video size={28} className="text-tet-accent" /> Video liên quan
+            </h3>
+            <div className="rounded-3xl overflow-hidden border border-gray-100 shadow-xl bg-black">
+              <video
+                controls
+                className="w-full max-h-[500px] outline-none"
+                src={getFullMediaUrl(blog.videoUrl)}
+              >
+                Trình duyệt của bạn không hỗ trợ thẻ video.
+              </video>
+            </div>
+          </div>
+        )}
+        {/* ------------------------------------------- */}
 
         {/* 4. CTA Bottom (Giữ lại làm Banner cố định dưới mỗi bài) */}
         <div className="mt-20 bg-tet-primary p-12 rounded-[3rem] text-center text-white relative overflow-hidden group">

@@ -6,6 +6,7 @@ import FlashSellCarousel from "../components/FlashSellCarousel";
 import ProductGridHome from "../components/ProductGridHome";
 import CustomGiftBanner from "../components/CustomGiftBanner";
 
+
 export default function HomePage() {
   return (
     <div className="w-full flex flex-col overflow-x-hidden">
@@ -26,7 +27,7 @@ export default function HomePage() {
 
       {/* Banner 6: Giải pháp quà tặng doanh nghiệp & Quy trình */}
       <CustomGiftBanner />
-
+      
     </div>
   );
 }

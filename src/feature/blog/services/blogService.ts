@@ -8,6 +8,8 @@ export interface BlogDto {
   content: string;
   authorName: string | null;
   creationDate: string;
+  imageUrl: string | null; // Bổ sung nhận link ảnh từ BE
+  videoUrl: string | null; // Bổ sung nhận link video từ BE
 }
 
 // Interface cho response wrapper của Backend

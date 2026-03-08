@@ -2,7 +2,7 @@
 import type { BlogDto } from "@/feature/blog/services/blogService";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-
+import BASE_URL from "@/api/apiConfig"; // Import để lấy BASE_URL nối vào link ảnh
 
 interface BlogHeroProps {
   blog: BlogDto;
@@ -27,9 +27,16 @@ export default function BlogHero({ blog }: BlogHeroProps) {
     },
   );
 
-  // Ảnh mặc định vì BE không cung cấp
+  // Ảnh mặc định vì BE không cung cấp (Fallback)
   const defaultImage =
     "https://res.cloudinary.com/dratbz8bh/image/upload/v1769521491/Gia-Dinh-Doan-Vien-T_v0n9to.png";
+
+  // Hàm hỗ trợ lấy full URL ảnh
+  const getFullMediaUrl = (url: string | null) => {
+    if (!url) return defaultImage; // Trả về ảnh mặc định nếu bài viết không có ảnh
+    const serverUrl = BASE_URL.replace("/api", "");
+    return `${serverUrl}${url}`;
+  };
 
   return (
     <section className="py-12 bg-white">
@@ -48,10 +55,10 @@ export default function BlogHero({ blog }: BlogHeroProps) {
           animate={{ opacity: 1, y: 0 }}
           className="group relative flex flex-col md:flex-row border-2 border-tet-secondary/30 rounded-[2.5rem] overflow-hidden bg-[#FBF5E8]/20 shadow-xl"
         >
-          {/* Bên trái: Hình ảnh (Dùng ảnh mặc định) */}
+          {/* Bên trái: Hình ảnh (Đã sửa để dùng ảnh từ BE) */}
           <div className="w-full md:w-1/2 overflow-hidden bg-gray-100">
             <img
-              src={defaultImage}
+              src={getFullMediaUrl(blog.imageUrl)} // <--- Đã thay đổi ở đây
               alt={blog.title}
               className="w-full h-[350px] md:h-[450px] object-cover transition-transform duration-700 group-hover:scale-105"
             />

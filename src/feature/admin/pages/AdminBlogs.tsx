@@ -10,6 +10,8 @@ import {
   Save,
   User,
   Calendar,
+  Image as ImageIcon,
+  Video,
 } from "lucide-react";
 import {
   blogAdminService,
@@ -18,6 +20,7 @@ import {
   type UpdateBlogRequest,
 } from "@/api/blogAdminService";
 import AdminPagination from "../components/AdminPagination";
+import BASE_URL from "@/api/apiConfig"; // Import để lấy BASE_URL nối vào link ảnh/video
 
 export default function AdminBlogs() {
   // --- States ---
@@ -39,10 +42,12 @@ export default function AdminBlogs() {
   const [selectedBlog, setSelectedBlog] = useState<BlogDto | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // Form State
+  // Form State (Đã bổ sung imageFile và videoFile)
   const [formData, setFormData] = useState<CreateBlogRequest>({
     title: "",
     content: "",
+    imageFile: null,
+    videoFile: null,
   });
 
   // --- Functions ---
@@ -57,7 +62,7 @@ export default function AdminBlogs() {
     } catch (err: unknown) {
       console.error("Error fetching blogs:", err);
       setError("Không thể tải danh sách bài viết. Vui lòng thử lại.");
-      console.log("Error fetching blogs:", error); // Debug state blogs
+      console.log("Error details:",error);
     } finally {
       setLoading(false);
     }
@@ -75,10 +80,16 @@ export default function AdminBlogs() {
     setModalType(type);
     if (blog) {
       setSelectedBlog(blog);
-      setFormData({ title: blog.title, content: blog.content });
+      // Khi sửa, không thể gán URL cũ vào File object, nên set null. Giao diện sẽ tự hiểu là không upload file mới.
+      setFormData({
+        title: blog.title,
+        content: blog.content,
+        imageFile: null,
+        videoFile: null,
+      });
     } else {
       setSelectedBlog(null);
-      setFormData({ title: "", content: "" });
+      setFormData({ title: "", content: "", imageFile: null, videoFile: null });
     }
     setShowModal(true);
   };
@@ -86,7 +97,7 @@ export default function AdminBlogs() {
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedBlog(null);
-    setFormData({ title: "", content: "" });
+    setFormData({ title: "", content: "", imageFile: null, videoFile: null });
     setError(null);
   };
 
@@ -156,6 +167,14 @@ export default function AdminBlogs() {
     currentPage * itemsPerPage,
   );
 
+  // --- Hỗ trợ tạo đường dẫn đầy đủ cho Media ---
+  const getFullMediaUrl = (url: string | null) => {
+    if (!url) return "";
+    // Xóa phần '/api' ở cuối BASE_URL nếu có để ghép với '/uploads/...'
+    const serverUrl = BASE_URL.replace("/api", "");
+    return `${serverUrl}${url}`;
+  };
+
   // --- Render UI ---
   return (
     <div className="space-y-6">
@@ -213,9 +232,21 @@ export default function AdminBlogs() {
                 className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col md:flex-row justify-between items-center gap-4 group"
               >
                 <div className="flex items-center gap-4 w-full md:w-auto">
-                  <div className="w-14 h-14 rounded-xl bg-[#FBF5E8] flex items-center justify-center text-tet-primary shrink-0">
-                    <BookOpen size={24} />
-                  </div>
+                  {/* Hiển thị Ảnh bìa thay vì Icon nếu có */}
+                  {blog.imageUrl ? (
+                    <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-gray-100">
+                      <img
+                        src={getFullMediaUrl(blog.imageUrl)}
+                        alt={blog.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-[#FBF5E8] flex items-center justify-center text-tet-primary shrink-0">
+                      <BookOpen size={24} />
+                    </div>
+                  )}
+
                   <div className="min-w-0">
                     <h3 className="font-bold text-tet-primary truncate max-w-md md:max-w-xl">
                       {blog.title}
@@ -230,6 +261,12 @@ export default function AdminBlogs() {
                           "vi-VN",
                         )}
                       </span>
+                      {/* Thêm indicator nếu bài viết có video */}
+                      {blog.videoUrl && (
+                        <span className="flex items-center gap-1 text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
+                          <Video size={10} /> Có Video
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -294,9 +331,21 @@ export default function AdminBlogs() {
             <div className="p-8 overflow-y-auto flex-1 custom-scrollbar">
               {modalType === "VIEW" ? (
                 <div className="space-y-6">
+                  {/* Hiển thị Media trong modal View */}
+                  {selectedBlog?.imageUrl && (
+                    <div className="w-full h-64 md:h-80 rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                      <img
+                        src={getFullMediaUrl(selectedBlog.imageUrl)}
+                        alt={selectedBlog.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+
                   <h1 className="text-3xl font-serif font-bold text-tet-primary leading-tight">
                     {selectedBlog?.title}
                   </h1>
+
                   <div className="flex gap-4 text-sm text-gray-400 pb-6 border-b border-gray-50">
                     <span className="font-bold text-tet-accent">
                       Tác giả: {selectedBlog?.authorName}
@@ -309,6 +358,7 @@ export default function AdminBlogs() {
                         )}
                     </span>
                   </div>
+
                   {/* Nội dung bài viết hiển thị HTML */}
                   <div
                     className="prose prose-red max-w-none text-gray-700 leading-relaxed"
@@ -316,6 +366,22 @@ export default function AdminBlogs() {
                       __html: selectedBlog?.content || "",
                     }}
                   />
+
+                  {/* Hiển thị Video phía dưới bài viết */}
+                  {selectedBlog?.videoUrl && (
+                    <div className="mt-8 pt-6 border-t border-gray-100">
+                      <h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                        <Video size={18} /> Video minh họa
+                      </h4>
+                      <video
+                        controls
+                        className="w-full rounded-2xl border border-gray-100 shadow-sm"
+                        src={getFullMediaUrl(selectedBlog.videoUrl)}
+                      >
+                        Trình duyệt của bạn không hỗ trợ thẻ video.
+                      </video>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <form
@@ -338,6 +404,7 @@ export default function AdminBlogs() {
                       required
                     />
                   </div>
+
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">
                       Nội dung bài viết (Hỗ trợ HTML)
@@ -347,7 +414,7 @@ export default function AdminBlogs() {
                       onChange={(e) =>
                         setFormData({ ...formData, content: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-tet-accent outline-none min-h-[350px] font-sans"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-tet-accent outline-none min-h-[300px] font-sans"
                       placeholder="Nhập nội dung chi tiết bài viết ở đây..."
                       required
                     />
@@ -355,6 +422,67 @@ export default function AdminBlogs() {
                       * Hiện tại hệ thống hỗ trợ nhập liệu trực tiếp HTML để
                       format bài viết.
                     </p>
+                  </div>
+
+                  {/* Vùng Upload Ảnh và Video */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                    {/* Upload Ảnh */}
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                        <ImageIcon size={16} className="text-tet-accent" /> Ảnh
+                        bìa bài viết
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            setFormData({
+                              ...formData,
+                              imageFile: e.target.files[0],
+                            });
+                          }
+                        }}
+                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 transition-colors"
+                      />
+                      {modalType === "EDIT" &&
+                        selectedBlog?.imageUrl &&
+                        !formData.imageFile && (
+                          <p className="mt-3 text-xs text-gray-500 italic bg-white p-2 rounded-lg border border-gray-200">
+                            Đang sử dụng ảnh bìa hiện tại. Chọn file mới nếu
+                            muốn thay đổi.
+                          </p>
+                        )}
+                    </div>
+
+                    {/* Upload Video */}
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                        <Video size={16} className="text-blue-500" /> Video minh
+                        họa (Tùy chọn)
+                      </label>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/x-m4v,video/*"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            setFormData({
+                              ...formData,
+                              videoFile: e.target.files[0],
+                            });
+                          }
+                        }}
+                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors"
+                      />
+                      {modalType === "EDIT" &&
+                        selectedBlog?.videoUrl &&
+                        !formData.videoFile && (
+                          <p className="mt-3 text-xs text-gray-500 italic bg-white p-2 rounded-lg border border-gray-200">
+                            Đang sử dụng video hiện tại. Chọn file mới nếu muốn
+                            thay đổi.
+                          </p>
+                        )}
+                    </div>
                   </div>
                 </form>
               )}
