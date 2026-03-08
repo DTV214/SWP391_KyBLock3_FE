@@ -14,7 +14,7 @@ const ENV_BASE_URL = (import.meta as unknown as { env: ViteEnv }).env
 // Fallback to current production server if env is not set
 const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5000/api").replace(/\/+$/, "");
 
-// const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(/\/+$/, "");
+// const BASE_URL = (ENV_BASE_URL?.trim() || "http://localhost:5280/api").replace(/\/+$/, "");
 
 // Điều này giúp bạn chỉ cần đổi file .env khi chạy local / deploy.
 export const API_ENDPOINTS = {
@@ -74,6 +74,7 @@ export const API_ENDPOINTS = {
     // Template endpoints
     TEMPLATES: `${BASE_URL}/products/templates`,
     ADMIN_BASKETS: `${BASE_URL}/products/admin-baskets`,
+    SHOP_BASKETS: `${BASE_URL}/products/shop`,
     CUSTOM_PRODUCT_BY_ID: (id: string | number) =>
       `${BASE_URL}/products/custom/${id}`,
     CLONE_TEMPLATE: (templateId: string | number) =>
@@ -82,6 +83,8 @@ export const API_ENDPOINTS = {
       `${BASE_URL}/products/${id}/set-as-template`,
     REMOVE_TEMPLATE: (id: string | number) =>
       `${BASE_URL}/products/${id}/remove-template`,
+    HARD_DELETE: (id: string | number) =>
+      `${BASE_URL}/products/${id}/hard`,
   },
 
   // Product Categories endpoints
@@ -99,6 +102,7 @@ export const API_ENDPOINTS = {
     CREATE: `${BASE_URL}/configs`,
     UPDATE: `${BASE_URL}/configs`,
     DELETE: (id: string | number) => `${BASE_URL}/configs/${id}`,
+    HARD_DELETE: (id: string | number) => `${BASE_URL}/configs/${id}/hard`,
   },
 
   // Product Details endpoints (items in basket)

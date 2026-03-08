@@ -1,5 +1,5 @@
 
-import { Gift, Eye, Trash2, Star, X, Edit, Save, Package, Plus, Settings } from "lucide-react";
+import { Gift, Eye, Trash2, Star, X, Edit, Save, Package, Plus, Settings, AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { productService, type Product, type UpdateComboProductRequest, type ProductDetailRequest, type CreateComboProductRequest } from "@/api/productService";
 import { configService, type ProductConfig } from "@/api/configService";
@@ -115,7 +115,7 @@ export default function AdminTemplates() {
       setProductname('');
       setDescription('');
       setImageUrl('');
-      setStatus('TEMPLATE');
+      setStatus('ACTIVE');
       setSelectedConfigId(configsData[0]?.configid || 0);
       setSelectedConfig(configsData[0] || null);
       setProductDetails([]);
@@ -347,6 +347,20 @@ export default function AdminTemplates() {
       alert(error.response?.data?.message || error.message || 'Không thể xóa sản phẩm');
     } finally {
       console.log('=== END DELETE PRODUCT ===');
+    }
+  };
+
+  const handleHardDeleteTemplate = async (productId: number, productname: string) => {
+    if (!confirm(`⚠️ XÓA VĨNH VIỄN template "${productname}"?\n\nThao tác này sẽ xóa template và toàn bộ sản phẩm con đi kèm. KHÔNG THỂ HOÀN TÁC!`)) return;
+
+    try {
+      const token = localStorage.getItem('token') || '';
+      await productService.templates.hardDelete(productId, token);
+      alert('Đã xóa vĩnh viễn template thành công');
+      fetchTemplates();
+    } catch (error: any) {
+      console.error('❌ Error hard deleting template:', error);
+      alert(error.response?.data?.message || error.message || 'Không thể xóa vĩnh viễn template');
     }
   };
 
@@ -876,8 +890,16 @@ export default function AdminTemplates() {
                   <button
                     onClick={() => handleDelete(template.productid!)}
                     className="px-4 py-2 bg-red-50 text-red-600 rounded-lg font-bold hover:bg-red-100 transition-all"
+                    title="Xóa mềm"
                   >
                     <Trash2 size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleHardDeleteTemplate(template.productid!, template.productname || '')}
+                    className="px-4 py-2 bg-white text-red-800 border border-red-200 rounded-lg font-bold hover:bg-red-100 transition-all"
+                    title="Xóa vĩnh viễn (xóa cả sản phẩm con liên quan)"
+                  >
+                    <AlertTriangle size={16} />
                   </button>
                 </div>
               </div>
