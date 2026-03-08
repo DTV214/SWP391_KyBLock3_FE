@@ -200,6 +200,10 @@ export const API_ENDPOINTS = {
     UPDATE_STATUS: (id: string | number) =>
       `${BASE_URL}/admin/accounts/${id}/status`,
   },
+  // AI Chatbot endpoint
+  AI_CHAT: {
+    SEND: `${BASE_URL}/aichat`,
+  },
 };
 
 export default BASE_URL;

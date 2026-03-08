@@ -1,6 +1,5 @@
-import axios from "axios";
-
-const CHAT_API_URL = "https://localhost:7056/api/Chat";
+import axiosClient from "./axiosClient";
+import { API_ENDPOINTS } from "./apiConfig";
 
 export interface ChatMessage {
   message: string;
@@ -8,8 +7,11 @@ export interface ChatMessage {
 }
 
 export interface ChatResponse {
-  reply: string;
-  // Add other fields from API response if needed
+  status: number;
+  msg: string;
+  data: {
+    reply: string;
+  };
 }
 
 export const chatService = {
@@ -21,29 +23,29 @@ export const chatService = {
   sendMessage: async (message: string): Promise<string> => {
     try {
       const requestBody: ChatMessage = {
-        history: [],
         message: message,
+        history: [],
       };
 
-      const response = await axios.post(CHAT_API_URL, requestBody, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // For HTTPS localhost with self-signed certificate
-      });
+      // axiosClient already returns response.data via interceptor
+      // So response is directly {status, msg, data: {reply: "..."}}
+      const response = await axiosClient.post<ChatResponse>(
+        API_ENDPOINTS.AI_CHAT.SEND,
+        requestBody
+      ) as unknown as ChatResponse;
       
-      console.log("Chat API Response:", response.data);
+      console.log("AI Chat API Response:", response);
       
       // API returns: {status, msg, data: {reply: "..."}}
-      if (response.data?.data?.reply) {
-        return response.data.data.reply;
+      if (response.data?.reply) {
+        return response.data.reply;
       }
       
       // Fallback
       return "Không nhận được phản hồi từ AI";
     } catch (error) {
-      console.error("Chat API Error:", error);
-      throw new Error("Không thể kết nối với chatbot AI");
+      console.error("AI Chat API Error:", error);
+      throw new Error("Không thể kết nối với chatbot AI. Vui lòng thử lại sau.");
     }
   },
 };
