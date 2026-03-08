@@ -15,6 +15,7 @@ import "./App.css";
 // Auth & Home
 import LoginPage from "./feature/auth/pages/LoginPage";
 import RegisterPage from "./feature/auth/pages/RegisterPage";
+ // --- THÊM DÒNG NÀY ---
 import HomePage from "./feature/homepage/pages/HomePage";
 
 // News & Intro
@@ -45,8 +46,8 @@ import AdminCategories from "@/feature/admin/pages/AdminCategories";
 import AdminConfigs from "@/feature/admin/pages/AdminConfigs";
 import AdminTemplates from "@/feature/admin/pages/AdminTemplates";
 import AdminPromotions from "@/feature/admin/pages/AdminPromotions";
-import AdminQuotationsPage from "@/feature/admin/pages/AdminQuotationsPage"; // Admin duyệt list
-import AdminQuotationDetailPage from "@/feature/admin/pages/AdminQuotationDetailPage"; // Admin duyệt chi tiết
+import AdminQuotationsPage from "@/feature/admin/pages/AdminQuotationsPage";
+import AdminQuotationDetailPage from "@/feature/admin/pages/AdminQuotationDetailPage";
 import AdminApprovalQuotationsPage from "@/feature/admin/pages/AdminApprovalQuotationsPage";
 import AdminApprovalQuotationDetailPage from "@/feature/admin/pages/AdminApprovalQuotationDetailPage";
 import AdminOrderHistory from "@/feature/admin/pages/AdminOrderHistory";
@@ -71,6 +72,7 @@ import CustomerChatWidget from "@/feature/chat/components/CustomerChatWidget";
 import AdminBlogs from "@/feature/admin/pages/AdminBlogs";
 import AdminInventory from "@/feature/admin/pages/AdminInventory";
 import AdminAccounts from "@/feature/admin/pages/AdminAccounts";
+import ForgotPasswordPage from "@/feature/auth/pages/ForgotPasswordPage";
 
 // --- MIDDLEWARES ---
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
@@ -99,7 +101,6 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 const StaffRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
-  // Cho phép ADMIN truy cập cả trang STAFF nếu cần thiết, hoặc có thể chỉ giới hạn "STAFF"
   return token && (role === "STAFF" || role === "ADMIN") ? (
     children
   ) : (
@@ -154,6 +155,17 @@ function App() {
                   </PublicRoute>
                 }
               />
+
+              {/* --- NEW ROUTE: FORGOT PASSWORD --- */}
+              <Route
+                path="/forgot-password"
+                element={
+                  <PublicRoute>
+                    <ForgotPasswordPage />
+                  </PublicRoute>
+                }
+              />
+
               <Route path="/" element={<Navigate to="/home" />} />
 
               {/* --- CUSTOMER ACCOUNT ROUTES --- */}

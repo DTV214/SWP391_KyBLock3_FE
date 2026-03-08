@@ -167,6 +167,14 @@ export function LoginForm() {
         >
           {loading ? "Đang xử lý..." : "Đăng Nhập"}
         </button>
+        <div className="flex justify-end mt-1">
+          <Link
+            to="/forgot-password"
+            className="text-xs text-gray-500 hover:text-tet-primary transition-colors underline underline-offset-2"
+          >
+            Quên mật khẩu?
+          </Link>
+        </div>
 
         <div className="relative my-8 text-center">
           <div className="absolute inset-0 flex items-center">

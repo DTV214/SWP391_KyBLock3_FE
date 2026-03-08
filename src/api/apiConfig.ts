@@ -12,9 +12,9 @@ interface ViteEnv {
 const ENV_BASE_URL = (import.meta as unknown as { env: ViteEnv }).env
   ?.VITE_API_BASE_URL;
 // Fallback to current production server if env is not set
-const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5000/api").replace(/\/+$/, "");
+// const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5000/api").replace(/\/+$/, "");
 
-// const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(/\/+$/, "");
+const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(/\/+$/, "");
 
 // Điều này giúp bạn chỉ cần đổi file .env khi chạy local / deploy.
 export const API_ENDPOINTS = {
@@ -23,6 +23,8 @@ export const API_ENDPOINTS = {
     LOGIN: `${BASE_URL}/auth/login`,
     REGISTER_REQUEST_OTP: `${BASE_URL}/auth/register/request-otp`,
     REGISTER_VERIFY_OTP: `${BASE_URL}/auth/register/verify-otp`,
+    FORGOT_PASSWORD_REQUEST_OTP: `${BASE_URL}/auth/forgot-password/request-otp`,
+    FORGOT_PASSWORD_RESET: `${BASE_URL}/auth/forgot-password/reset`,
   },
   // Thêm vào bên trong const API_ENDPOINTS = { ... }
   // Inventory & Stocks endpoints
