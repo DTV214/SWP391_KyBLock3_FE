@@ -64,11 +64,6 @@ export default function AccountOverview() {
     }
   };
 
-  const handleOpenBasketsModal = async () => {
-    setShowBasketsModal(true);
-    await fetchCustomBaskets();
-  };
-
   const handleCloseBasketsModal = () => {
     setShowBasketsModal(false);
     setCustomBaskets([]);
