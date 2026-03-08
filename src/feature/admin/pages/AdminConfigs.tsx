@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Settings, Eye, Save } from "lucide-react";
+import { Plus, Edit, Trash2, Settings, Eye, Save, AlertTriangle } from "lucide-react";
 import { 
   configService,
   categoryService,
@@ -221,6 +221,22 @@ export default function AdminConfigs() {
     } catch (err: any) {
       console.error("Error deleting config:", err);
       setError(err.response?.data?.message || err.response?.data?.msg || "Không thể xóa cấu hình");
+    }
+  };
+
+  const handleHardDelete = async (id: number, configname: string) => {
+    if (!window.confirm(
+      `⚠️ XÓA VĨNH VIỄN cấu hình "${configname}"?\n\nHành động này sẽ xóa vĩnh viễn:\n- Cấu hình này\n- Toàn bộ sản phẩm thuộc cấu hình\n- Toàn bộ chi tiết sản phẩm liên quan\n\nKHÔNG THỂ HOÀN TÁC!`
+    )) {
+      return;
+    }
+    try {
+      setError(null);
+      await configService.hardDelete(id, getToken());
+      await fetchData();
+    } catch (err: any) {
+      console.error("Error hard deleting config:", err);
+      setError(err.response?.data?.message || err.response?.data?.msg || "Không thể xóa vĩnh viễn cấu hình");
     }
   };
 
@@ -626,9 +642,17 @@ export default function AdminConfigs() {
                       onClick={() => handleDelete(config.configid!)}
                       className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
                       disabled={loading}
-                      title="Xóa"
+                      title="Xóa mềm"
                     >
                       <Trash2 size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleHardDelete(config.configid!, config.configname || '')}
+                      className="p-2 hover:bg-red-100 rounded-lg text-red-800 transition-colors border border-red-200"
+                      disabled={loading}
+                      title="Xóa vĩnh viễn (xóa cả sản phẩm liên quan)"
+                    >
+                      <AlertTriangle size={18} />
                     </button>
                   </div>
                 </div>

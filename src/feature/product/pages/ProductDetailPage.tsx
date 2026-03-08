@@ -10,13 +10,60 @@ import {
   Truck,
   RefreshCcw,
 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import ProductCard from "../components/ProductCard";
+import { productService, type Product } from "@/api/productService";
+import { useCart } from "@/feature/cart/context/CartContext";
 
 export default function ProductDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { addToCart, isLoading: cartLoading, error: cartError } = useCart();
+
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState("Vừa");
+  const [addSuccess, setAddSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    productService
+      .getById(id)
+      .then((res) => setProduct(res.data))
+      .catch((err) => console.error("Error fetching product:", err))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const formattedPrice = product?.price
+    ? product.price.toLocaleString("vi-VN") + "đ"
+    : "—";
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+    setAddSuccess(false);
+    await addToCart(product, 1);
+    // If no error after adding, show success
+    setAddSuccess(true);
+    setTimeout(() => setAddSuccess(false), 3000);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-tet-primary font-bold text-xl">
+        Đang tải sản phẩm...
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-500 font-bold text-xl">
+        Không tìm thấy sản phẩm.
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#FBF5E8]/30 min-h-screen pb-20">
@@ -54,9 +101,9 @@ export default function ProductDetailPage() {
               className="aspect-square rounded-[3.5rem] overflow-hidden bg-white border-8 border-white shadow-2xl relative group"
             >
               <img
-                src="https://res.cloudinary.com/dratbz8bh/image/upload/v1769521637/IN-VO-HOP-QUA-TET_z1cmai.jpg"
+                src={product.imageUrl || "https://res.cloudinary.com/dratbz8bh/image/upload/v1769521637/IN-VO-HOP-QUA-TET_z1cmai.jpg"}
                 className="w-full h-full object-cover duration-700 group-hover:scale-105"
-                alt="Main"
+                alt={product.productname || "Sản phẩm"}
               />
               <div className="absolute top-8 left-8 bg-tet-accent text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">
                 Bán chạy nhất
@@ -69,7 +116,7 @@ export default function ProductDetailPage() {
                   className="aspect-square rounded-3xl overflow-hidden cursor-pointer border-2 border-transparent hover:border-tet-primary shadow-sm transition-all hover:-translate-y-1"
                 >
                   <img
-                    src="https://res.cloudinary.com/dratbz8bh/image/upload/v1769313271/1714504461883_xqmhva.png"
+                    src={product.imageUrl || "https://res.cloudinary.com/dratbz8bh/image/upload/v1769313271/1714504461883_xqmhva.png"}
                     className="w-full h-full object-cover"
                     alt="thumb"
                   />
@@ -85,7 +132,7 @@ export default function ProductDetailPage() {
                 Bộ sưu tập 2026
               </p>
               <h1 className="text-4xl md:text-6xl font-serif font-bold text-tet-primary leading-tight">
-                Quà tết niên
+                {product.productname || "Sản phẩm"}
               </h1>
               <div className="flex items-center gap-4 pt-2">
                 <div className="flex text-yellow-500">
@@ -103,10 +150,7 @@ export default function ProductDetailPage() {
 
             <div className="flex items-baseline gap-4">
               <p className="text-5xl font-black text-tet-primary italic tracking-tighter">
-                1,250,000đ
-              </p>
-              <p className="text-lg text-gray-300 line-through font-bold">
-                1,500,000đ
+                {formattedPrice}
               </p>
             </div>
 
@@ -129,8 +173,12 @@ export default function ProductDetailPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button className="flex-1 bg-[#4a0d06] hover:bg-tet-accent text-white py-8 rounded-[1.5rem] text-lg font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-3">
-                  <ShoppingCart size={24} /> THÊM VÀO GIỎ HÀNG
+                <Button
+                  onClick={handleAddToCart}
+                  disabled={cartLoading}
+                  className="flex-1 bg-[#4a0d06] hover:bg-tet-accent text-white py-8 rounded-[1.5rem] text-lg font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <ShoppingCart size={24} /> {cartLoading ? "Đang thêm..." : "THÊM VÀO GIỎ HÀNG"}
                 </Button>
                 <Button
                   variant="outline"
@@ -139,6 +187,16 @@ export default function ProductDetailPage() {
                   <RefreshCcw size={24} />
                 </Button>
               </div>
+              {cartError && (
+                <p className="text-sm font-bold text-red-500 bg-red-50 px-4 py-3 rounded-xl border border-red-100">
+                  ⚠️ {cartError}
+                </p>
+              )}
+              {addSuccess && !cartError && (
+                <p className="text-sm font-bold text-green-600 bg-green-50 px-4 py-3 rounded-xl border border-green-100">
+                  ✅ Đã thêm vào giỏ hàng!
+                </p>
+              )}
             </div>
 
             {/* Đặc điểm hỗ trợ */}

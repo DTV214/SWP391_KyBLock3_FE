@@ -41,7 +41,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             productid: item.productId,
             productname: item.productName,
             price: item.price,
-            imageUrl: item.imageUrl1,
+            imageUrl: item.imageUrl,
             sku: item.sku,
             cartQuantity: item.quantity,
             cartDetailId: item.cartDetailId,
@@ -96,9 +96,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // Tự động mở sidebar
             setIsOpen(true);
         } catch (err: any) {
-            const message = err.response?.data?.message || err.message || 'Lỗi khi thêm vào giỏ hàng';
+            const message = err.response?.data?.message || err.response?.data?.msg || err.message || 'Lỗi khi thêm vào giỏ hàng';
             setError(message);
-            console.error('❌ Error adding to cart:', message);
+            console.error('❌ Error adding to cart:', message, err);
+            throw err; // re-throw so callers (e.g. CustomBasketPage) can catch and display the error
         } finally {
             setIsLoading(false);
         }

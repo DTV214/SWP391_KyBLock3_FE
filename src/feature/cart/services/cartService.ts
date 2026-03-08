@@ -15,7 +15,7 @@ export interface CartItemResponse {
     price: number;
     quantity: number;
     subTotal: number;
-    imageUrl1?: string;
+    imageUrl?: string;
 }
 
 export interface CartResponse {

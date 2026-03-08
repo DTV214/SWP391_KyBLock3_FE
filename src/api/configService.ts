@@ -242,6 +242,14 @@ export const configService = {
     });
     return response;
   },
+
+  // Hard delete config and all related products/details (Admin/Staff)
+  hardDelete: async (id: number | string, token: string) => {
+    const response = await axiosClient.delete(API_ENDPOINTS.CONFIGS.HARD_DELETE(id), {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response;
+  },
 };
 
 export const configDetailService = {

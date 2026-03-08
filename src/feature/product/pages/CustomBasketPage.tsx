@@ -143,6 +143,20 @@ export default function CustomBasketPage() {
     });
   };
 
+  /** So sánh 2 giỏ có cùng bộ sản phẩm (productid + quantity) không */
+  const isSameBasket = (
+    pickedList: PickedItem[],
+    existing: import("@/api/productService").CustomerBasketDto
+  ): boolean => {
+    const details = existing.productDetails ?? [];
+    if (pickedList.length !== details.length) return false;
+    const sorted = (arr: { productid: number; quantity: number }[]) =>
+      [...arr].sort((a, b) => a.productid - b.productid);
+    const a = sorted(pickedList.map((i) => ({ productid: i.productid, quantity: i.quantity })));
+    const b = sorted(details.map((d) => ({ productid: d.productid, quantity: d.quantity })));
+    return a.every((item, idx) => item.productid === b[idx].productid && item.quantity === b[idx].quantity);
+  };
+
   const handleAddToCart = async () => {
     if (!selectedConfig) return;
     if (!token) { navigate("/login"); return; }
@@ -173,30 +187,78 @@ export default function CustomBasketPage() {
       setSaving(true);
       setSaveError(null);
 
-      const payload: CreateComboProductRequest = {
-        configid: selectedConfig.configid,
-        productname: customName,
-        status: "ACTIVE",
-        productDetails: pickedItems.map((i) => ({
-          productid: i.productid,
-          quantity: i.quantity,
-        })),
-      };
+      // ── Step 1: Check for an identical existing DRAFT basket ──
+      const mybasketsRes = await productService.getMyBaskets(token);
+      const rawBaskets = (mybasketsRes as any)?.data?.data ?? (mybasketsRes as any)?.data ?? [];
+      const existingDrafts: import("@/api/productService").CustomerBasketDto[] = rawBaskets.filter(
+        (b: import("@/api/productService").CustomerBasketDto) =>
+          b.configid === selectedConfig.configid &&
+          b.status?.toUpperCase() === "DRAFT"
+      );
 
-      const createRes = await productService.createCustom(payload, token);
-      const rawCreated = createRes.data;
-      const created: Product = rawCreated?.data ?? rawCreated;
+      const duplicate = existingDrafts.find((b) => isSameBasket(pickedItems, b));
 
-      if (!created?.productid) {
-        throw new Error("Không tạo được giỏ quà, vui lòng thử lại.");
+      if (duplicate) {
+        // ── Same basket already exists → just add existing product to cart ──
+        console.log("[CustomBasket] ♻️ Duplicate basket found (id:", duplicate.productid, "), adding to cart without creating new.");
+        const existingProduct: Product = {
+          productid: duplicate.productid,
+          configid: duplicate.configid,
+          productname: duplicate.productname,
+          description: duplicate.description,
+          imageUrl: duplicate.imageUrl,
+          status: duplicate.status,
+          price: duplicate.totalPrice,
+        } as Product;
+        await addToCart(existingProduct, 1);
+      } else {
+        // ── Different basket → create new in DB then add to cart ──
+        const payload: CreateComboProductRequest = {
+          configid: selectedConfig.configid,
+          productname: customName,
+          status: "DRAFT",
+          productDetails: pickedItems.map((i) => ({
+            productid: i.productid,
+            quantity: i.quantity,
+          })),
+        };
+
+        console.log("[CustomBasket] 📤 Creating new custom basket:", JSON.stringify(payload, null, 2));
+        const createRes = await productService.createCustom(payload, token);
+        const rawCreated = (createRes as any)?.data;
+        let created: Product | null = rawCreated?.data ?? rawCreated ?? null;
+
+        // If backend didn't return productid (old server), fetch my-baskets to locate the new one
+        if (!created?.productid) {
+          console.log("[CustomBasket] productid not in create response, fetching my-baskets to locate new basket...");
+          const refetchRes = await productService.getMyBaskets(token);
+          const refetchRaw = (refetchRes as any)?.data?.data ?? (refetchRes as any)?.data ?? [];
+          const newBaskets: import("@/api/productService").CustomerBasketDto[] = refetchRaw.filter(
+            (b: import("@/api/productService").CustomerBasketDto) =>
+              b.configid === selectedConfig.configid &&
+              b.status?.toUpperCase() === "DRAFT"
+          );
+          const matched = newBaskets.find((b) => isSameBasket(pickedItems, b));
+          if (!matched) throw new Error("Không tạo được giỏ quà, vui lòng thử lại.");
+          created = {
+            productid: matched.productid,
+            configid: matched.configid,
+            productname: matched.productname,
+            description: matched.description,
+            imageUrl: matched.imageUrl,
+            status: matched.status,
+            price: matched.totalPrice,
+          } as Product;
+        }
+
+        console.log("[CustomBasket] ✅ New basket (id:", created.productid, "), adding to cart.");
+        await addToCart(created, 1);
       }
 
-      // Fetch full details then add to cart
-      const fullRes = await productService.getCustomProductById(created.productid);
-      await addToCart(fullRes.data, 1);
       setSaveSuccess(true);
       openCart();
     } catch (err: any) {
+      console.error("[CustomBasket] ❌ Error in handleAddToCart:", err);
       setSaveError(
         err?.response?.data?.msg ||
           err?.response?.data?.message ||

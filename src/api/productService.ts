@@ -218,6 +218,12 @@ export const productService = {
       return response;
     },
 
+    // Get ACTIVE admin/staff baskets for shop page (public)
+    getShopBaskets: async () => {
+      const response = await axiosClient.get(API_ENDPOINTS.PRODUCTS.SHOP_BASKETS);
+      return response;
+    },
+
     // Clone template
     clone: async (templateId: number | string, request: CloneBasketRequest, token: string) => {
       const response = await axiosClient.post(
@@ -242,6 +248,15 @@ export const productService = {
     removeTemplate: async (id: number | string, token: string) => {
       const response = await axiosClient.delete(
         API_ENDPOINTS.PRODUCTS.REMOVE_TEMPLATE(id),
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return response;
+    },
+
+    // Hard delete template + associated ProductDetails permanently
+    hardDelete: async (id: number | string, token: string) => {
+      const response = await axiosClient.delete(
+        API_ENDPOINTS.PRODUCTS.HARD_DELETE(id),
         { headers: { Authorization: `Bearer ${token}` } }
       );
       return response;
