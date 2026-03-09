@@ -103,7 +103,8 @@ export default function AdminApprovalQuotationDetailPage() {
     fetchProductImages();
   }, [detail]);
 
-  const statusMeta = getQuotationStatusMeta(detail?.status);
+  const displayStatus = detail?.status === "DRAFT" ? "SUBMITTED" : detail?.status;
+  const statusMeta = getQuotationStatusMeta(displayStatus);
   const canDecide = detail?.status === "WAITING_ADMIN";
 
   const totalQuantity = useMemo(() => {

@@ -36,7 +36,10 @@ export default function Navbar() {
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const role = localStorage.getItem("role");
+  const isStaff = role === "STAFF";
   const isAdmin = role === "ADMIN" || role === "STAFF";
+  const displayName = isStaff ? "Staff" : user.username || "Tài khoản";
+  const avatarName = isStaff ? "Staff" : user.username || "User";
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -99,12 +102,12 @@ export default function Navbar() {
               >
                 <div className="w-8 h-8 rounded-full border border-tet-secondary overflow-hidden bg-white/20">
                   <img
-                    src={`https://ui-avatars.com/api/?name=${user.username || "User"}&background=random`}
+                    src={`https://ui-avatars.com/api/?name=${avatarName}&background=random`}
                     alt="avatar"
                   />
                 </div>
                 <span className="max-w-[100px] truncate">
-                  {user.username || "Tài khoản"}
+                  {displayName}
                 </span>
                 <ChevronDown
                   size={14}
@@ -272,7 +275,7 @@ export default function Navbar() {
                   onClick={() => setIsMenuOpen(false)}
                   className="flex items-center gap-3 text-tet-primary font-bold"
                 >
-                  <User size={20} /> Chào, {user.username}
+                  <User size={20} /> Chào, {displayName}
                 </Link>
                 <button
                   onClick={handleLogout}

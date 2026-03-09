@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+﻿import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   FileText,
@@ -6,12 +6,12 @@ import {
   LogOut,
   Home,
   UserCircle,
+  MessageSquare,
 } from "lucide-react";
 
 export default function StaffSidebar() {
   const navigate = useNavigate();
-  // Giả lập lấy tên user từ localStorage (nếu có)
-  const userName = localStorage.getItem("user") || "Staff Member";
+  const userName = "Staff";
 
   const handleLogout = () => {
     if (confirm("Bạn có chắc muốn đăng xuất?")) {
@@ -37,6 +37,11 @@ export default function StaffSidebar() {
       path: "/staff/orders",
       label: "Đơn hàng của tôi",
       icon: <Package size={18} />,
+    },
+    {
+      path: "/staff/chats",
+      label: "Chat khách hàng",
+      icon: <MessageSquare size={18} />,
     },
   ];
 

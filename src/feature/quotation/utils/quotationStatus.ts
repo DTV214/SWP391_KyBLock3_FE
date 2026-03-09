@@ -14,7 +14,7 @@ export const QUOTATION_STATUS_META: Record<string, QuotationStatusMeta> = {
     badgeClass: "bg-slate-100 text-slate-700 border border-slate-200",
   },
   SUBMITTED: {
-    label: "Đã gửi",
+    label: "Khách hàng gửi yêu cầu",
     badgeClass: "bg-sky-100 text-sky-800 border border-sky-200",
   },
   STAFF_REVIEWING: {

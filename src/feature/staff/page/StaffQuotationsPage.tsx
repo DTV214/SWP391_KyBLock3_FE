@@ -1,220 +1,229 @@
-import { useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Calendar, FileText, Filter } from "lucide-react";
 import {
-  Calendar,
-  Filter,
-  Building,
-  DollarSign,
-  PlayCircle,
-  FileText,
-  Clock,
-} from "lucide-react";
-
-// --- MOCK DATA ---
-const MOCK_QUOTATIONS = [
-  {
-    quotationId: 1001,
-    company: "Tập đoàn FPT",
-    requestDate: "2026-03-01T08:30:00",
-    totalQuantity: 150,
-    totalPrice: 150000000,
-    status: "SUBMITTED", // Mới khách gửi
-  },
-  {
-    quotationId: 1002,
-    company: "Công ty Cổ phần Sữa Việt Nam (Vinamilk)",
-    requestDate: "2026-03-02T10:15:00",
-    totalQuantity: 500,
-    totalPrice: 420000000,
-    status: "STAFF_REVIEWING", // Đang làm dở
-  },
-  {
-    quotationId: 1003,
-    company: "Ngân hàng Techcombank",
-    requestDate: "2026-03-02T14:45:00",
-    totalQuantity: 200,
-    totalPrice: 280000000,
-    status: "WAITING_ADMIN", // Đã đẩy lên Admin
-  },
-  {
-    quotationId: 1004,
-    company: "Shopee VN",
-    requestDate: "2026-03-03T09:00:00",
-    totalQuantity: 50,
-    totalPrice: 45000000,
-    status: "SUBMITTED",
-  },
-  {
-    quotationId: 1005,
-    company: "Công ty TNHH VNG",
-    requestDate: "2026-03-03T11:20:00",
-    totalQuantity: 300,
-    totalPrice: null, // Trường hợp chưa có giá cụ thể
-    status: "STAFF_REVIEWING",
-  },
-];
-
-// --- HELPER FORMAT ---
-const formatMoney = (value?: number | null) => {
-  if (typeof value !== "number") return "Chưa cập nhật";
-  return `${value.toLocaleString("vi-VN")}đ`;
-};
-
-const getStatusMeta = (status: string) => {
-  switch (status) {
-    case "SUBMITTED":
-      return {
-        label: "Mới nhận",
-        badgeClass: "bg-blue-100 text-blue-800 border-blue-200",
-      };
-    case "STAFF_REVIEWING":
-      return {
-        label: "Đang xử lý",
-        badgeClass: "bg-amber-100 text-amber-800 border-amber-200",
-      };
-    case "WAITING_ADMIN":
-      return {
-        label: "Chờ Admin duyệt",
-        badgeClass: "bg-violet-100 text-violet-800 border-violet-200",
-      };
-    default:
-      return { label: status, badgeClass: "bg-gray-100 text-gray-700" };
-  }
-};
+  quotationService,
+  type QuotationSummary,
+} from "@/feature/quotation/services/quotationService";
+import {
+  QUOTATION_STATUS_OPTIONS,
+  getQuotationStatusMeta,
+} from "@/feature/quotation/utils/quotationStatus";
 
 export default function StaffQuotationsPage() {
-  const [filterStatus, setFilterStatus] = useState<string>("ALL");
-
-  // Lọc danh sách dựa trên trạng thái
-  const filteredQuotations = MOCK_QUOTATIONS.filter(
-    (q) => filterStatus === "ALL" || q.status === filterStatus,
+  const PAGE_SIZE = 5;
+  const [status, setStatus] = useState("SUBMITTED");
+  const [rows, setRows] = useState<QuotationSummary[]>([]);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const statusOptions = QUOTATION_STATUS_OPTIONS.filter(
+    (option) => option.value !== "DRAFT" && option.value !== "",
   );
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [filteredResponse, allResponse] = await Promise.all([
+          quotationService.getStaffQuotations(status || undefined),
+          quotationService.getStaffQuotations(),
+        ]);
+
+        setRows(
+          ((filteredResponse?.data || []) as QuotationSummary[]).filter(
+            (item) => item.status !== "DRAFT",
+          ),
+        );
+
+        const allRows = ((allResponse?.data || []) as QuotationSummary[]).filter(
+          (item) => item.status !== "DRAFT",
+        );
+        const counts = allRows.reduce<Record<string, number>>((acc, item) => {
+          acc[item.status] = (acc[item.status] ?? 0) + 1;
+          return acc;
+        }, {});
+        setStatusCounts(counts);
+      } catch (err) {
+        console.error(err);
+        setError("Không thể tải danh sách quotation cho staff.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [status]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [status]);
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const paginatedRows = rows.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <div className="space-y-6">
-      {/* Header & Filter */}
-      <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm flex flex-col gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#7a160e]">
-            Xử lý Báo giá (B2B)
+          <h1 className="text-2xl font-bold text-tet-primary">
+            Reviewing Quotations
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Danh sách các yêu cầu báo giá từ Khách hàng Doanh nghiệp.
+            Danh sách quotation dành cho staff review và chỉnh phí.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-[#fffaf5] border border-[#ead6c9] rounded-full px-4 py-2">
-            <Filter className="h-4 w-4 text-[#b07b61]" />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-transparent text-sm font-semibold text-[#4a0d06] focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="SUBMITTED">Mới nhận (Cần xử lý)</option>
-              <option value="STAFF_REVIEWING">Đang xử lý</option>
-              <option value="WAITING_ADMIN">Chờ Admin duyệt</option>
-            </select>
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[#7a160e]">
+            <Filter className="h-3.5 w-3.5" />
+            Bộ lọc trạng thái
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {statusOptions.map((option) => {
+              const active = option.value === status;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setStatus(option.value)}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                    active
+                      ? "border-[#7a160e] bg-[#7a160e] text-white shadow-sm"
+                      : "border-[#e8d4c8] bg-[#fffaf5] text-[#5b2817] hover:border-[#dcb9a5]"
+                  }`}
+                >
+                  <span>{option.label}</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[11px] ${
+                      active
+                        ? "bg-white/20 text-white"
+                        : "bg-white border border-[#e8d4c8] text-[#7a160e]"
+                    }`}
+                  >
+                    {statusCounts[option.value] ?? 0}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* List */}
-      <div className="grid grid-cols-1 gap-4">
-        {filteredQuotations.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-gray-100 p-12 text-center text-sm text-gray-500 shadow-sm">
-            <FileText className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-            Không có báo giá nào phù hợp với bộ lọc.
-          </div>
-        ) : (
-          filteredQuotations.map((item) => {
-            const statusMeta = getStatusMeta(item.status);
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-500 shadow-sm">
+          Đang tải dữ liệu...
+        </div>
+      ) : error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+          {error}
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-500 shadow-sm">
+          Không có quotation nào.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {paginatedRows.map((item) => {
+            const statusMeta = getQuotationStatusMeta(item.status);
             return (
               <div
                 key={item.quotationId}
-                className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+                className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-3"
               >
-                {/* Thông tin chính */}
-                <div className="space-y-2 flex-1">
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-lg text-[#7a160e]">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-tet-primary">
                       #{item.quotationId}
                     </span>
                     <span
-                      className={`text-xs px-2.5 py-1 rounded-full font-bold border ${statusMeta.badgeClass}`}
+                      className={`text-xs px-2 py-1 rounded-full font-semibold ${statusMeta.badgeClass}`}
                     >
                       {statusMeta.label}
                     </span>
                   </div>
-
-                  <div className="flex items-center gap-2 text-base font-semibold text-gray-800">
-                    <Building className="h-4 w-4 text-gray-400" />
-                    {item.company}
-                  </div>
-
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {new Date(item.requestDate).toLocaleDateString("vi-VN")}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      {new Date(item.requestDate).toLocaleTimeString("vi-VN")}
-                    </div>
+                  <p className="text-sm text-gray-700">
+                    Công ty: {item.company || "N/A"}
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Calendar className="h-4 w-4" />
+                    {new Date(item.requestDate).toLocaleString("vi-VN")}
                   </div>
                 </div>
 
-                {/* Thông tin giá & Nút Action */}
-                <div className="flex items-center gap-6 lg:border-l lg:border-gray-100 lg:pl-6">
+                <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <p className="text-xs text-gray-500 mb-1">
-                      Số lượng:{" "}
-                      <span className="font-semibold text-gray-800">
-                        {item.totalQuantity} món
-                      </span>
+                    <p className="text-xs text-gray-500">Tổng tiền</p>
+                    <p className="font-semibold text-[#7a160e]">
+                      {item.totalPrice
+                        ? `${item.totalPrice.toLocaleString("vi-VN")}đ`
+                        : "Chưa có"}
                     </p>
-                    <div className="flex items-center justify-end gap-1 text-[#7a160e]">
-                      <DollarSign className="h-4 w-4" />
-                      <span className="font-bold text-lg">
-                        {formatMoney(item.totalPrice)}
-                      </span>
-                    </div>
                   </div>
-
-                  {/* Nút hành động thay đổi tùy theo trạng thái */}
                   <Link
                     to={`/staff/quotations/${item.quotationId}`}
-                    className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition-all shadow-sm ${
-                      item.status === "SUBMITTED"
-                        ? "bg-[#7a160e] text-white hover:bg-[#5c0f09]"
-                        : item.status === "STAFF_REVIEWING"
-                          ? "bg-amber-500 text-white hover:bg-amber-600"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#7a160e] px-4 py-2 text-xs font-semibold text-white hover:bg-[#5c0f09] transition"
                   >
-                    {item.status === "SUBMITTED" && (
-                      <>
-                        <PlayCircle className="h-4 w-4" /> Bắt đầu xử lý
-                      </>
-                    )}
-                    {item.status === "STAFF_REVIEWING" && (
-                      <>
-                        <FileText className="h-4 w-4" /> Tiếp tục xử lý
-                      </>
-                    )}
-                    {item.status === "WAITING_ADMIN" && (
-                      <>
-                        <FileText className="h-4 w-4" /> Xem chi tiết
-                      </>
-                    )}
+                    <FileText className="h-4 w-4" />
+                    Xem chi tiết
                   </Link>
                 </div>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="h-10 w-10 rounded-sm border border-[#d7b8a5] bg-[#fffaf5] text-sm font-bold text-[#7a160e] transition hover:bg-[#f7ecdf] disabled:opacity-40"
+              >
+                ←
+              </button>
+              {Array.from({ length: totalPages }, (_, index) => {
+                const page = index + 1;
+                const active = page === currentPage;
+                return (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`h-10 w-10 rounded-sm border text-sm font-bold transition ${
+                      active
+                        ? "border-[#7a160e] bg-[#7a160e] text-white"
+                        : "border-[#d7b8a5] bg-[#fffaf5] text-[#7a160e] hover:bg-[#f7ecdf]"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="h-10 w-10 rounded-sm border border-[#d7b8a5] bg-[#fffaf5] text-sm font-bold text-[#7a160e] transition hover:bg-[#f7ecdf] disabled:opacity-40"
+              >
+                →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

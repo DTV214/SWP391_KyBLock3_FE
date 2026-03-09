@@ -6,10 +6,11 @@ export default function StaffLayout() {
   const location = useLocation();
 
   const getBreadcrumbName = (path: string) => {
-    if (path.includes("dashboard")) return "Tổng quan";
-    if (path.includes("quotations")) return "Xử lý Báo giá";
-    if (path.includes("orders")) return "Quản lý đơn hàng";
-    return "Cổng nhân viên";
+    if (path.includes("dashboard")) return "T?ng quan";
+    if (path.includes("quotations")) return "X? l� B�o gi�";
+    if (path.includes("chats")) return "Chat kh�ch h�ng";
+    if (path.includes("orders")) return "Qu?n l� don h�ng";
+    return "C?ng nh�n vi�n";
   };
 
   return (
@@ -17,10 +18,10 @@ export default function StaffLayout() {
       <div className="container mx-auto max-w-7xl px-4 md:px-6">
         <nav className="flex items-center gap-2 py-6 text-sm font-medium text-gray-400">
           <Link to="/home" className="hover:text-[#7a160e] transition-colors">
-            Trang chủ
+            Trang ch?
           </Link>
           <ChevronRight size={14} />
-          <span className="text-gray-400">Nhân viên</span>
+          <span className="text-gray-400">Nh�n vi�n</span>
           <ChevronRight size={14} />
           <span className="text-[#7a160e] font-bold">
             {getBreadcrumbName(location.pathname)}
@@ -33,7 +34,6 @@ export default function StaffLayout() {
           </div>
 
           <div className="flex-1 w-full">
-            {/* Nội dung các trang con (Dashboard, Quotations) sẽ được render tại đây */}
             <Outlet />
           </div>
         </div>

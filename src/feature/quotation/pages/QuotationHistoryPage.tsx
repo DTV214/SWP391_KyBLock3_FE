@@ -11,8 +11,10 @@ import {
 } from "@/feature/quotation/utils/quotationStatus";
 
 export default function QuotationHistoryPage() {
+  const PAGE_SIZE = 5;
   const [status, setStatus] = useState("");
   const [data, setData] = useState<QuotationSummary[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<number | null>(null);
@@ -41,6 +43,10 @@ export default function QuotationHistoryPage() {
   }, [status]);
 
   useEffect(() => {
+    setCurrentPage(1);
+  }, [status]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (!statusDropdownRef.current) return;
       if (!statusDropdownRef.current.contains(event.target as Node)) {
@@ -53,6 +59,16 @@ export default function QuotationHistoryPage() {
   }, []);
 
   const rows = useMemo(() => data, [data]);
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const paginatedRows = useMemo(
+    () => rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [rows, currentPage],
+  );
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const handleSubmitQuotation = async (quotationId: number) => {
     try {
@@ -133,7 +149,7 @@ export default function QuotationHistoryPage() {
               Chưa có yêu cầu báo giá nào.
             </div>
           ) : (
-            rows.map((item) => {
+            paginatedRows.map((item) => {
               const statusMeta = getQuotationStatusMeta(item.status);
               return (
                 <div
@@ -184,6 +200,46 @@ export default function QuotationHistoryPage() {
                 </div>
               );
             })
+          )}
+          {!loading && !error && rows.length > 0 && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="h-10 w-10 rounded-sm border border-[#d7b8a5] bg-[#fffaf5] text-sm font-bold text-[#7a160e] transition hover:bg-[#f7ecdf] disabled:opacity-40"
+              >
+                ←
+              </button>
+              {Array.from({ length: totalPages }, (_, index) => {
+                const page = index + 1;
+                const active = page === currentPage;
+                return (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`h-10 w-10 rounded-sm border text-sm font-bold transition ${
+                      active
+                        ? "border-[#7a160e] bg-[#7a160e] text-white"
+                        : "border-[#d7b8a5] bg-[#fffaf5] text-[#7a160e] hover:bg-[#f7ecdf]"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="h-10 w-10 rounded-sm border border-[#d7b8a5] bg-[#fffaf5] text-sm font-bold text-[#7a160e] transition hover:bg-[#f7ecdf] disabled:opacity-40"
+              >
+                →
+              </button>
+            </div>
           )}
         </div>
       </div>

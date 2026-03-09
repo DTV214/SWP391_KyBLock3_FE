@@ -203,6 +203,7 @@ function App() {
                   path="quotations/:id"
                   element={<StaffQuotationDetailPage />}
                 />
+                <Route path="chats" element={<AdminChatPage />} />
                 <Route path="orders" element={<StaffOrdersPage />} />
               </Route>
 
