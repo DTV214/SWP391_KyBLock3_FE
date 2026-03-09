@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { MessageCircle, Send, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import {
@@ -50,6 +50,21 @@ export default function CustomerChatWidget() {
     [messages],
   );
 
+  const isMessageMine = (message: ChatMessage): boolean => {
+    if (currentUserId !== null) {
+      return message.senderId === currentUserId;
+    }
+    return message.senderId === conversation?.userId;
+  };
+
+  const unreadCount = useMemo(
+    () =>
+      sortedMessages.filter(
+        (message) => !isMessageMine(message) && !message.isRead,
+      ).length,
+    [sortedMessages, currentUserId, conversation?.userId],
+  );
+
   useEffect(() => {
     if (!shouldRender) return;
 
@@ -72,7 +87,7 @@ export default function CustomerChatWidget() {
       }
     };
 
-    loadConversation();
+    void loadConversation();
   }, [shouldRender]);
 
   useEffect(() => {
@@ -95,6 +110,27 @@ export default function CustomerChatWidget() {
     if (!isOpen) return;
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [sortedMessages, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!conversation?.id) return;
+    if (unreadCount === 0) return;
+
+    const markAsRead = async () => {
+      try {
+        await chatService.markConversationRead(conversation.id);
+        setMessages((prev) =>
+          prev.map((message) =>
+            isMessageMine(message) ? message : { ...message, isRead: true },
+          ),
+        );
+      } catch {
+        // silent read-update error
+      }
+    };
+
+    void markAsRead();
+  }, [isOpen, conversation?.id, unreadCount, currentUserId, conversation?.userId]);
 
   const handleSend = async () => {
     const trimmed = messageInput.trim();
@@ -153,10 +189,7 @@ export default function CustomerChatWidget() {
             ) : (
               <div className="space-y-2">
                 {sortedMessages.map((message) => {
-                  const isMine =
-                    currentUserId !== null
-                      ? message.senderId === currentUserId
-                      : message.senderId === conversation?.userId;
+                  const isMine = isMessageMine(message);
 
                   return (
                     <div
@@ -221,10 +254,15 @@ export default function CustomerChatWidget() {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="w-14 h-14 rounded-full bg-tet-primary text-white shadow-xl flex items-center justify-center hover:bg-tet-accent transition-colors"
+          className="relative w-14 h-14 rounded-full bg-tet-primary text-white shadow-xl flex items-center justify-center hover:bg-tet-accent transition-colors"
           aria-label="Mở chat hỗ trợ"
         >
           <MessageCircle size={24} />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
         </button>
       )}
     </div>

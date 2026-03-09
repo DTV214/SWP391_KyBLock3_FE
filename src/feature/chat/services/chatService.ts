@@ -84,6 +84,10 @@ const replyToConversation = async (
   return response.data;
 };
 
+const markConversationRead = async (conversationId: number): Promise<void> => {
+  await axiosClient.put(API_ENDPOINTS.CHAT.READ(conversationId));
+};
+
 const decodeJwtPayload = (token: string): Record<string, unknown> | null => {
   try {
     const parts = token.split(".");
@@ -150,5 +154,6 @@ export const chatService = {
   getAllConversations,
   getConversationMessages,
   replyToConversation,
+  markConversationRead,
 };
 

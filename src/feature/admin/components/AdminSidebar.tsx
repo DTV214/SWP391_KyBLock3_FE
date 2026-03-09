@@ -1,4 +1,5 @@
-﻿import { NavLink, useNavigate } from "react-router-dom";
+﻿import { useEffect, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -12,11 +13,38 @@ import {
   LogOut,
   Home,
   BookOpen,
-  PackageOpen, // <-- Đã thêm icon BookOpen cho mục Bài viết
+  PackageOpen,
 } from "lucide-react";
+import { chatService } from "@/feature/chat/services/chatService";
 
 export default function AdminSidebar() {
+  const POLL_INTERVAL_MS = 7000;
   const navigate = useNavigate();
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+
+  useEffect(() => {
+    const loadUnreadChats = async () => {
+      try {
+        const conversations = await chatService.getAllConversations();
+        const unreadConversations = conversations.filter((conversation) =>
+          (conversation.messages || []).some(
+            (message) =>
+              !message.isRead && message.senderId === conversation.userId,
+          ),
+        );
+        setUnreadChatCount(unreadConversations.length);
+      } catch {
+        // silent unread-count error
+      }
+    };
+
+    void loadUnreadChats();
+    const timer = window.setInterval(() => {
+      void loadUnreadChats();
+    }, POLL_INTERVAL_MS);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   const handleLogout = () => {
     if (confirm("Bạn có chắc muốn đăng xuất?")) {
@@ -69,7 +97,7 @@ export default function AdminSidebar() {
       icon: <Gift size={18} />,
     },
     {
-      path: "/admin/blogs", // <-- BỔ SUNG MENU BÀI VIẾT TẠI ĐÂY
+      path: "/admin/blogs",
       label: "Bài viết",
       icon: <BookOpen size={18} />,
     },
@@ -120,14 +148,25 @@ export default function AdminSidebar() {
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mb-1 ${isActive
-                ? "bg-tet-secondary text-tet-primary font-bold shadow-sm"
-                : "text-gray-600 hover:bg-gray-50 hover:text-tet-primary"
+              `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mb-1 ${
+                isActive
+                  ? "bg-tet-secondary text-tet-primary font-bold shadow-sm"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-tet-primary"
               }`
             }
           >
-            {item.icon}
-            <span>{item.label}</span>
+            <div className="relative">
+              {item.icon}
+              {item.path === "/admin/chats" && unreadChatCount > 0 && (
+                <span className="absolute -top-2 -right-2 h-2 w-2 rounded-full bg-red-500" />
+              )}
+            </div>
+            <span className="flex-1">{item.label}</span>
+            {item.path === "/admin/chats" && unreadChatCount > 0 && (
+              <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                {unreadChatCount}
+              </span>
+            )}
           </NavLink>
         ))}
 

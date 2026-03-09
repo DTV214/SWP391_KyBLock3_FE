@@ -1,4 +1,5 @@
-﻿import { NavLink, useNavigate } from "react-router-dom";
+﻿import { useEffect, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   FileText,
@@ -8,10 +9,37 @@ import {
   UserCircle,
   MessageSquare,
 } from "lucide-react";
+import { chatService } from "@/feature/chat/services/chatService";
 
 export default function StaffSidebar() {
+  const POLL_INTERVAL_MS = 7000;
   const navigate = useNavigate();
   const userName = "Staff";
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+
+  useEffect(() => {
+    const loadUnreadChats = async () => {
+      try {
+        const conversations = await chatService.getAllConversations();
+        const unreadConversations = conversations.filter((conversation) =>
+          (conversation.messages || []).some(
+            (message) =>
+              !message.isRead && message.senderId === conversation.userId,
+          ),
+        );
+        setUnreadChatCount(unreadConversations.length);
+      } catch {
+        // silent unread-count error
+      }
+    };
+
+    void loadUnreadChats();
+    const timer = window.setInterval(() => {
+      void loadUnreadChats();
+    }, POLL_INTERVAL_MS);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   const handleLogout = () => {
     if (confirm("Bạn có chắc muốn đăng xuất?")) {
@@ -76,8 +104,18 @@ export default function StaffSidebar() {
               }`
             }
           >
-            {item.icon}
-            <span>{item.label}</span>
+            <div className="relative">
+              {item.icon}
+              {item.path === "/staff/chats" && unreadChatCount > 0 && (
+                <span className="absolute -top-2 -right-2 h-2 w-2 rounded-full bg-red-500" />
+              )}
+            </div>
+            <span className="flex-1">{item.label}</span>
+            {item.path === "/staff/chats" && unreadChatCount > 0 && (
+              <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                {unreadChatCount}
+              </span>
+            )}
           </NavLink>
         ))}
 

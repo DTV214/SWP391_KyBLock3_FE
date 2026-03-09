@@ -196,6 +196,8 @@ export const API_ENDPOINTS = {
       `${BASE_URL}/chat/messages/${conversationId}`,
     ADMIN_REPLY: (conversationId: string | number) =>
       `${BASE_URL}/chat/reply/${conversationId}`,
+    READ: (conversationId: string | number) =>
+      `${BASE_URL}/chat/read/${conversationId}`,
   },
   // Admin Accounts endpoints
   ADMIN_ACCOUNTS: {

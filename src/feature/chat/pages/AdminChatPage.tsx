@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, MessageSquare, Send } from "lucide-react";
 import {
   chatService,
-  getCurrentUserId,
   type ChatConversation,
   type ChatMessage,
 } from "@/feature/chat/services/chatService";
+import { accountAdminService } from "@/api/accountAdminService";
 
 const POLL_INTERVAL_MS = 7000;
 
@@ -19,6 +19,8 @@ const formatDateTime = (iso: string): string =>
 
 export default function AdminChatPage() {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [unreadMap, setUnreadMap] = useState<Record<number, number>>({});
+  const [userNameMap, setUserNameMap] = useState<Record<number, string>>({});
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<
     number | null
@@ -29,13 +31,13 @@ export default function AdminChatPage() {
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
-  const currentUserId = useMemo(() => getCurrentUserId(), []);
 
   const sortedConversations = useMemo(
     () =>
       [...conversations].sort(
         (a, b) =>
-          new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime(),
+          new Date(b.lastMessageAt).getTime() -
+          new Date(a.lastMessageAt).getTime(),
       ),
     [conversations],
   );
@@ -50,16 +52,61 @@ export default function AdminChatPage() {
   );
 
   const selectedConversation = useMemo(
-    () => conversations.find((item) => item.id === selectedConversationId) ?? null,
+    () =>
+      conversations.find((item) => item.id === selectedConversationId) ?? null,
     [conversations, selectedConversationId],
   );
+
+  const getUnreadCount = (conversation: ChatConversation): number =>
+    unreadMap[conversation.id] ?? 0;
+
+  const getDisplayName = (userId: number): string =>
+    userNameMap[userId] || `User ${userId}`;
 
   const loadConversations = async () => {
     setIsLoadingConversations(true);
     setError(null);
     try {
       const data = await chatService.getAllConversations();
+
+      const unreadEntries = await Promise.all(
+        data.map(async (conversation) => {
+          try {
+            const conversationMessages = await chatService.getConversationMessages(
+              conversation.id,
+            );
+            const unreadCount = conversationMessages.filter(
+              (message) =>
+                !message.isRead && message.senderId === conversation.userId,
+            ).length;
+            return [conversation.id, unreadCount] as const;
+          } catch {
+            return [conversation.id, 0] as const;
+          }
+        }),
+      );
+
+      const nameEntries = await Promise.all(
+        data.map(async (conversation) => {
+          try {
+            const account = await accountAdminService.getAccountById(
+              conversation.userId,
+            );
+            const displayName =
+              account?.fullname?.trim() ||
+              account?.username?.trim() ||
+              `User ${conversation.userId}`;
+            return [conversation.userId, displayName] as const;
+          } catch {
+            return [conversation.userId, `User ${conversation.userId}`] as const;
+          }
+        }),
+      );
+
+      setUnreadMap(Object.fromEntries(unreadEntries));
+      setUserNameMap(Object.fromEntries(nameEntries));
       setConversations(data);
+
       if (!selectedConversationId && data.length > 0) {
         setSelectedConversationId(data[0].id);
       }
@@ -80,10 +127,20 @@ export default function AdminChatPage() {
       setMessages(data);
     } catch (err: unknown) {
       setError(
-        err instanceof Error ? err.message : "Không tải được nội dung hội thoại.",
+        err instanceof Error
+          ? err.message
+          : "Không tải được nội dung hội thoại.",
       );
     } finally {
       setIsLoadingMessages(false);
+    }
+  };
+
+  const markAsRead = async (conversationId: number) => {
+    try {
+      await chatService.markConversationRead(conversationId);
+    } catch {
+      // silent read-update error
     }
   };
 
@@ -96,13 +153,19 @@ export default function AdminChatPage() {
       setMessages([]);
       return;
     }
-    void loadMessages(selectedConversationId);
+    const syncConversation = async () => {
+      await loadMessages(selectedConversationId);
+      await markAsRead(selectedConversationId);
+      await loadConversations();
+    };
+    void syncConversation();
   }, [selectedConversationId]);
 
   useEffect(() => {
     if (!selectedConversationId) return;
     const timer = window.setInterval(() => {
       void loadMessages(selectedConversationId);
+      void markAsRead(selectedConversationId);
       void loadConversations();
     }, POLL_INTERVAL_MS);
     return () => window.clearInterval(timer);
@@ -149,9 +212,7 @@ export default function AdminChatPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] flex-1 min-h-0">
         <aside className="border-r border-gray-100 bg-[#fffaf0] flex flex-col min-h-0">
           <div className="p-4 border-b border-gray-100">
-            <p className="text-sm font-bold text-tet-primary">
-              Danh sách hội thoại
-            </p>
+            <p className="text-sm font-bold text-tet-primary">Danh sách hội thoại</p>
           </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto">
@@ -163,28 +224,43 @@ export default function AdminChatPage() {
             ) : sortedConversations.length === 0 ? (
               <p className="p-4 text-sm text-gray-500">Chưa có hội thoại nào.</p>
             ) : (
-              sortedConversations.map((conversation) => (
-                <button
-                  key={conversation.id}
-                  type="button"
-                  onClick={() => setSelectedConversationId(conversation.id)}
-                  className={`w-full text-left px-4 py-3 border-b border-gray-100 transition-colors ${
-                    selectedConversationId === conversation.id
-                      ? "bg-tet-secondary/60"
-                      : "hover:bg-gray-50"
-                  }`}
-                >
-                  <p className="text-sm font-bold text-tet-primary">
-                    Conversation #{conversation.id}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    User ID: {conversation.userId}
-                  </p>
-                  <p className="text-[11px] text-gray-400 mt-1">
-                    {formatDateTime(conversation.lastMessageAt)}
-                  </p>
-                </button>
-              ))
+              sortedConversations.map((conversation) => {
+                const unreadCount = getUnreadCount(conversation);
+                return (
+                  <button
+                    key={conversation.id}
+                    type="button"
+                    onClick={() => setSelectedConversationId(conversation.id)}
+                    className={`w-full text-left px-4 py-3 border-b border-gray-100 transition-colors ${
+                      selectedConversationId === conversation.id
+                        ? "bg-tet-secondary/60"
+                        : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-bold text-tet-primary">
+                        Conversation #{conversation.id}
+                      </p>
+                      {unreadCount > 0 && (
+                        <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {getDisplayName(conversation.userId)} (ID: {conversation.userId})
+                    </p>
+                    {unreadCount > 0 && (
+                      <p className="text-[11px] mt-1 text-red-600 font-semibold">
+                        Tin nhắn mới
+                      </p>
+                    )}
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      {formatDateTime(conversation.lastMessageAt)}
+                    </p>
+                  </button>
+                );
+              })
             )}
           </div>
         </aside>
@@ -193,7 +269,9 @@ export default function AdminChatPage() {
           <div className="px-5 py-4 border-b border-gray-100 bg-white">
             <p className="text-sm font-bold text-tet-primary">
               {selectedConversation
-                ? `Hội thoại #${selectedConversation.id} - User ${selectedConversation.userId}`
+                ? `Hội thoại #${selectedConversation.id} - ${getDisplayName(
+                    selectedConversation.userId,
+                  )}`
                 : "Chọn một hội thoại để xem chi tiết"}
             </p>
           </div>
@@ -218,9 +296,7 @@ export default function AdminChatPage() {
               <div className="space-y-2">
                 {sortedMessages.map((message) => {
                   const isMine =
-                    currentUserId !== null
-                      ? message.senderId === currentUserId
-                      : message.senderId !== selectedConversation?.userId;
+                    message.senderId !== selectedConversation?.userId;
                   return (
                     <div
                       key={message.id}

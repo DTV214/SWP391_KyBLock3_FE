@@ -1,12 +1,20 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { ClipboardList, Clock3, AlertTriangle, ListTodo } from "lucide-react";
+import {
+  ClipboardList,
+  Clock3,
+  AlertTriangle,
+  ListTodo,
+  MessageSquare,
+} from "lucide-react";
 import {
   quotationService,
   type QuotationSummary,
 } from "@/feature/quotation/services/quotationService";
+import { chatService } from "@/feature/chat/services/chatService";
 
 export default function StaffDashboardPage() {
   const [rows, setRows] = useState<QuotationSummary[]>([]);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,8 +23,31 @@ export default function StaffDashboardPage() {
       try {
         setLoading(true);
         setError(null);
-        const response = await quotationService.getStaffQuotations();
-        setRows((response?.data || []) as QuotationSummary[]);
+
+        const [quotationResponse, conversations] = await Promise.all([
+          quotationService.getStaffQuotations(),
+          chatService.getAllConversations(),
+        ]);
+
+        setRows((quotationResponse?.data || []) as QuotationSummary[]);
+
+        const unreadByConversation = await Promise.all(
+          conversations.map(async (conversation) => {
+            try {
+              const messages = await chatService.getConversationMessages(
+                conversation.id,
+              );
+              return messages.some(
+                (message) =>
+                  !message.isRead && message.senderId === conversation.userId,
+              );
+            } catch {
+              return false;
+            }
+          }),
+        );
+
+        setUnreadChatCount(unreadByConversation.filter(Boolean).length);
       } catch (err) {
         console.error(err);
         setError("Không thể tải dữ liệu tổng quan báo giá.");
@@ -25,7 +56,7 @@ export default function StaffDashboardPage() {
       }
     };
 
-    fetchData();
+    void fetchData();
   }, []);
 
   const { submittedCount, reviewingCount, rejectedCount, totalTaskCount } =
@@ -73,6 +104,13 @@ export default function StaffDashboardPage() {
       color: "text-rose-700",
       bg: "bg-rose-100",
     },
+    {
+      label: "Chat mới từ khách hàng",
+      value: unreadChatCount,
+      icon: MessageSquare,
+      color: "text-violet-700",
+      bg: "bg-violet-100",
+    },
   ];
 
   return (
@@ -90,7 +128,7 @@ export default function StaffDashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
           return (
