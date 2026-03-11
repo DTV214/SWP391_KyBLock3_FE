@@ -1,5 +1,5 @@
 
-import { Gift, Eye, Trash2, Star, X, Edit, Save, Package, Plus, Settings, AlertTriangle } from "lucide-react";
+import { Gift, Eye, Trash2, Star, X, Edit, Save, Package, Plus, Settings, AlertTriangle, Image as ImageIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { productService, type Product, type UpdateComboProductRequest, type ProductDetailRequest, type CreateComboProductRequest } from "@/api/productService";
 import { configService, type ProductConfig } from "@/api/configService";
@@ -44,6 +44,7 @@ export default function AdminTemplates() {
   const [productname, setProductname] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [status, setStatus] = useState("DRAFT");
   const [productDetails, setProductDetails] = useState<ProductDetailWithChild[]>([]);
 
@@ -56,6 +57,18 @@ export default function AdminTemplates() {
   
   // Details modal config (for showing ConfigDetails in view modal)
   const [detailsModalConfig, setDetailsModalConfig] = useState<ProductConfig | null>(null);
+
+  // TODO: Thay bằng API upload Cloudinary thực tế khi sẵn sàng
+  const uploadMedia = async (file: File): Promise<string> => {
+    console.log("Đang upload file:", file.name);
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(
+          `https://res.cloudinary.com/demo/image/upload/sample.jpg?name=${encodeURIComponent(file.name)}`
+        );
+      }, 1000);
+    });
+  };
 
   const fetchTemplates = async () => {
     console.log('=== FETCH ADMIN BASKETS ===');
@@ -115,6 +128,7 @@ export default function AdminTemplates() {
       setProductname('');
       setDescription('');
       setImageUrl('');
+      setImageFile(null);
       setStatus('ACTIVE');
       setSelectedConfigId(configsData[0]?.configid || 0);
       setSelectedConfig(configsData[0] || null);
@@ -137,6 +151,7 @@ export default function AdminTemplates() {
     setProductname('');
     setDescription('');
     setImageUrl('');
+    setImageFile(null);
     setStatus('TEMPLATE');
     setSelectedConfigId(0);
     setSelectedConfig(null);
@@ -242,12 +257,18 @@ export default function AdminTemplates() {
     try {
       setCreating(true);
       const token = localStorage.getItem('token') || '';
+
+      // Upload ảnh nếu có file mới chọn
+      let finalImageUrl = imageUrl || '';
+      if (imageFile) {
+        finalImageUrl = await uploadMedia(imageFile);
+      }
       
       const createData: CreateComboProductRequest = {
         configid: selectedConfigId,
         productname,
         description: description || undefined,
-        imageUrl: imageUrl || undefined,
+        imageUrl: finalImageUrl || undefined,
         status: status || 'TEMPLATE',
         productDetails: productDetails.map(pd => ({
           productid: pd.productid,
@@ -506,6 +527,7 @@ export default function AdminTemplates() {
     setProductname("");
     setDescription("");
     setImageUrl("");
+    setImageFile(null);
     setStatus("DRAFT");
     setProductDetails([]);
     setAvailableProductsForEdit([]);
@@ -1164,28 +1186,58 @@ export default function AdminTemplates() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        URL Hình ảnh
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                        <ImageIcon size={14} className="text-blue-500" /> Hình ảnh
                       </label>
-                      <input
-                        type="text"
-                        value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="https://example.com/image.jpg"
-                      />
+                      <div className="space-y-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] ?? null;
+                            setImageFile(file);
+                            if (file) setImageUrl('');
+                          }}
+                          className="w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                        {imageFile && (
+                          <div className="flex items-center gap-2">
+                            <img src={URL.createObjectURL(imageFile)} alt="Preview" className="w-16 h-16 object-cover rounded-lg border" />
+                            <div>
+                              <p className="text-xs font-medium text-gray-700">{imageFile.name}</p>
+                              <button type="button" onClick={() => setImageFile(null)} className="text-xs text-red-500 hover:text-red-700">Xóa file</button>
+                            </div>
+                          </div>
+                        )}
+                        {!imageFile && imageUrl && (
+                          <div className="flex items-center gap-2">
+                            <img src={imageUrl} alt="Ảnh hiện tại" className="w-16 h-16 object-cover rounded-lg border" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                            <p className="text-xs text-gray-400 italic">Ảnh hiện tại</p>
+                          </div>
+                        )}
+                        {!imageFile && (
+                          <div>
+                            <p className="text-xs text-gray-400 mb-1">Hoặc nhập URL ảnh:</p>
+                            <input
+                              type="text"
+                              value={imageUrl}
+                              onChange={(e) => setImageUrl(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="https://example.com/image.jpg"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {imageUrl && (
+                    {!imageFile && imageUrl && (
                       <div>
                         <p className="text-sm font-medium text-gray-700 mb-2">Xem trước hình ảnh</p>
-                        <img 
-                          src={imageUrl} 
+                        <img
+                          src={imageUrl}
                           alt="Preview"
                           className="w-full h-48 object-cover rounded-lg border"
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Invalid+Image';
-                          }}
+                          onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Invalid+Image'; }}
                         />
                       </div>
                     )}
@@ -1756,28 +1808,58 @@ export default function AdminTemplates() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      URL Hình ảnh
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                      <ImageIcon size={14} className="text-purple-500" /> Hình ảnh
                     </label>
-                    <input
-                      type="text"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="https://example.com/image.jpg"
-                    />
+                    <div className="space-y-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] ?? null;
+                          setImageFile(file);
+                          if (file) setImageUrl('');
+                        }}
+                        className="w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                      />
+                      {imageFile && (
+                        <div className="flex items-center gap-2">
+                          <img src={URL.createObjectURL(imageFile)} alt="Preview" className="w-16 h-16 object-cover rounded-lg border" />
+                          <div>
+                            <p className="text-xs font-medium text-gray-700">{imageFile.name}</p>
+                            <button type="button" onClick={() => setImageFile(null)} className="text-xs text-red-500 hover:text-red-700">Xóa file</button>
+                          </div>
+                        </div>
+                      )}
+                      {!imageFile && imageUrl && (
+                        <div className="flex items-center gap-2">
+                          <img src={imageUrl} alt="Ảnh hiện tại" className="w-16 h-16 object-cover rounded-lg border" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                          <p className="text-xs text-gray-400 italic">Ảnh hiện tại (chọn file mới để thay)</p>
+                        </div>
+                      )}
+                      {!imageFile && (
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1">Hoặc nhập URL ảnh:</p>
+                          <input
+                            type="text"
+                            value={imageUrl}
+                            onChange={(e) => setImageUrl(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="https://example.com/image.jpg"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {imageUrl && (
+                  {!imageFile && imageUrl && (
                     <div>
                       <p className="text-sm font-medium text-gray-700 mb-2">Xem trước hình ảnh</p>
-                      <img 
-                        src={imageUrl} 
+                      <img
+                        src={imageUrl}
                         alt="Preview"
                         className="w-full h-48 object-cover rounded-lg border"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Invalid+Image';
-                        }}
+                        onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Invalid+Image'; }}
                       />
                     </div>
                   )}

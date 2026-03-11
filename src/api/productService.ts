@@ -96,6 +96,56 @@ export interface ValidationStatus {
   isValid: boolean;
 }
 
+// --- FormData helpers (for endpoints that accept [FromForm]) ---
+
+const buildCreateNormalFormData = (product: CreateSingleProductRequest): URLSearchParams => {
+  const params = new URLSearchParams();
+  if (product.categoryid != null) params.append('categoryid', String(product.categoryid));
+  params.append('sku', product.sku);
+  params.append('productname', product.productname);
+  if (product.description) params.append('description', product.description);
+  params.append('price', String(product.price));
+  params.append('unit', String(product.unit));
+  if (product.imageUrl) params.append('imageUrl', product.imageUrl);
+  return params;
+};
+
+const buildUpdateNormalFormData = (product: Product): URLSearchParams => {
+  const params = new URLSearchParams();
+  if (product.categoryid != null) params.append('categoryid', String(product.categoryid));
+  if (product.sku) params.append('sku', product.sku);
+  if (product.productname) params.append('productname', product.productname);
+  if (product.description) params.append('description', product.description);
+  if (product.price != null) params.append('price', String(product.price));
+  if (product.unit != null) params.append('unit', String(product.unit));
+  if (product.status) params.append('status', product.status);
+  if (product.imageUrl) params.append('imageUrl', product.imageUrl);
+  return params;
+};
+
+const buildUpdateCustomFormData = (basket: UpdateComboProductRequest): URLSearchParams => {
+  const params = new URLSearchParams();
+  if (basket.productname) params.append('productname', basket.productname);
+  if (basket.description != null) params.append('description', basket.description);
+  if (basket.status) params.append('status', basket.status);
+  if (basket.imageUrl) params.append('imageUrl', basket.imageUrl);
+  return params;
+};
+
+const buildCreateComboFormData = (basket: CreateComboProductRequest): URLSearchParams => {
+  const params = new URLSearchParams();
+  if (basket.configid != null) params.append('configid', String(basket.configid));
+  params.append('productname', basket.productname);
+  if (basket.description) params.append('description', basket.description);
+  if (basket.status) params.append('status', basket.status);
+  if (basket.imageUrl) params.append('imageUrl', basket.imageUrl);
+  basket.productDetails.forEach((pd, i) => {
+    if (pd.productid != null) params.append(`productDetails[${i}].productid`, String(pd.productid));
+    if (pd.quantity != null) params.append(`productDetails[${i}].quantity`, String(pd.quantity));
+  });
+  return params;
+};
+
 // Product Service
 export const productService = {
   // Get all products
@@ -136,7 +186,9 @@ export const productService = {
 
   // Create normal product (Admin/Staff)
   createNormal: async (product: CreateSingleProductRequest, token: string) => {
-    const response = await axiosClient.post(API_ENDPOINTS.PRODUCTS.CREATE_NORMAL, product, {
+    const params = buildCreateNormalFormData(product);
+    console.log('[createNormal] → POST', API_ENDPOINTS.PRODUCTS.CREATE_NORMAL);
+    const response = await axiosClient.post(API_ENDPOINTS.PRODUCTS.CREATE_NORMAL, params, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return response;
@@ -144,7 +196,8 @@ export const productService = {
 
   // Create custom basket (Customer)
   createCustom: async (basket: CreateComboProductRequest, token: string) => {
-    const response = await axiosClient.post(API_ENDPOINTS.PRODUCTS.CREATE_CUSTOM, basket, {
+    const params = buildCreateComboFormData(basket);
+    const response = await axiosClient.post(API_ENDPOINTS.PRODUCTS.CREATE_CUSTOM, params, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return response;
@@ -152,7 +205,8 @@ export const productService = {
 
   // Create template basket (Admin/Staff)
   createTemplate: async (basket: CreateComboProductRequest, token: string) => {
-    const response = await axiosClient.post(API_ENDPOINTS.PRODUCTS.CREATE_TEMPLATE, basket, {
+    const params = buildCreateComboFormData(basket);
+    const response = await axiosClient.post(API_ENDPOINTS.PRODUCTS.CREATE_TEMPLATE, params, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return response;
@@ -160,7 +214,9 @@ export const productService = {
 
   // Update normal product (Admin/Staff)
   updateNormal: async (id: number | string, product: Product, token: string) => {
-    const response = await axiosClient.put(API_ENDPOINTS.PRODUCTS.UPDATE_NORMAL(id), product, {
+    const params = buildUpdateNormalFormData(product);
+    console.log('[updateNormal] → PUT', API_ENDPOINTS.PRODUCTS.UPDATE_NORMAL(id));
+    const response = await axiosClient.put(API_ENDPOINTS.PRODUCTS.UPDATE_NORMAL(id), params, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return response;
@@ -168,7 +224,9 @@ export const productService = {
 
   // Update custom basket
   updateCustom: async (id: number | string, basket: UpdateComboProductRequest, token: string) => {
-    const response = await axiosClient.put(API_ENDPOINTS.PRODUCTS.UPDATE_CUSTOM(id), basket, {
+    const params = buildUpdateCustomFormData(basket);
+    console.log('[updateCustom] → PUT', API_ENDPOINTS.PRODUCTS.UPDATE_CUSTOM(id));
+    const response = await axiosClient.put(API_ENDPOINTS.PRODUCTS.UPDATE_CUSTOM(id), params, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return response;
@@ -204,9 +262,10 @@ export const productService = {
 
     // Create template (Admin/Staff)
     create: async (data: CreateComboProductRequest, token: string) => {
+      const params = buildCreateComboFormData(data);
       const response = await axiosClient.post(
         API_ENDPOINTS.PRODUCTS.TEMPLATES,
-        data,
+        params,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       return response;

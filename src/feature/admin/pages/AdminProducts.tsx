@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Plus, Search, Edit, Trash2, Eye, Package, Gift } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Eye, Package, Gift, Image as ImageIcon } from "lucide-react";
 import { productService, type Product } from "../../../api/productService";
 import { categoryService, type Category } from "../../../api/categoryService";
 import axiosClient from "../../../api/axiosClient";
@@ -26,6 +26,9 @@ export default function AdminProducts() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
+
+  // Image file for upload
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   // Pagination state (single products)
   const [currentPage, setCurrentPage] = useState(1);
@@ -200,6 +203,7 @@ export default function AdminProducts() {
         isCustom: false,
       });
     }
+    setImageFile(null);
     setShowModal(true);
   };
 
@@ -207,6 +211,7 @@ export default function AdminProducts() {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingProduct(null);
+    setImageFile(null);
     setError(null);
   };
 
@@ -218,6 +223,18 @@ export default function AdminProducts() {
   // Close view modal
   const handleCloseViewModal = () => {
     setViewingProduct(null);
+  };
+
+  // TODO: Thay bằng API upload Cloudinary thực tế khi sẵn sàng
+  const uploadMedia = async (file: File): Promise<string> => {
+    console.log("Đang upload file:", file.name);
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(
+          `https://res.cloudinary.com/demo/image/upload/sample.jpg?name=${encodeURIComponent(file.name)}`
+        );
+      }, 1000);
+    });
   };
 
   // Handle form submit
@@ -249,24 +266,34 @@ export default function AdminProducts() {
       setSubmitting(true);
       setError(null);
 
+      // Bước 1: Upload ảnh nếu có file mới được chọn
+      let finalImageUrl = formData.imageUrl || "";
+      if (imageFile) {
+        finalImageUrl = await uploadMedia(imageFile);
+      }
+
       if (editingProduct?.productid) {
+        // ── UPDATE ──────────────────────────────────────────────────────────
         if (formData.isCustom) {
-          // Update basket/combo product — only header fields (name, desc, image, status)
+          const updatePayload = {
+            productname: formData.productname,
+            description: formData.description,
+            status: formData.status,
+            imageUrl: finalImageUrl,
+          };
+          console.log(`[UPDATE CUSTOM] productId=${editingProduct.productid}`, updatePayload);
           await productService.updateCustom(
             editingProduct.productid,
-            {
-              productname: formData.productname,
-              description: formData.description,
-              imageUrl: formData.imageUrl,
-              status: formData.status,
-            },
+            updatePayload,
             getToken()
           );
         } else {
-          await productService.updateNormal(editingProduct.productid, formData, getToken());
+          const updatePayload = { ...formData, imageUrl: finalImageUrl };
+          console.log(`[UPDATE NORMAL] productId=${editingProduct.productid}`, updatePayload);
+          await productService.updateNormal(editingProduct.productid, updatePayload as any, getToken());
         }
       } else {
-        // Create - normal product only
+        // ── CREATE ──────────────────────────────────────────────────────────
         if (formData.isCustom) {
           setError("Không thể tạo sản phẩm tùy chỉnh ở đây. Vui lòng sử dụng trang Cấu hình giỏ quà.");
           setSubmitting(false);
@@ -280,17 +307,20 @@ export default function AdminProducts() {
           description: formData.description,
           price: formData.price || 0,
           unit: formData.unit || 0,
-          imageUrl: formData.imageUrl
+          imageUrl: finalImageUrl,
         };
-        
+        console.log('[CREATE NORMAL] payload:', createData);
         await productService.createNormal(createData, getToken());
       }
 
+      console.log('[SUBMIT] Thành công — đóng modal và reload danh sách');
       handleCloseModal();
       await fetchProducts(currentPage, searchTerm);
     } catch (err: any) {
-      console.error("Error saving product:", err);
-      setError(err.response?.data?.message || "Không thể lưu sản phẩm");
+      console.error('[SUBMIT ERROR]', err);
+      console.error('[SUBMIT ERROR] response:', err?.response?.data);
+      console.error('[SUBMIT ERROR] status:', err?.response?.status);
+      setError(err?.response?.data?.message || err?.message || "Không thể lưu sản phẩm");
     } finally {
       setSubmitting(false);
     }
@@ -816,19 +846,57 @@ export default function AdminProducts() {
                   </select>
                 </div>
 
-                {/* Image URL */}
+                {/* Image */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    URL Hình ảnh
+                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                    <ImageIcon size={16} className="text-tet-accent" /> Hình ảnh sản phẩm
                   </label>
-                  <input
-                    type="url"
-                    placeholder="https://example.com/image.jpg"
-                    value={formData.imageUrl || ""}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent focus:border-transparent"
-                    disabled={submitting}
-                  />
+                  <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    {/* File picker */}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        setImageFile(file);
+                        if (file) setFormData({ ...formData, imageUrl: '' });
+                      }}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 transition-colors"
+                      disabled={submitting}
+                    />
+                    {/* Preview selected file */}
+                    {imageFile && (
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={URL.createObjectURL(imageFile)}
+                          alt="Preview"
+                          className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                        />
+                        <div>
+                          <p className="text-xs font-semibold text-gray-700">{imageFile.name}</p>
+                          <button
+                            type="button"
+                            onClick={() => setImageFile(null)}
+                            className="text-xs text-red-500 hover:text-red-700 mt-1"
+                          >
+                            Xóa file
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {/* Show existing image when editing and no new file selected */}
+                    {!imageFile && formData.imageUrl && (
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={formData.imageUrl}
+                          alt="Ảnh hiện tại"
+                          className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                        <p className="text-xs text-gray-400 italic">Ảnh hiện tại (chọn file mới để thay)</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Mô tả */}

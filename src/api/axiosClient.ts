@@ -23,9 +23,10 @@ axiosClient.interceptors.request.use(
     if (!config.headers) return config;
 
     // Kỹ thuật an toàn: Nếu là FormData (gửi ảnh), tuyệt đối không set Content-Type tĩnh
+    // URLSearchParams → Axios tự set application/x-www-form-urlencoded (cũng không cần set)
     if (config.data instanceof FormData) {
       delete config.headers["Content-Type"];
-    } else {
+    } else if (!(config.data instanceof URLSearchParams)) {
       config.headers["Content-Type"] = "application/json";
     }
 
