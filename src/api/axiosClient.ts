@@ -1,33 +1,38 @@
 import axios from "axios";
 import type { AxiosResponse, InternalAxiosRequestConfig } from "axios";
 
-// 1. Khởi tạo instance chính (có redirect khi 401)
+// 1. Khởi tạo instance chính
 const axiosClient = axios.create({
-  // Bạn có thể dùng BASE_URL từ apiConfig ở đây nếu muốn
-  timeout: 10000, // 10 giây nếu không phản hồi thì ngắt
-  headers: {
-    "Content-Type": "application/json",
-  },
+  timeout: 10000,
+  // QUAN TRỌNG: Đã bỏ hardcode "Content-Type": "application/json" ở đây.
+  // Axios mặc định gửi JSON rất tốt, nhưng bỏ đi sẽ giúp nó TỰ ĐỘNG
+  // nhận diện FormData (multipart/form-data) khi bạn upload ảnh ở chức năng Blog.
 });
 
-// 1b. Axios instance cho public/anonymous requests (KHÔNG redirect khi 401)
+// 1b. Axios instance cho public/anonymous requests
 const axiosPublic = axios.create({
   timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
-// 2. Request Interceptor: Tự động đính kèm Token vào mỗi yêu cầu gửi đi
+// 2. Request Interceptor: Tự động đính kèm Token
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Lấy token từ localStorage
     const token = localStorage.getItem("token");
 
-    if (token && config.headers) {
-      // Đính kèm theo chuẩn Bearer Token của .NET Identity/JWT
+    // Đảm bảo headers tồn tại
+    if (!config.headers) return config;
+
+    // Kỹ thuật an toàn: Nếu là FormData (gửi ảnh), tuyệt đối không set Content-Type tĩnh
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    } else {
+      config.headers["Content-Type"] = "application/json";
+    }
+
+    if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
   (error) => {
@@ -35,31 +40,36 @@ axiosClient.interceptors.request.use(
   },
 );
 
-// 3. Response Interceptor: Xử lý dữ liệu trả về và lỗi hệ thống
+// 3. Response Interceptor: Xử lý dữ liệu và lỗi
 axiosClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Vì Backend của bạn trả về { status, msg, data }
-    // Chúng ta trả về response.data để ở ngoài Component gọi là lấy được object đó luôn
     return response.data;
   },
   (error) => {
-    // Xử lý lỗi tập trung
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          // Token hết hạn hoặc không hợp lệ -> Xóa local và đẩy về login
+          console.error("Token hết hạn hoặc bị từ chối truy cập (401).");
+          // Xóa token
           localStorage.removeItem("token");
           localStorage.removeItem("user");
-          // Chỉ redirect nếu không phải đang ở trang login
+          localStorage.removeItem("role"); // Nhớ xóa cả role nhé
+
+          // Chuyển hướng nếu không phải đang ở trang login
           if (!window.location.pathname.includes("/login")) {
-            window.location.href = "/login";
+            // Thay vì dùng window.location.href (làm reload trang và mất log Network),
+            // bạn có thể cân nhắc dùng navigate của react-router-dom ở cấp Component.
+            // Nhưng tạm thời để an toàn, ta vẫn dùng window.location nhưng thêm delay 1 chút để bạn kịp đọc log.
+            setTimeout(() => {
+              window.location.href = "/login";
+            }, 500);
           }
           break;
         case 403:
-          console.error("Bạn không có quyền truy cập tính năng này");
+          console.error("Bạn không có quyền truy cập tính năng này (403)");
           break;
         case 500:
-          console.error("Lỗi hệ thống từ phía Server");
+          console.error("Lỗi hệ thống từ phía Server (500)");
           break;
       }
     }
@@ -73,20 +83,15 @@ axiosPublic.interceptors.response.use(
     return response.data;
   },
   (error) => {
-    // Xử lý lỗi nhưng KHÔNG redirect, cho phép component tự handle
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          // Chỉ xóa token, không redirect
           localStorage.removeItem("token");
           localStorage.removeItem("user");
-          localStorage.removeItem("access_token");
+          localStorage.removeItem("role");
           break;
         case 403:
-          console.error("Bạn không có quyền truy cập tính năng này");
-          break;
-        case 500:
-          console.error("Lỗi hệ thống từ phía Server");
+          console.error("Bạn không có quyền truy cập tính năng này (403)");
           break;
       }
     }

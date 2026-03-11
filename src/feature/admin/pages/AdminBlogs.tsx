@@ -20,14 +20,14 @@ import {
   type UpdateBlogRequest,
 } from "@/api/blogAdminService";
 import AdminPagination from "../components/AdminPagination";
-import BASE_URL from "@/api/apiConfig"; // Import để lấy BASE_URL nối vào link ảnh/video
+import BASE_URL from "@/api/apiConfig";
 
 export default function AdminBlogs() {
   // --- States ---
   const [blogs, setBlogs] = useState<BlogDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
+  console.log("error state:", error);
   const [searchTerm, setSearchTerm] = useState<string>("");
 
   // Pagination State
@@ -42,17 +42,21 @@ export default function AdminBlogs() {
   const [selectedBlog, setSelectedBlog] = useState<BlogDto | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // Form State (Đã bổ sung imageFile và videoFile)
-  const [formData, setFormData] = useState<CreateBlogRequest>({
+  // --- FORM STATE MỚI ---
+  // formData giờ CHỈ lưu các giá trị chuỗi (text/url) để gửi thành JSON
+  const [formData, setFormData] = useState({
     title: "",
     content: "",
-    imageFile: null,
-    videoFile: null,
+    imageUrl: "",
+    videoUrl: "",
   });
+
+  // State riêng để lưu File nhị phân chuẩn bị upload
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
 
   // --- Functions ---
 
-  // Fetch danh sách bài viết
   const fetchBlogs = useCallback(async () => {
     try {
       setLoading(true);
@@ -62,7 +66,6 @@ export default function AdminBlogs() {
     } catch (err: unknown) {
       console.error("Error fetching blogs:", err);
       setError("Không thể tải danh sách bài viết. Vui lòng thử lại.");
-      console.log("Error details:",error);
     } finally {
       setLoading(false);
     }
@@ -72,24 +75,26 @@ export default function AdminBlogs() {
     fetchBlogs();
   }, [fetchBlogs]);
 
-  // Mở Modal (Thêm / Sửa / Xem)
   const handleOpenModal = (
     type: "CREATE" | "EDIT" | "VIEW",
     blog?: BlogDto,
   ) => {
     setModalType(type);
+    // Reset file đang chọn mỗi khi mở modal
+    setSelectedImageFile(null);
+    setSelectedVideoFile(null);
+
     if (blog) {
       setSelectedBlog(blog);
-      // Khi sửa, không thể gán URL cũ vào File object, nên set null. Giao diện sẽ tự hiểu là không upload file mới.
       setFormData({
         title: blog.title,
         content: blog.content,
-        imageFile: null,
-        videoFile: null,
+        imageUrl: blog.imageUrl || "",
+        videoUrl: blog.videoUrl || "",
       });
     } else {
       setSelectedBlog(null);
-      setFormData({ title: "", content: "", imageFile: null, videoFile: null });
+      setFormData({ title: "", content: "", imageUrl: "", videoUrl: "" });
     }
     setShowModal(true);
   };
@@ -97,8 +102,29 @@ export default function AdminBlogs() {
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedBlog(null);
-    setFormData({ title: "", content: "", imageFile: null, videoFile: null });
+    setFormData({ title: "", content: "", imageUrl: "", videoUrl: "" });
+    setSelectedImageFile(null);
+    setSelectedVideoFile(null);
     setError(null);
+  };
+
+  // --- HÀM UPLOAD MEDIA ---
+  // TODO: Thay thế hàm này bằng API upload thực tế của bạn (gọi Cloudinary hoặc API Upload Media trên BE)
+  const uploadMedia = async (file: File): Promise<string> => {
+    console.log("Đang upload file:", file.name);
+    // Ví dụ gọi API:
+    // const formData = new FormData(); formData.append("file", file);
+    // const res = await axiosClient.post('/api/media/upload', formData, { headers: { "Content-Type": "multipart/form-data" }});
+    // return res.data.url;
+
+    // Giả lập trả về một URL ngẫu nhiên sau 1 giây
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(
+          `https://res.cloudinary.com/demo/image/upload/sample.jpg?name=${encodeURIComponent(file.name)}`,
+        );
+      }, 1000);
+    });
   };
 
   // Xử lý Submit Form (Create hoặc Update)
@@ -111,17 +137,40 @@ export default function AdminBlogs() {
 
     try {
       setSubmitting(true);
+
+      // Bước 1: Upload file nếu có chọn file mới
+      let finalImageUrl = formData.imageUrl;
+      let finalVideoUrl = formData.videoUrl;
+
+      if (selectedImageFile) {
+        finalImageUrl = await uploadMedia(selectedImageFile);
+      }
+      if (selectedVideoFile) {
+        finalVideoUrl = await uploadMedia(selectedVideoFile);
+      }
+
+      // Bước 2: Chuẩn bị Payload JSON
+      const payload = {
+        title: formData.title,
+        content: formData.content,
+        imageUrl: finalImageUrl,
+        videoUrl: finalVideoUrl,
+      };
+
+      // Bước 3: Gửi API
       if (modalType === "CREATE") {
-        await blogAdminService.createBlog(formData);
+        await blogAdminService.createBlog(
+          payload as unknown as CreateBlogRequest,
+        );
       } else if (modalType === "EDIT" && selectedBlog) {
         await blogAdminService.updateBlog(
           selectedBlog.blogId,
-          formData as UpdateBlogRequest,
+          payload as unknown as UpdateBlogRequest,
         );
       }
 
       handleCloseModal();
-      await fetchBlogs(); // Reload lại danh sách
+      await fetchBlogs();
     } catch (err: unknown) {
       setError("Có lỗi xảy ra khi lưu bài viết.");
       console.error("Error submitting blog form:", err);
@@ -130,14 +179,11 @@ export default function AdminBlogs() {
     }
   };
 
-  // Xử lý Xóa
   const handleDelete = async (id: number) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa bài viết này?")) return;
     try {
       await blogAdminService.deleteBlog(id);
       await fetchBlogs();
-
-      // Nếu xóa item cuối cùng của trang hiện tại, lùi về trang trước đó
       if (paginatedBlogs.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }
@@ -147,7 +193,6 @@ export default function AdminBlogs() {
     }
   };
 
-  // Lọc bài viết theo Search Term
   const filteredBlogs = blogs.filter(
     (b) =>
       b.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -155,27 +200,26 @@ export default function AdminBlogs() {
         b.authorName.toLowerCase().includes(searchTerm.toLowerCase())),
   );
 
-  // Tự động reset về trang 1 nếu gõ tìm kiếm
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Logic cắt mảng để phân trang
   const totalPages = Math.ceil(filteredBlogs.length / itemsPerPage);
   const paginatedBlogs = filteredBlogs.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
 
-  // --- Hỗ trợ tạo đường dẫn đầy đủ cho Media ---
+  // Xử lý thông minh: Nhận diện link Cloudinary/http hoặc link local
   const getFullMediaUrl = (url: string | null) => {
     if (!url) return "";
-    // Xóa phần '/api' ở cuối BASE_URL nếu có để ghép với '/uploads/...'
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url; // Trả thẳng nếu đã là link absolute
+    }
     const serverUrl = BASE_URL.replace("/api", "");
     return `${serverUrl}${url}`;
   };
 
-  // --- Render UI ---
   return (
     <div className="space-y-6">
       {/* Header & Search */}
@@ -193,8 +237,7 @@ export default function AdminBlogs() {
             onClick={() => handleOpenModal("CREATE")}
             className="flex items-center gap-2 bg-tet-primary text-white px-6 py-3 rounded-full font-bold hover:bg-tet-accent transition-all shadow-md"
           >
-            <Plus size={20} />
-            Thêm bài viết
+            <Plus size={20} /> Thêm bài viết
           </button>
         </div>
 
@@ -232,7 +275,6 @@ export default function AdminBlogs() {
                 className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col md:flex-row justify-between items-center gap-4 group"
               >
                 <div className="flex items-center gap-4 w-full md:w-auto">
-                  {/* Hiển thị Ảnh bìa thay vì Icon nếu có */}
                   {blog.imageUrl ? (
                     <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-gray-100">
                       <img
@@ -261,7 +303,6 @@ export default function AdminBlogs() {
                           "vi-VN",
                         )}
                       </span>
-                      {/* Thêm indicator nếu bài viết có video */}
                       {blog.videoUrl && (
                         <span className="flex items-center gap-1 text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
                           <Video size={10} /> Có Video
@@ -331,7 +372,6 @@ export default function AdminBlogs() {
             <div className="p-8 overflow-y-auto flex-1 custom-scrollbar">
               {modalType === "VIEW" ? (
                 <div className="space-y-6">
-                  {/* Hiển thị Media trong modal View */}
                   {selectedBlog?.imageUrl && (
                     <div className="w-full h-64 md:h-80 rounded-2xl overflow-hidden shadow-sm border border-gray-100">
                       <img
@@ -359,7 +399,6 @@ export default function AdminBlogs() {
                     </span>
                   </div>
 
-                  {/* Nội dung bài viết hiển thị HTML */}
                   <div
                     className="prose prose-red max-w-none text-gray-700 leading-relaxed"
                     dangerouslySetInnerHTML={{
@@ -367,7 +406,6 @@ export default function AdminBlogs() {
                     }}
                   />
 
-                  {/* Hiển thị Video phía dưới bài viết */}
                   {selectedBlog?.videoUrl && (
                     <div className="mt-8 pt-6 border-t border-gray-100">
                       <h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
@@ -426,7 +464,6 @@ export default function AdminBlogs() {
 
                   {/* Vùng Upload Ảnh và Video */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                    {/* Upload Ảnh */}
                     <div>
                       <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                         <ImageIcon size={16} className="text-tet-accent" /> Ảnh
@@ -436,26 +473,28 @@ export default function AdminBlogs() {
                         type="file"
                         accept="image/*"
                         onChange={(e) => {
-                          if (e.target.files && e.target.files.length > 0) {
-                            setFormData({
-                              ...formData,
-                              imageFile: e.target.files[0],
-                            });
-                          }
+                          if (e.target.files && e.target.files.length > 0)
+                            setSelectedImageFile(e.target.files[0]);
                         }}
                         className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 transition-colors"
                       />
                       {modalType === "EDIT" &&
-                        selectedBlog?.imageUrl &&
-                        !formData.imageFile && (
-                          <p className="mt-3 text-xs text-gray-500 italic bg-white p-2 rounded-lg border border-gray-200">
-                            Đang sử dụng ảnh bìa hiện tại. Chọn file mới nếu
-                            muốn thay đổi.
-                          </p>
+                        formData.imageUrl &&
+                        !selectedImageFile && (
+                          <div className="mt-3">
+                            <p className="text-xs text-gray-500 italic bg-white p-2 rounded-lg border border-gray-200">
+                              Đang sử dụng ảnh bìa hiện tại. Chọn file mới để
+                              thay thế.
+                            </p>
+                            <img
+                              src={getFullMediaUrl(formData.imageUrl)}
+                              alt="Current cover"
+                              className="mt-2 h-16 rounded-md object-cover border border-gray-200"
+                            />
+                          </div>
                         )}
                     </div>
 
-                    {/* Upload Video */}
                     <div>
                       <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                         <Video size={16} className="text-blue-500" /> Video minh
@@ -465,21 +504,17 @@ export default function AdminBlogs() {
                         type="file"
                         accept="video/mp4,video/x-m4v,video/*"
                         onChange={(e) => {
-                          if (e.target.files && e.target.files.length > 0) {
-                            setFormData({
-                              ...formData,
-                              videoFile: e.target.files[0],
-                            });
-                          }
+                          if (e.target.files && e.target.files.length > 0)
+                            setSelectedVideoFile(e.target.files[0]);
                         }}
                         className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors"
                       />
                       {modalType === "EDIT" &&
-                        selectedBlog?.videoUrl &&
-                        !formData.videoFile && (
+                        formData.videoUrl &&
+                        !selectedVideoFile && (
                           <p className="mt-3 text-xs text-gray-500 italic bg-white p-2 rounded-lg border border-gray-200">
-                            Đang sử dụng video hiện tại. Chọn file mới nếu muốn
-                            thay đổi.
+                            Đang sử dụng video hiện tại. Chọn file mới để thay
+                            thế.
                           </p>
                         )}
                     </div>
@@ -494,16 +529,16 @@ export default function AdminBlogs() {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="px-6 py-2.5 rounded-full font-bold text-gray-500 hover:bg-gray-200 transition-all"
                   disabled={submitting}
+                  className="px-6 py-2.5 rounded-full font-bold text-gray-500 hover:bg-gray-200 transition-all"
                 >
                   Hủy bỏ
                 </button>
                 <button
                   type="submit"
                   form="blogForm"
-                  className="px-8 py-2.5 bg-tet-primary text-white rounded-full font-bold hover:bg-tet-accent transition-all shadow-lg flex items-center gap-2 disabled:opacity-50"
                   disabled={submitting}
+                  className="px-8 py-2.5 bg-tet-primary text-white rounded-full font-bold hover:bg-tet-accent transition-all shadow-lg flex items-center gap-2 disabled:opacity-50"
                 >
                   {submitting ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
