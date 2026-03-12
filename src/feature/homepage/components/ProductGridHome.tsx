@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProductCard from "../../../components/common/ProductCard";
 import { productService, type Product } from "@/api/productService";
+import { useCart } from "@/feature/cart/context/CartContext";
 
 const DEFAULT_IMAGE =
   "https://res.cloudinary.com/dratbz8bh/image/upload/v1769521638/HOP-BANH-TRUNG-THU-VEN-TRON-3_get5up.jpg";
@@ -31,6 +32,7 @@ const itemVariants = {
 
 export default function ProductGridHome() {
   const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -104,6 +106,7 @@ export default function ProductGridHome() {
                     title={p.productname ?? "Giỏ quà Tết"}
                     price={(p.price ?? 0).toLocaleString("vi-VN")}
                     image={p.imageUrl?.trim() ? p.imageUrl : DEFAULT_IMAGE}
+                    onAddToCart={(qty) => addToCart(p, qty)}
                   />
                 </motion.div>
               ))}
