@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { categoryService, type Category } from "@/api/categoryService";
 
 const CARD_GRADIENTS = [
@@ -10,6 +11,7 @@ const CARD_GRADIENTS = [
 ];
 
 export default function CategoryGrid() {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
@@ -65,6 +67,7 @@ export default function CategoryGrid() {
               transition={{ delay: index * 0.1, duration: 0.5 }}
               viewport={{ once: true }}
               className="group cursor-pointer"
+              onClick={() => navigate(`/products?category=${cat.categoryid}`)}
             >
               <div className={`relative h-[140px] md:h-[160px] rounded-2xl overflow-hidden shadow-md border-2 border-white/20 transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-[0_12px_32px_rgba(90,17,7,0.3)] bg-gradient-to-br ${CARD_GRADIENTS[index % CARD_GRADIENTS.length]}`}>
                 {/* Họa tiết nền trang trí */}

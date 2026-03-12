@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Gift, X, Eye, Copy, Save, Trash2, Package, ShoppingCart, Search, CheckCircle, AlertCircle, ChevronRight, Sparkles, Filter, ArrowUpDown } from "lucide-react";
 import ProductHero from "../components/ProductHero";
 import { useCart } from "@/feature/cart/context/CartContext";
@@ -63,13 +64,17 @@ function SectionHeader({ icon, title, count, sub }: { icon: string; title: strin
 /*  Main Component  */
 export default function ProductPage() {
   const { addToCart } = useCart();
+  const [searchParams] = useSearchParams();
 
   /*  Single products  */
   const [singleProducts, setSingleProducts] = useState<Product[]>([]);
   const [singleLoading, setSingleLoading] = useState(true);
   const [singleSortBy, setSingleSortBy] = useState("name");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<number>(0);
+  const [selectedCategory, setSelectedCategory] = useState<number>(() => {
+    const cat = searchParams.get("category");
+    return cat ? Number(cat) : 0;
+  });
   const [singlePriceRange, setSinglePriceRange] = useState<PriceRange>({});
 
   /*  Baskets  */
@@ -103,6 +108,11 @@ export default function ProductPage() {
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [saving, setSaving] = useState(false);
+
+  /*  Scroll to top on mount  */
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
 
   /*  Fetch  */
   useEffect(() => {
