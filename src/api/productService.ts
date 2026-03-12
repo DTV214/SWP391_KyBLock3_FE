@@ -98,52 +98,52 @@ export interface ValidationStatus {
 
 // --- FormData helpers (for endpoints that accept [FromForm]) ---
 
-const buildCreateNormalFormData = (product: CreateSingleProductRequest): URLSearchParams => {
-  const params = new URLSearchParams();
-  if (product.categoryid != null) params.append('categoryid', String(product.categoryid));
-  params.append('sku', product.sku);
-  params.append('productname', product.productname);
-  if (product.description) params.append('description', product.description);
-  params.append('price', String(product.price));
-  params.append('unit', String(product.unit));
-  if (product.imageUrl) params.append('imageUrl', product.imageUrl);
-  return params;
+const buildCreateNormalFormData = (product: CreateSingleProductRequest): FormData => {
+  const form = new FormData();
+  if (product.categoryid != null) form.append('categoryid', String(product.categoryid));
+  form.append('sku', product.sku);
+  form.append('productname', product.productname);
+  if (product.description) form.append('description', product.description);
+  form.append('price', String(product.price));
+  form.append('unit', String(product.unit));
+  if (product.imageUrl) form.append('imageUrl', product.imageUrl);
+  return form;
 };
 
-const buildUpdateNormalFormData = (product: Product): URLSearchParams => {
-  const params = new URLSearchParams();
-  if (product.categoryid != null) params.append('categoryid', String(product.categoryid));
-  if (product.sku) params.append('sku', product.sku);
-  if (product.productname) params.append('productname', product.productname);
-  if (product.description) params.append('description', product.description);
-  if (product.price != null) params.append('price', String(product.price));
-  if (product.unit != null) params.append('unit', String(product.unit));
-  if (product.status) params.append('status', product.status);
-  if (product.imageUrl) params.append('imageUrl', product.imageUrl);
-  return params;
+const buildUpdateNormalFormData = (product: Product): FormData => {
+  const form = new FormData();
+  if (product.categoryid != null) form.append('categoryid', String(product.categoryid));
+  if (product.sku) form.append('sku', product.sku);
+  if (product.productname) form.append('productname', product.productname);
+  if (product.description) form.append('description', product.description);
+  if (product.price != null) form.append('price', String(product.price));
+  if (product.unit != null) form.append('unit', String(product.unit));
+  if (product.status) form.append('status', product.status);
+  if (product.imageUrl) form.append('imageUrl', product.imageUrl);
+  return form;
 };
 
-const buildUpdateCustomFormData = (basket: UpdateComboProductRequest): URLSearchParams => {
-  const params = new URLSearchParams();
-  if (basket.productname) params.append('productname', basket.productname);
-  if (basket.description != null) params.append('description', basket.description);
-  if (basket.status) params.append('status', basket.status);
-  if (basket.imageUrl) params.append('imageUrl', basket.imageUrl);
-  return params;
+const buildUpdateCustomFormData = (basket: UpdateComboProductRequest): FormData => {
+  const form = new FormData();
+  if (basket.productname) form.append('productname', basket.productname);
+  if (basket.description != null) form.append('description', basket.description);
+  if (basket.status) form.append('status', basket.status);
+  if (basket.imageUrl) form.append('imageUrl', basket.imageUrl);
+  return form;
 };
 
-const buildCreateComboFormData = (basket: CreateComboProductRequest): URLSearchParams => {
-  const params = new URLSearchParams();
-  if (basket.configid != null) params.append('configid', String(basket.configid));
-  params.append('productname', basket.productname);
-  if (basket.description) params.append('description', basket.description);
-  if (basket.status) params.append('status', basket.status);
-  if (basket.imageUrl) params.append('imageUrl', basket.imageUrl);
+const buildCreateComboFormData = (basket: CreateComboProductRequest): FormData => {
+  const form = new FormData();
+  if (basket.configid != null) form.append('configid', String(basket.configid));
+  form.append('productname', basket.productname);
+  if (basket.description) form.append('description', basket.description);
+  if (basket.status) form.append('status', basket.status);
+  if (basket.imageUrl) form.append('imageUrl', basket.imageUrl);
   basket.productDetails.forEach((pd, i) => {
-    if (pd.productid != null) params.append(`productDetails[${i}].productid`, String(pd.productid));
-    if (pd.quantity != null) params.append(`productDetails[${i}].quantity`, String(pd.quantity));
+    if (pd.productid != null) form.append(`productDetails[${i}].productid`, String(pd.productid));
+    if (pd.quantity != null) form.append(`productDetails[${i}].quantity`, String(pd.quantity));
   });
-  return params;
+  return form;
 };
 
 // Product Service

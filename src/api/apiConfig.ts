@@ -212,6 +212,11 @@ export const API_ENDPOINTS = {
   AI_CHAT: {
     SEND: `${BASE_URL}/aichat`,
   },
+  // Media upload endpoint
+  MEDIA: {
+    UPLOAD: `${BASE_URL}/media/upload`,
+    DELETE: `${BASE_URL}/media/delete`,
+  },
 };
 
 export default BASE_URL;

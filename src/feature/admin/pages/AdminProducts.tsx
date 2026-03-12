@@ -225,16 +225,13 @@ export default function AdminProducts() {
     setViewingProduct(null);
   };
 
-  // TODO: Thay bằng API upload Cloudinary thực tế khi sẵn sàng
   const uploadMedia = async (file: File): Promise<string> => {
-    console.log("Đang upload file:", file.name);
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(
-          `https://res.cloudinary.com/demo/image/upload/sample.jpg?name=${encodeURIComponent(file.name)}`
-        );
-      }, 1000);
-    });
+    const formData = new FormData();
+    formData.append("file", file);
+    const res: any = await axiosClient.post(API_ENDPOINTS.MEDIA.UPLOAD, formData);
+    const url = res?.data?.url;
+    if (!url) throw new Error("Upload ảnh thất bại: không nhận được URL từ server");
+    return url;
   };
 
   // Handle form submit
