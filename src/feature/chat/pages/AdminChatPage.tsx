@@ -5,9 +5,14 @@ import {
   type ChatConversation,
   type ChatMessage,
 } from "@/feature/chat/services/chatService";
+import { chatRealtimeService } from "@/feature/chat/services/chatRealtime";
 import { accountAdminService } from "@/api/accountAdminService";
+import ChatOrderCard from "@/feature/chat/components/ChatOrderCard";
+import ChatOrderPreviewModal from "@/feature/chat/components/ChatOrderPreviewModal";
+import { orderService, type OrderResponse } from "@/feature/checkout/services/orderService";
 
 const POLL_INTERVAL_MS = 7000;
+const REALTIME_FALLBACK_SYNC_MS = 15000;
 
 const formatDateTime = (iso: string): string =>
   new Date(iso).toLocaleString("vi-VN", {
@@ -21,11 +26,15 @@ export default function AdminChatPage() {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [unreadMap, setUnreadMap] = useState<Record<number, number>>({});
   const [userNameMap, setUserNameMap] = useState<Record<number, string>>({});
+  const [allOrders, setAllOrders] = useState<OrderResponse[]>([]);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<
     number | null
   >(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [orderMap, setOrderMap] = useState<Record<number, OrderResponse>>({});
+  const [previewOrderId, setPreviewOrderId] = useState<number | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [messageInput, setMessageInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +65,9 @@ export default function AdminChatPage() {
       conversations.find((item) => item.id === selectedConversationId) ?? null,
     [conversations, selectedConversationId],
   );
+
+  const previewOrder =
+    previewOrderId !== null ? orderMap[previewOrderId] ?? null : null;
 
   const getUnreadCount = (conversation: ChatConversation): number =>
     unreadMap[conversation.id] ?? 0;
@@ -149,6 +161,31 @@ export default function AdminChatPage() {
   }, []);
 
   useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        const token = localStorage.getItem("token") || undefined;
+        const orders = await orderService.getAllOrders(token);
+        setAllOrders(orders);
+        setOrderMap(
+          Object.fromEntries(orders.map((order) => [order.orderId, order])),
+        );
+      } catch {
+        // silent order-loading error
+      }
+    };
+
+    void loadOrders();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribeConnection = chatRealtimeService.subscribeConnection(
+      setIsRealtimeConnected,
+    );
+
+    return unsubscribeConnection;
+  }, []);
+
+  useEffect(() => {
     if (!selectedConversationId) {
       setMessages([]);
       return;
@@ -167,8 +204,21 @@ export default function AdminChatPage() {
       void loadMessages(selectedConversationId);
       void markAsRead(selectedConversationId);
       void loadConversations();
-    }, POLL_INTERVAL_MS);
+    }, isRealtimeConnected ? REALTIME_FALLBACK_SYNC_MS : POLL_INTERVAL_MS);
     return () => window.clearInterval(timer);
+  }, [selectedConversationId, isRealtimeConnected]);
+
+  useEffect(() => {
+    const unsubscribeRealtime = chatRealtimeService.subscribe(() => {
+      void loadConversations();
+
+      if (selectedConversationId) {
+        void loadMessages(selectedConversationId);
+        void markAsRead(selectedConversationId);
+      }
+    });
+
+    return unsubscribeRealtime;
   }, [selectedConversationId]);
 
   useEffect(() => {
@@ -179,6 +229,45 @@ export default function AdminChatPage() {
       behavior: "smooth",
     });
   }, [sortedMessages, selectedConversationId]);
+
+  useEffect(() => {
+    const missingOrderIds = sortedMessages
+      .map((message) => message.orderId)
+      .filter(
+        (orderId): orderId is number =>
+          typeof orderId === "number" && !orderMap[orderId],
+      );
+
+    if (missingOrderIds.length === 0) return;
+
+    const uniqueOrderIds = [...new Set(missingOrderIds)];
+
+    const loadMissingOrders = async () => {
+      const token = localStorage.getItem("token") || undefined;
+      const entries = await Promise.all(
+        uniqueOrderIds.map(async (orderId) => {
+          try {
+            const order = await orderService.getOrderById(orderId, token);
+            return [orderId, order] as const;
+          } catch {
+            return null;
+          }
+        }),
+      );
+
+      setOrderMap((prev) => {
+        const next = { ...prev };
+        for (const entry of entries) {
+          if (entry) {
+            next[entry[0]] = entry[1];
+          }
+        }
+        return next;
+      });
+    };
+
+    void loadMissingOrders();
+  }, [sortedMessages, orderMap]);
 
   const handleSendReply = async () => {
     const trimmed = messageInput.trim();
@@ -297,6 +386,10 @@ export default function AdminChatPage() {
                 {sortedMessages.map((message) => {
                   const isMine =
                     message.senderId !== selectedConversation?.userId;
+                  const attachedOrder = message.orderId
+                    ? orderMap[message.orderId] ??
+                      allOrders.find((order) => order.orderId === message.orderId)
+                    : undefined;
                   return (
                     <div
                       key={message.id}
@@ -311,6 +404,17 @@ export default function AdminChatPage() {
                             : "bg-white border border-gray-200 text-gray-800"
                         }`}
                       >
+                        {message.orderId && (
+                          <div className="mb-2 min-w-[260px]">
+                            <ChatOrderCard
+                              orderId={message.orderId}
+                              order={attachedOrder}
+                              compact
+                              clickable
+                              onClick={() => setPreviewOrderId(message.orderId)}
+                            />
+                          </div>
+                        )}
                         <p className="whitespace-pre-wrap break-words">
                           {message.content}
                         </p>
@@ -358,6 +462,13 @@ export default function AdminChatPage() {
           </div>
         </section>
       </div>
+
+      <ChatOrderPreviewModal
+        isOpen={previewOrderId !== null}
+        orderId={previewOrderId}
+        order={previewOrder}
+        onClose={() => setPreviewOrderId(null)}
+      />
     </div>
   );
 }

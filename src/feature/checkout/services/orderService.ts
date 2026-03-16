@@ -93,6 +93,23 @@ export const getAllOrders = async (token?: string): Promise<OrderResponse[]> => 
     return response.data;
 };
 
+/**
+ * Láº¥y chi tiáº¿t má»™t Ä‘Æ¡n hÃ ng
+ * GET /api/orders/{orderId}
+ */
+export const getOrderById = async (
+    orderId: number,
+    token?: string
+): Promise<OrderResponse> => {
+    const response = await axiosClient.get<OrderResponse>(
+        API_ENDPOINTS.ORDERS.DETAIL(orderId),
+        {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        }
+    );
+    return response.data;
+};
+
 // Cập nhật thông tin giao hàng của order
 export const updateOrderShippingInfo = async (
     orderId: number,
@@ -131,6 +148,7 @@ export const cancelOrder = async (
 export const orderService = {
     createOrder,
     getMyOrders,
+    getOrderById,
     getAllOrders,
     updateOrderShippingInfo,
     cancelOrder

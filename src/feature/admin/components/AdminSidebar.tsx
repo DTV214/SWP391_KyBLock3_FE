@@ -16,11 +16,13 @@ import {
   PackageOpen,
 } from "lucide-react";
 import { chatService } from "@/feature/chat/services/chatService";
+import { chatRealtimeService } from "@/feature/chat/services/chatRealtime";
 
 export default function AdminSidebar() {
   const POLL_INTERVAL_MS = 7000;
   const navigate = useNavigate();
   const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
 
   useEffect(() => {
     const loadUnreadChats = async () => {
@@ -39,12 +41,28 @@ export default function AdminSidebar() {
     };
 
     void loadUnreadChats();
-    const timer = window.setInterval(() => {
-      void loadUnreadChats();
-    }, POLL_INTERVAL_MS);
 
-    return () => window.clearInterval(timer);
-  }, []);
+    const unsubscribeConnection = chatRealtimeService.subscribeConnection(
+      setIsRealtimeConnected,
+    );
+    const unsubscribeRealtime = chatRealtimeService.subscribe(() => {
+      void loadUnreadChats();
+    });
+
+    const timer = !isRealtimeConnected
+      ? window.setInterval(() => {
+          void loadUnreadChats();
+        }, POLL_INTERVAL_MS)
+      : null;
+
+    return () => {
+      unsubscribeConnection();
+      unsubscribeRealtime();
+      if (timer) {
+        window.clearInterval(timer);
+      }
+    };
+  }, [isRealtimeConnected]);
 
   const handleLogout = () => {
     if (confirm("Bạn có chắc muốn đăng xuất?")) {

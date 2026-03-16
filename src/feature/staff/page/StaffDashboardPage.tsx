@@ -11,6 +11,7 @@ import {
   type QuotationSummary,
 } from "@/feature/quotation/services/quotationService";
 import { chatService } from "@/feature/chat/services/chatService";
+import { chatRealtimeService } from "@/feature/chat/services/chatRealtime";
 
 export default function StaffDashboardPage() {
   const [rows, setRows] = useState<QuotationSummary[]>([]);
@@ -19,35 +20,39 @@ export default function StaffDashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchUnreadChats = async () => {
+      const conversations = await chatService.getAllConversations();
+
+      const unreadByConversation = await Promise.all(
+        conversations.map(async (conversation) => {
+          try {
+            const messages = await chatService.getConversationMessages(
+              conversation.id,
+            );
+            return messages.some(
+              (message) =>
+                !message.isRead && message.senderId === conversation.userId,
+            );
+          } catch {
+            return false;
+          }
+        }),
+      );
+
+      setUnreadChatCount(unreadByConversation.filter(Boolean).length);
+    };
+
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const [quotationResponse, conversations] = await Promise.all([
+        const [quotationResponse] = await Promise.all([
           quotationService.getStaffQuotations(),
-          chatService.getAllConversations(),
         ]);
 
         setRows((quotationResponse?.data || []) as QuotationSummary[]);
-
-        const unreadByConversation = await Promise.all(
-          conversations.map(async (conversation) => {
-            try {
-              const messages = await chatService.getConversationMessages(
-                conversation.id,
-              );
-              return messages.some(
-                (message) =>
-                  !message.isRead && message.senderId === conversation.userId,
-              );
-            } catch {
-              return false;
-            }
-          }),
-        );
-
-        setUnreadChatCount(unreadByConversation.filter(Boolean).length);
+        await fetchUnreadChats();
       } catch (err) {
         console.error(err);
         setError("Không thể tải dữ liệu tổng quan báo giá.");
@@ -57,6 +62,12 @@ export default function StaffDashboardPage() {
     };
 
     void fetchData();
+
+    const unsubscribeRealtime = chatRealtimeService.subscribe(() => {
+      void fetchUnreadChats();
+    });
+
+    return unsubscribeRealtime;
   }, []);
 
   const { submittedCount, reviewingCount, rejectedCount, totalTaskCount } =
