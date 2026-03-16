@@ -14,14 +14,20 @@ const SIGNALR_EVENT_NAMES = [
   "MessageReceived",
   "NewMessage",
   "ChatMessageReceived",
+  "ReceiveChatMessage",
+  "ReceiveConversationMessage",
   "ReceiveReply",
   "ReplyReceived",
   "ReceiveAdminMessage",
   "AdminMessageReceived",
   "ReceiveStaffMessage",
   "StaffMessageReceived",
+  "ReceiveSupportMessage",
+  "SupportMessageReceived",
   "ReceiveUserMessage",
   "UserMessageReceived",
+  "MessagesRead",
+  "ConversationReadUpdated",
   "ChatUpdated",
   "ConversationUpdated",
   "ReceiveConversationUpdate",
@@ -154,6 +160,27 @@ class ChatRealtimeService {
     });
 
     return this.startPromise;
+  }
+
+  async invokeFirstSuccessful(
+    methodNames: string[],
+    ...args: unknown[]
+  ): Promise<boolean> {
+    const connected = await this.ensureConnected();
+    if (!connected || !this.connection) {
+      return false;
+    }
+
+    for (const methodName of methodNames) {
+      try {
+        await this.connection.invoke(methodName, ...args);
+        return true;
+      } catch {
+        // Try the next candidate method name.
+      }
+    }
+
+    return false;
   }
 
   async stopIfIdle(): Promise<void> {

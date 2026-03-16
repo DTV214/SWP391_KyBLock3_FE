@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { Link2, MessageCircle, Send, X } from "lucide-react";
+import { Check, CheckCheck, Link2, MessageCircle, Send, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import {
   chatService,
@@ -11,14 +11,21 @@ import { chatRealtimeService } from "@/feature/chat/services/chatRealtime";
 import ChatOrderCard from "@/feature/chat/components/ChatOrderCard";
 import { orderService, type OrderResponse } from "@/feature/checkout/services/orderService";
 
-const POLL_INTERVAL_MS = 7000;
-const REALTIME_FALLBACK_SYNC_MS = 15000;
-
 const formatTime = (iso: string): string =>
   new Date(iso).toLocaleTimeString("vi-VN", {
     hour: "2-digit",
     minute: "2-digit",
   });
+
+const formatMessageDate = (iso: string): string =>
+  new Date(iso).toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
+const renderMessageStatus = (isRead: boolean) =>
+  isRead ? <CheckCheck size={12} /> : <Check size={12} />;
 
 export default function CustomerChatWidget() {
   const location = useLocation();
@@ -30,7 +37,6 @@ export default function CustomerChatWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [myOrders, setMyOrders] = useState<OrderResponse[]>([]);
   const [orderMap, setOrderMap] = useState<Record<number, OrderResponse>>({});
-  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [showOrderPicker, setShowOrderPicker] = useState(false);
   const [messageInput, setMessageInput] = useState("");
@@ -114,9 +120,44 @@ export default function CustomerChatWidget() {
 
   useEffect(() => {
     if (!shouldRender) return;
+    if (!conversation?.id) return;
+
+    const joinRealtimeTargets = async () => {
+      const userId = getCurrentUserId();
+
+      await chatRealtimeService.invokeFirstSuccessful(
+        [
+          "JoinConversation",
+          "JoinConversationGroup",
+          "JoinChatConversation",
+          "JoinChatRoom",
+          "JoinRoom",
+        ],
+        conversation.id,
+      );
+
+      if (userId) {
+        await chatRealtimeService.invokeFirstSuccessful(
+          [
+            "JoinUserGroup",
+            "JoinCustomerGroup",
+            "JoinAccountGroup",
+            "JoinPersonalGroup",
+            "JoinUserRoom",
+          ],
+          userId,
+        );
+      }
+    };
+
+    void joinRealtimeTargets();
+  }, [shouldRender, conversation?.id]);
+
+  useEffect(() => {
+    if (!shouldRender) return;
 
     const unsubscribeConnection = chatRealtimeService.subscribeConnection(
-      setIsRealtimeConnected,
+      () => undefined,
     );
 
     return unsubscribeConnection;
@@ -160,32 +201,6 @@ export default function CustomerChatWidget() {
 
     void loadMissingOrders();
   }, [sortedMessages, orderMap]);
-
-  useEffect(() => {
-    if (!shouldRender) return;
-    const syncConversation = async () => {
-      try {
-        const conv = await chatService.getMyConversation();
-        setConversation(conv);
-
-        if (conv?.id) {
-          const data = await chatService.getMyConversationMessages(conv.id);
-          setMessages(data);
-        }
-      } catch {
-        // silent polling error
-      }
-    };
-
-    const timer = window.setInterval(
-      () => {
-        void syncConversation();
-      },
-      isRealtimeConnected ? REALTIME_FALLBACK_SYNC_MS : POLL_INTERVAL_MS,
-    );
-
-    return () => window.clearInterval(timer);
-  }, [shouldRender, isRealtimeConnected]);
 
   useEffect(() => {
     if (!shouldRender) return;
@@ -320,40 +335,59 @@ export default function CustomerChatWidget() {
                     ? orderMap[message.orderId] ??
                       myOrders.find((order) => order.orderId === message.orderId)
                     : undefined;
+                  const previousMessage =
+                    sortedMessages[sortedMessages.indexOf(message) - 1];
+                  const showDateDivider =
+                    !previousMessage ||
+                    formatMessageDate(previousMessage.createdAt) !==
+                      formatMessageDate(message.createdAt);
 
                   return (
-                    <div
-                      key={message.id}
-                      className={`flex ${
-                        isMine ? "justify-end" : "justify-start"
-                      }`}
-                    >
+                    <div key={message.id}>
+                      {showDateDivider && (
+                        <div className="my-3 flex items-center gap-3">
+                          <div className="h-px flex-1 bg-[#ead6c9]" />
+                          <span className="text-[11px] font-semibold text-[#a06b56]">
+                            {formatMessageDate(message.createdAt)}
+                          </span>
+                          <div className="h-px flex-1 bg-[#ead6c9]" />
+                        </div>
+                      )}
                       <div
-                        className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${
-                          isMine
-                            ? "bg-tet-primary text-white"
-                            : "bg-white border border-gray-200 text-gray-800"
+                        className={`flex ${
+                          isMine ? "justify-end" : "justify-start"
                         }`}
                       >
-                        {message.orderId && (
-                          <div className="mb-2 min-w-[220px]">
-                            <ChatOrderCard
-                              orderId={message.orderId}
-                              order={attachedOrder}
-                              compact
-                            />
-                          </div>
-                        )}
-                        <p className="whitespace-pre-wrap break-words">
-                          {message.content}
-                        </p>
-                        <p
-                          className={`text-[10px] mt-1 ${
-                            isMine ? "text-white/80" : "text-gray-500"
+                        <div
+                          className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${
+                            isMine
+                              ? "bg-tet-primary text-white"
+                              : "bg-white border border-gray-200 text-gray-800"
                           }`}
                         >
-                          {formatTime(message.createdAt)}
-                        </p>
+                          {message.orderId && (
+                            <div className="mb-2 min-w-[220px]">
+                              <ChatOrderCard
+                                orderId={message.orderId}
+                                order={attachedOrder}
+                                compact
+                              />
+                            </div>
+                          )}
+                          <p className="whitespace-pre-wrap break-words">
+                            {message.content}
+                          </p>
+                          <div
+                            className={`mt-1 flex items-center gap-1 text-[10px] ${
+                              isMine
+                                ? "justify-end text-white/80"
+                                : "justify-end text-gray-500"
+                            }`}
+                          >
+                            <span>{formatTime(message.createdAt)}</span>
+                            {renderMessageStatus(message.isRead)}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );

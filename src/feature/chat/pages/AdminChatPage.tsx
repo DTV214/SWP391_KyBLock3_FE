@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, MessageSquare, Send } from "lucide-react";
+import { Check, CheckCheck, Loader2, MessageSquare, Send } from "lucide-react";
 import {
   chatService,
   type ChatConversation,
@@ -11,9 +11,6 @@ import ChatOrderCard from "@/feature/chat/components/ChatOrderCard";
 import ChatOrderPreviewModal from "@/feature/chat/components/ChatOrderPreviewModal";
 import { orderService, type OrderResponse } from "@/feature/checkout/services/orderService";
 
-const POLL_INTERVAL_MS = 7000;
-const REALTIME_FALLBACK_SYNC_MS = 15000;
-
 const formatDateTime = (iso: string): string =>
   new Date(iso).toLocaleString("vi-VN", {
     hour: "2-digit",
@@ -22,12 +19,27 @@ const formatDateTime = (iso: string): string =>
     month: "2-digit",
   });
 
+const formatTime = (iso: string): string =>
+  new Date(iso).toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+const formatMessageDate = (iso: string): string =>
+  new Date(iso).toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
+const renderMessageStatus = (isRead: boolean) =>
+  isRead ? <CheckCheck size={12} /> : <Check size={12} />;
+
 export default function AdminChatPage() {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [unreadMap, setUnreadMap] = useState<Record<number, number>>({});
   const [userNameMap, setUserNameMap] = useState<Record<number, string>>({});
   const [allOrders, setAllOrders] = useState<OrderResponse[]>([]);
-  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<
     number | null
@@ -179,7 +191,7 @@ export default function AdminChatPage() {
 
   useEffect(() => {
     const unsubscribeConnection = chatRealtimeService.subscribeConnection(
-      setIsRealtimeConnected,
+      () => undefined,
     );
 
     return unsubscribeConnection;
@@ -200,13 +212,23 @@ export default function AdminChatPage() {
 
   useEffect(() => {
     if (!selectedConversationId) return;
-    const timer = window.setInterval(() => {
-      void loadMessages(selectedConversationId);
-      void markAsRead(selectedConversationId);
-      void loadConversations();
-    }, isRealtimeConnected ? REALTIME_FALLBACK_SYNC_MS : POLL_INTERVAL_MS);
-    return () => window.clearInterval(timer);
-  }, [selectedConversationId, isRealtimeConnected]);
+
+    const joinConversation = async () => {
+      await chatRealtimeService.invokeFirstSuccessful(
+        ["JoinConversation"],
+        selectedConversationId,
+      );
+    };
+
+    void joinConversation();
+
+    return () => {
+      void chatRealtimeService.invokeFirstSuccessful(
+        ["LeaveConversation"],
+        selectedConversationId,
+      );
+    };
+  }, [selectedConversationId]);
 
   useEffect(() => {
     const unsubscribeRealtime = chatRealtimeService.subscribe(() => {
@@ -390,41 +412,60 @@ export default function AdminChatPage() {
                     ? orderMap[message.orderId] ??
                       allOrders.find((order) => order.orderId === message.orderId)
                     : undefined;
+                  const previousMessage =
+                    sortedMessages[sortedMessages.indexOf(message) - 1];
+                  const showDateDivider =
+                    !previousMessage ||
+                    formatMessageDate(previousMessage.createdAt) !==
+                      formatMessageDate(message.createdAt);
                   return (
-                    <div
-                      key={message.id}
-                      className={`flex ${
-                        isMine ? "justify-end" : "justify-start"
-                      }`}
-                    >
+                    <div key={message.id}>
+                      {showDateDivider && (
+                        <div className="my-3 flex items-center gap-3">
+                          <div className="h-px flex-1 bg-[#ead6c9]" />
+                          <span className="text-[11px] font-semibold text-[#a06b56]">
+                            {formatMessageDate(message.createdAt)}
+                          </span>
+                          <div className="h-px flex-1 bg-[#ead6c9]" />
+                        </div>
+                      )}
                       <div
-                        className={`max-w-[70%] px-3 py-2 rounded-xl text-sm ${
-                          isMine
-                            ? "bg-tet-primary text-white"
-                            : "bg-white border border-gray-200 text-gray-800"
+                        className={`flex ${
+                          isMine ? "justify-end" : "justify-start"
                         }`}
                       >
-                        {message.orderId && (
-                          <div className="mb-2 min-w-[260px]">
-                            <ChatOrderCard
-                              orderId={message.orderId}
-                              order={attachedOrder}
-                              compact
-                              clickable
-                              onClick={() => setPreviewOrderId(message.orderId)}
-                            />
-                          </div>
-                        )}
-                        <p className="whitespace-pre-wrap break-words">
-                          {message.content}
-                        </p>
-                        <p
-                          className={`text-[10px] mt-1 ${
-                            isMine ? "text-white/80" : "text-gray-500"
+                        <div
+                          className={`max-w-[70%] px-3 py-2 rounded-xl text-sm ${
+                            isMine
+                              ? "bg-tet-primary text-white"
+                              : "bg-white border border-gray-200 text-gray-800"
                           }`}
                         >
-                          {formatDateTime(message.createdAt)}
-                        </p>
+                          {message.orderId && (
+                            <div className="mb-2 min-w-[260px]">
+                              <ChatOrderCard
+                                orderId={message.orderId}
+                                order={attachedOrder}
+                                compact
+                                clickable
+                                onClick={() => setPreviewOrderId(message.orderId)}
+                              />
+                            </div>
+                          )}
+                          <p className="whitespace-pre-wrap break-words">
+                            {message.content}
+                          </p>
+                          <div
+                            className={`mt-1 flex items-center gap-1 text-[10px] ${
+                              isMine
+                                ? "justify-end text-white/80"
+                                : "justify-end text-gray-500"
+                            }`}
+                          >
+                            <span>{formatTime(message.createdAt)}</span>
+                            {renderMessageStatus(message.isRead)}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
