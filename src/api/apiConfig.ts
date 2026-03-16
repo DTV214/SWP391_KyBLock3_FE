@@ -199,6 +199,10 @@ export const API_ENDPOINTS = {
     READ: (conversationId: string | number) =>
       `${BASE_URL}/chat/read/${conversationId}`,
   },
+  STORE_LOCATIONS: {
+    ACTIVE: `${BASE_URL}/store-locations/active`,
+    DETAIL: (id: string | number) => `${BASE_URL}/store-locations/${id}`,
+  },
   // Admin Accounts endpoints
   ADMIN_ACCOUNTS: {
     LIST: `${BASE_URL}/admin/accounts`,
