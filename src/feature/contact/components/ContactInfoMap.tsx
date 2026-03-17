@@ -1,19 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Clock, Loader2, MapPin, Phone, Store } from "lucide-react";
+import { Clock, Loader2, MapPin, Navigation, X } from "lucide-react";
 import {
   MapContainer,
   Marker,
   Popup,
   TileLayer,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
   storeLocationService,
   type StoreLocation,
+  type TravelMode,
 } from "@/feature/contact/services/storeLocationService";
+import {
+  geocodingService,
+  type AddressSuggestion,
+} from "@/feature/contact/services/geocodingService";
 
 const HCMC_CENTER: [number, number] = [10.7769, 106.7009];
 const DEFAULT_ZOOM = 11;
@@ -38,6 +44,13 @@ const activeStoreIcon = new L.DivIcon({
   iconAnchor: [21, 52],
 });
 
+const originPinIcon = new L.DivIcon({
+  html: `<div style="width:16px;height:16px;border-radius:9999px;background:#ffffff;border:4px solid #1d4ed8;box-shadow:0 4px 10px rgba(0,0,0,0.25)"></div>`,
+  className: "",
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
+
 function MapViewportController({
   selectedStore,
 }: {
@@ -47,11 +60,9 @@ function MapViewportController({
 
   useEffect(() => {
     if (selectedStore) {
-      map.flyTo(
-        [selectedStore.latitude, selectedStore.longitude],
-        FOCUSED_ZOOM,
-        { duration: 0.8 },
-      );
+      map.flyTo([selectedStore.latitude, selectedStore.longitude], FOCUSED_ZOOM, {
+        duration: 0.8,
+      });
       return;
     }
 
@@ -61,12 +72,73 @@ function MapViewportController({
   return null;
 }
 
+function DirectionsMapViewportController({
+  center,
+  zoom,
+}: {
+  center: [number, number];
+  zoom: number;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [map, center, zoom]);
+
+  return null;
+}
+
+function DirectionsMapClickPicker({
+  onPick,
+}: {
+  onPick: (latitude: number, longitude: number) => void;
+}) {
+  useMapEvents({
+    click: (event) => {
+      onPick(event.latlng.lat, event.latlng.lng);
+    },
+  });
+
+  return null;
+}
+
+type OriginPoint = {
+  latitude: number;
+  longitude: number;
+};
+
 export default function ContactInfoMap() {
   const [locations, setLocations] = useState<StoreLocation[]>([]);
   const [selectedStore, setSelectedStore] = useState<StoreLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [travelMode, setTravelMode] = useState<TravelMode>("driving");
+  const [directionsLoading, setDirectionsLoading] = useState(false);
+  const [directionsError, setDirectionsError] = useState<string | null>(null);
+
+  const [showDirectionsModal, setShowDirectionsModal] = useState(false);
+  const [originSearch, setOriginSearch] = useState("");
+  const [originSuggestions, setOriginSuggestions] = useState<AddressSuggestion[]>(
+    [],
+  );
+  const [searchingOrigin, setSearchingOrigin] = useState(false);
+  const [isOriginSearchFocused, setIsOriginSearchFocused] = useState(false);
+  const [originPoint, setOriginPoint] = useState<OriginPoint | null>(null);
+  const [reverseLoading, setReverseLoading] = useState(false);
+
+  const modalMapCenter: [number, number] = useMemo(() => {
+    if (originPoint) {
+      return [originPoint.latitude, originPoint.longitude];
+    }
+    if (selectedStore) {
+      return [selectedStore.latitude, selectedStore.longitude];
+    }
+    return HCMC_CENTER;
+  }, [originPoint, selectedStore]);
+
+  const modalMapZoom = originPoint ? 16 : selectedStore ? 14 : DEFAULT_ZOOM;
 
   useEffect(() => {
     const loadLocations = async () => {
@@ -104,8 +176,34 @@ export default function ContactInfoMap() {
     void loadLocations();
   }, []);
 
+  useEffect(() => {
+    if (!showDirectionsModal || !isOriginSearchFocused) return;
+
+    const query = originSearch.trim();
+    if (query.length < 3) {
+      setOriginSuggestions([]);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setSearchingOrigin(true);
+      const suggestions = await geocodingService.searchAddress(query);
+      if (!cancelled) {
+        setOriginSuggestions(suggestions);
+      }
+      setSearchingOrigin(false);
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [originSearch, showDirectionsModal, isOriginSearchFocused]);
+
   const handleSelectStore = async (location: StoreLocation) => {
     setSelectedStore(location);
+    setDirectionsError(null);
     setDetailLoading(true);
     try {
       const detail = await storeLocationService.getStoreLocationById(
@@ -119,29 +217,94 @@ export default function ContactInfoMap() {
     }
   };
 
-  const contactHighlights = useMemo(() => {
+  const openDirectionsModal = () => {
+    setDirectionsError(null);
+    setShowDirectionsModal(true);
+    setOriginSearch("");
+    setOriginSuggestions([]);
+    setIsOriginSearchFocused(false);
+    setOriginPoint(null);
+    setReverseLoading(false);
+  };
+
+  const closeDirectionsModal = () => {
+    setShowDirectionsModal(false);
+    setOriginSuggestions([]);
+    setIsOriginSearchFocused(false);
+    setReverseLoading(false);
+  };
+
+  const handleSelectOriginSuggestion = (suggestion: AddressSuggestion) => {
+    setOriginSearch(suggestion.displayName);
+    setOriginPoint({
+      latitude: suggestion.latitude,
+      longitude: suggestion.longitude,
+    });
+    setOriginSuggestions([]);
+    setIsOriginSearchFocused(false);
+  };
+
+  const handlePickOriginOnMap = async (latitude: number, longitude: number) => {
+    setOriginPoint({ latitude, longitude });
+    setDirectionsError(null);
+    setOriginSuggestions([]);
+    setIsOriginSearchFocused(false);
+
+    setReverseLoading(true);
+    const resolvedAddress = await geocodingService.reverseGeocode(latitude, longitude);
+    if (resolvedAddress) {
+      setOriginSearch(resolvedAddress);
+    }
+    setReverseLoading(false);
+  };
+
+  const handleFindDirections = async () => {
     if (!selectedStore) {
-      return [];
+      setDirectionsError("Vui long chon cua hang.");
+      return;
     }
 
-    return [
-      {
-        icon: <Store className="text-tet-accent" />,
-        title: "Cua hang dang hien thi",
-        content: selectedStore.name,
-      },
-      {
-        icon: <MapPin className="text-tet-accent" />,
-        title: "Dia chi",
-        content: selectedStore.addressLine,
-      },
-      {
-        icon: <Phone className="text-tet-accent" />,
-        title: "Hotline",
-        content: selectedStore.phoneNumber,
-      },
-    ];
-  }, [selectedStore]);
+    if (!originPoint) {
+      setDirectionsError("Vui long chon vi tri cua ban tren map hoac tu goi y.");
+      return;
+    }
+
+    const routeWindow = window.open("", "_blank", "noopener,noreferrer");
+    const openInCurrentTab = !routeWindow;
+
+    try {
+      setDirectionsLoading(true);
+      setDirectionsError(null);
+
+      const result = await storeLocationService.getDirectionsToStore(
+        selectedStore.storeLocationId,
+        {
+          fromLat: originPoint.latitude,
+          fromLng: originPoint.longitude,
+          travelMode,
+        },
+      );
+
+      if (!result.url) {
+        setDirectionsError("Khong nhan duoc link chi duong tu he thong.");
+        routeWindow?.close();
+        return;
+      }
+
+      if (openInCurrentTab) {
+        window.location.href = result.url;
+      } else {
+        routeWindow.location.href = result.url;
+      }
+      closeDirectionsModal();
+    } catch (err) {
+      console.error(err);
+      setDirectionsError("Khong the tim duong luc nay. Vui long thu lai.");
+      routeWindow?.close();
+    } finally {
+      setDirectionsLoading(false);
+    }
+  };
 
   return (
     <section className="bg-white py-20">
@@ -157,9 +320,7 @@ export default function ContactInfoMap() {
               <div className="flex h-full items-center justify-center bg-[#fffaf5] text-[#7a160e]">
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="h-8 w-8 animate-spin" />
-                  <p className="text-sm font-medium">
-                    Dang tai vi tri cua hang...
-                  </p>
+                  <p className="text-sm font-medium">Dang tai vi tri cua hang...</p>
                 </div>
               </div>
             ) : error ? (
@@ -193,15 +354,9 @@ export default function ContactInfoMap() {
                   >
                     <Popup>
                       <div className="space-y-1">
-                        <p className="font-semibold text-[#7a160e]">
-                          {location.name}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          {location.addressLine}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {location.openHoursText}
-                        </p>
+                        <p className="font-semibold text-[#7a160e]">{location.name}</p>
+                        <p className="text-xs text-gray-600">{location.addressLine}</p>
+                        <p className="text-xs text-gray-500">{location.openHoursText}</p>
                       </div>
                     </Popup>
                   </Marker>
@@ -210,32 +365,7 @@ export default function ContactInfoMap() {
             )}
           </motion.div>
 
-          <div className="w-full space-y-10 lg:w-1/2">
-            <div className="grid gap-8">
-              {contactHighlights.map((detail, index) => (
-                <motion.div
-                  key={detail.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.08 }}
-                  viewport={{ once: true }}
-                  className="flex items-start gap-5 rounded-3xl border border-tet-secondary/20 bg-[#FBF5E8]/30 p-6 transition-shadow hover:shadow-md"
-                >
-                  <div className="rounded-2xl bg-white p-4 shadow-sm">
-                    {detail.icon}
-                  </div>
-                  <div>
-                    <h4 className="mb-1 text-xl font-bold text-tet-primary">
-                      {detail.title}
-                    </h4>
-                    <p className="text-sm italic leading-relaxed text-gray-600 md:text-base">
-                      {detail.content}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
+          <div className="w-full lg:w-1/2">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
@@ -259,15 +389,17 @@ export default function ContactInfoMap() {
                   <div className="space-y-3 text-sm md:text-base">
                     <div className="flex justify-between border-b border-white/10 pb-2">
                       <span className="opacity-80">Chi nhanh</span>
-                      <span className="font-bold text-right">
-                        {selectedStore.name}
+                      <span className="font-bold text-right">{selectedStore.name}</span>
+                    </div>
+                    <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-2">
+                      <span className="opacity-80">Dia chi</span>
+                      <span className="max-w-[70%] text-right font-bold">
+                        {selectedStore.addressLine}
                       </span>
                     </div>
                     <div className="flex justify-between border-b border-white/10 pb-2">
                       <span className="opacity-80">Mo cua</span>
-                      <span className="font-bold italic">
-                        {selectedStore.openHoursText}
-                      </span>
+                      <span className="font-bold italic">{selectedStore.openHoursText}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="opacity-80">Dien thoai</span>
@@ -283,9 +415,20 @@ export default function ContactInfoMap() {
                 )}
               </div>
 
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={openDirectionsModal}
+                  disabled={!selectedStore}
+                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#f4d2af] px-4 text-sm font-bold text-[#7a160e] transition-all hover:bg-[#f0c496] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Navigation size={15} /> Tìm đường
+                </button>
+              </div>
+
               <div className="mt-6">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-white/60">
-                  Danh sach cua hang dang hoat dong
+                  Danh sách cửa hàng
                 </p>
                 <div className="space-y-3">
                   {locations.map((location) => {
@@ -321,7 +464,7 @@ export default function ContactInfoMap() {
                                 : "bg-white/10 text-white/70"
                             }`}
                           >
-                            {isActive ? "Dang xem" : "Mo map"}
+                            {isActive ? "Dang xem" : "Mo ban do"}
                           </span>
                         </div>
                       </button>
@@ -333,6 +476,191 @@ export default function ContactInfoMap() {
           </div>
         </div>
       </div>
+
+      {showDirectionsModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={closeDirectionsModal}
+          />
+
+          <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+              <div>
+                <h3 className="text-xl font-bold text-tet-primary">Tìm đường</h3>
+                <p className="text-sm text-gray-500">
+                  Đến: {selectedStore?.name || "Chưa chọn cửa hàng"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeDirectionsModal}
+                className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-0 lg:grid-cols-2">
+              <div className="space-y-4 border-b border-gray-100 p-6 lg:border-b-0 lg:border-r">
+                <div className="relative">
+                  <label className="mb-2 block text-sm font-bold text-gray-700">
+                    Vị trí của bạn
+                  </label>
+                  <div className="relative">
+                    <MapPin
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      value={originSearch}
+                      onChange={(event) => setOriginSearch(event.target.value)}
+                      onFocus={() => setIsOriginSearchFocused(true)}
+                      onBlur={() => {
+                        setTimeout(() => setIsOriginSearchFocused(false), 120);
+                      }}
+                      placeholder="Nhập địa chỉ của bạn..."
+                      className="h-11 w-full rounded-xl border border-gray-200 pl-10 pr-4 text-sm outline-none transition-all focus:border-tet-accent"
+                    />
+                  </div>
+
+                  {isOriginSearchFocused &&
+                    (searchingOrigin || originSuggestions.length > 0) && (
+                      <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+                        {searchingOrigin ? (
+                          <div className="flex items-center gap-2 px-3 py-3 text-sm text-gray-500">
+                            <Loader2 size={14} className="animate-spin" />
+                            Dang tim dia chi...
+                          </div>
+                        ) : (
+                          originSuggestions.map((suggestion, index) => (
+                            <button
+                              key={`${suggestion.latitude}-${suggestion.longitude}-${index}`}
+                              type="button"
+                              onMouseDown={(event) => {
+                                event.preventDefault();
+                                handleSelectOriginSuggestion(suggestion);
+                              }}
+                              className="block w-full border-b border-gray-100 px-3 py-2 text-left text-sm text-gray-700 transition-colors last:border-b-0 hover:bg-[#fff7ee]"
+                            >
+                              {suggestion.displayName}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-bold text-gray-700">
+                    Phương tiện
+                  </label>
+                  <select
+                    value={travelMode}
+                    onChange={(event) => setTravelMode(event.target.value as TravelMode)}
+                    className="h-11 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition-all focus:border-tet-accent"
+                  >
+                    <option value="driving">Lái xe</option>
+                    <option value="walking">Đi bộ</option>
+                    <option value="bicycling">Xe đạp</option>
+                    <option value="transit">Phương tiện công cộng</option>
+                  </select>
+                </div>
+
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+                  {originPoint ? (
+                    <>
+                      <p>
+                        Origin: {originPoint.latitude.toFixed(6)}, {" "}
+                        {originPoint.longitude.toFixed(6)}
+                      </p>
+                      <p className="mt-1">
+                        Ban co the click truc tiep len map neu goi y khong dung dia chi.
+                      </p>
+                    </>
+                  ) : (
+                    <p>
+                      Chọn ví trí xuất phát của bạn.
+                    </p>
+                  )}
+
+                  {reverseLoading && (
+                    <p className="mt-2 inline-flex items-center gap-2">
+                      <Loader2 size={12} className="animate-spin" />
+                      Dang cap nhat dia chi tu vi tri map...
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-6">
+                <div className="contact-store-map h-[380px] overflow-hidden rounded-2xl border border-gray-200">
+                  <MapContainer
+                    center={modalMapCenter}
+                    zoom={modalMapZoom}
+                    scrollWheelZoom
+                    className="h-full w-full"
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+
+                    <DirectionsMapViewportController
+                      center={modalMapCenter}
+                      zoom={modalMapZoom}
+                    />
+                    <DirectionsMapClickPicker onPick={handlePickOriginOnMap} />
+
+                    {selectedStore && (
+                      <Marker
+                        position={[selectedStore.latitude, selectedStore.longitude]}
+                        icon={activeStoreIcon}
+                      >
+                        <Popup>{selectedStore.name}</Popup>
+                      </Marker>
+                    )}
+
+                    {originPoint && (
+                      <Marker
+                        position={[originPoint.latitude, originPoint.longitude]}
+                        icon={originPinIcon}
+                      >
+                        <Popup>Vi tri cua ban</Popup>
+                      </Marker>
+                    )}
+                  </MapContainer>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
+              {directionsError && (
+                <p className="mr-auto text-sm font-medium text-red-600">
+                  {directionsError}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={closeDirectionsModal}
+                className="rounded-full border border-gray-200 px-5 py-2.5 text-sm font-bold text-gray-700 transition-all hover:bg-gray-50"
+                disabled={directionsLoading}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleFindDirections()}
+                disabled={directionsLoading || !selectedStore || !originPoint}
+                className="inline-flex items-center gap-2 rounded-full bg-tet-primary px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-tet-accent disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {directionsLoading && <Loader2 size={14} className="animate-spin" />}
+                {directionsLoading ? "Đang xử lý..." : "Mở Google Maps"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

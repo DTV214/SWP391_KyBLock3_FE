@@ -73,6 +73,7 @@ import AdminBlogs from "@/feature/admin/pages/AdminBlogs";
 import AdminInventory from "@/feature/admin/pages/AdminInventory";
 import AdminAccounts from "@/feature/admin/pages/AdminAccounts";
 import ForgotPasswordPage from "@/feature/auth/pages/ForgotPasswordPage";
+import AdminStoreLocations from "@/feature/admin/pages/AdminStoreLocations";
 
 // --- MIDDLEWARES ---
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
@@ -228,6 +229,7 @@ function App() {
                 <Route path="blogs" element={<AdminBlogs />} />
                 <Route path="inventory" element={<AdminInventory />} />
                 <Route path="accounts" element={<AdminAccounts />} />
+                <Route path="store-locations" element={<AdminStoreLocations />} />
                 <Route
                   path="quotations"
                   element={<AdminApprovalQuotationsPage />}

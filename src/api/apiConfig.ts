@@ -202,8 +202,16 @@ export const API_ENDPOINTS = {
       `${BASE_URL}/chat/read/${conversationId}`,
   },
   STORE_LOCATIONS: {
+    LIST: `${BASE_URL}/store-locations`,
     ACTIVE: `${BASE_URL}/store-locations/active`,
     DETAIL: (id: string | number) => `${BASE_URL}/store-locations/${id}`,
+    CREATE: `${BASE_URL}/store-locations`,
+    UPDATE: (id: string | number) => `${BASE_URL}/store-locations/${id}`,
+    DELETE: (id: string | number) => `${BASE_URL}/store-locations/${id}`,
+  },
+  DIRECTIONS: {
+    TO_STORE: (storeLocationId: string | number) =>
+      `${BASE_URL}/directions/to-store/${storeLocationId}`,
   },
   // Admin Accounts endpoints
   ADMIN_ACCOUNTS: {

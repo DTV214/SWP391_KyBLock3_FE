@@ -14,6 +14,7 @@ import {
   Home,
   BookOpen,
   PackageOpen,
+  MapPin,
 } from "lucide-react";
 import { chatService } from "@/feature/chat/services/chatService";
 import { chatRealtimeService } from "@/feature/chat/services/chatRealtime";
@@ -68,6 +69,11 @@ export default function AdminSidebar() {
       path: "/admin/accounts",
       label: "Quản lý Tài khoản",
       icon: <Users size={18} />,
+    },
+    {
+      path: "/admin/store-locations",
+      label: "Cửa hàng",
+      icon: <MapPin size={18} />,
     },
     {
       path: "/admin/products",
