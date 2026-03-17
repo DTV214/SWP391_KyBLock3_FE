@@ -62,6 +62,10 @@ export default function OrderHistory() {
     }
   };
 
+  const handleStatusUpdate = (updatedOrder: OrderResponse) => {
+    updateOrderInList(updatedOrder);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -106,6 +110,8 @@ export default function OrderHistory() {
               onViewDetails={handleViewDetails}
               onReorder={handleReorder}
               onCancel={handleCancel}
+              onStatusUpdate={handleStatusUpdate}
+              isAdmin={false}
             />
           ))}
         </div>

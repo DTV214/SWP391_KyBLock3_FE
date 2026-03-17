@@ -2,34 +2,37 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, Loader2, X } from 'lucide-react';
 import { useState } from 'react';
 import type { OrderResponse } from '@/feature/checkout/services/orderService';
+import { translateOrderStatus } from '../utils/orderStatusUtils';
 
-interface CancelOrderConfirmModalProps {
+interface UpdateOrderStatusConfirmModalProps {
     order: OrderResponse | null;
     isOpen: boolean;
+    newStatus: string | null;
     onClose: () => void;
-    onConfirm: (orderId: number) => Promise<void>;
+    onConfirm: () => Promise<void>;
 }
 
-export default function CancelOrderConfirmModal({
+export default function UpdateOrderStatusConfirmModal({
     order,
     isOpen,
+    newStatus,
     onClose,
     onConfirm,
-}: CancelOrderConfirmModalProps) {
+}: UpdateOrderStatusConfirmModalProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    if (!order) return null;
+    if (!order || !newStatus) return null;
 
-    const handleCancel = async () => {
+    const handleConfirm = async () => {
         try {
             setIsLoading(true);
             setError(null);
-            await onConfirm(order.orderId);
+            await onConfirm();
             onClose();
         } catch (err: any) {
-            setError(err.message || 'Không thể hủy đơn hàng');
-            console.error('Error canceling order:', err);
+            setError(err.message || 'Không thể cập nhật trạng thái đơn hàng');
+            console.error('Error updating order status:', err);
         } finally {
             setIsLoading(false);
         }
@@ -57,15 +60,15 @@ export default function CancelOrderConfirmModal({
                     >
                         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
                             {/* Header */}
-                            <div className="bg-red-50 border-b border-red-200 px-6 py-4 flex items-center justify-between">
+                            <div className="bg-blue-50 border-b border-blue-200 px-6 py-4 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <AlertCircle className="w-5 h-5 text-red-600" />
-                                    <h2 className="text-lg font-bold text-red-900">Xác nhận hủy đơn hàng</h2>
+                                    <AlertCircle className="w-5 h-5 text-blue-600" />
+                                    <h2 className="text-lg font-bold text-blue-900">Xác nhận cập nhật trạng thái</h2>
                                 </div>
                                 <button
                                     onClick={onClose}
                                     disabled={isLoading}
-                                    className="text-red-600 hover:text-red-700 transition-colors"
+                                    className="text-blue-600 hover:text-blue-700 transition-colors"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
@@ -81,15 +84,22 @@ export default function CancelOrderConfirmModal({
 
                                 <div className="space-y-3">
                                     <p className="text-gray-700">
-                                        Bạn có chắc chắn muốn <span className="font-bold text-red-600">hủy đơn hàng này</span> không?
+                                        Bạn có chắc chắn muốn <span className="font-bold text-blue-600">cập nhật trạng thái</span> đơn hàng này không?
                                     </p>
 
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
                                         <p className="text-sm text-blue-900">
-                                            <span className="font-bold">💳 Hoàn tiền:</span> Sau khi hủy, nếu đã thanh toán thì số tiền{' '}
-                                            <span className="font-bold text-blue-600">{order.finalPrice.toLocaleString('vi-VN')}₫</span>{' '}
-                                            sẽ được hoàn ngay về ví.
+                                            <span className="font-bold">📋 Thay đổi:</span>
                                         </p>
+                                        <div className="space-y-2 ml-4">
+                                            <p className="text-sm text-blue-900">
+                                                Trạng thái hiện tại: <span className="font-bold text-blue-600">{translateOrderStatus(order.status)}</span>
+                                            </p>
+                                            <p className="text-sm text-blue-900 flex items-center gap-2">
+                                                <span>→</span>
+                                                <span>Trạng thái mới: <span className="font-bold text-green-600">{translateOrderStatus(newStatus)}</span></span>
+                                            </p>
+                                        </div>
                                     </div>
 
                                     <div className="bg-gray-50 p-4 rounded-lg">
@@ -113,12 +123,12 @@ export default function CancelOrderConfirmModal({
                                     disabled={isLoading}
                                     className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Giữ lại
+                                    Hủy bỏ
                                 </button>
                                 <button
-                                    onClick={handleCancel}
+                                    onClick={handleConfirm}
                                     disabled={isLoading}
-                                    className="px-6 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    className="px-6 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
                                     {isLoading ? (
                                         <>
@@ -126,7 +136,7 @@ export default function CancelOrderConfirmModal({
                                             Đang xử lý...
                                         </>
                                     ) : (
-                                        'Hủy đơn hàng'
+                                        'Xác nhận'
                                     )}
                                 </button>
                             </div>

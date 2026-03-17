@@ -47,6 +47,10 @@ export interface UpdateOrderRequest {
     note: string;
 }
 
+export interface UpdateOrderStatusRequest {
+    status: string;
+}
+
 /**
  * Tạo đơn hàng mới
  * POST /api/orders
@@ -128,6 +132,25 @@ export const updateOrderShippingInfo = async (
 };
 
 /**
+ * Cập nhật trạng thái đơn hàng
+ * PUT /api/orders/{orderId}/status
+ */
+export const updateOrderStatus = async (
+    orderId: number,
+    status: string,
+    token?: string
+): Promise<OrderResponse> => {
+    const response = await axiosClient.put<OrderResponse>(
+        API_ENDPOINTS.ORDERS.UPDATE_STATUS(orderId),
+        { status } as UpdateOrderStatusRequest,
+        {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        }
+    );
+    return response.data;
+};
+
+/**
  * Hủy đơn hàng
  * DELETE /api/orders/{orderId}/cancel
  */
@@ -151,5 +174,6 @@ export const orderService = {
     getOrderById,
     getAllOrders,
     updateOrderShippingInfo,
+    updateOrderStatus,
     cancelOrder
 };

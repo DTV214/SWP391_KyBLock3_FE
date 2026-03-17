@@ -18,8 +18,8 @@ export const translateOrderStatus = (status: string): string => {
         PENDING: 'Chờ xác nhận',
         CONFIRMED: 'Đã xác nhận',
         PROCESSING: 'Đang xử lý',
-        SHIPPED: 'Đã gửi',
-        DELIVERED: 'Đã giao',
+        SHIPPED: 'Đã giao hàng',
+        DELIVERED: 'Đã nhận hàng',
         COMPLETED: 'Hoàn thành',
         CANCELLED: 'Đã hủy',
     };

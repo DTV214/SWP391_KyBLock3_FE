@@ -147,6 +147,8 @@ export const API_ENDPOINTS = {
     MY_ORDERS: `${BASE_URL}/orders/my-orders`,
     UPDATE_SHIPPING_INFO: (orderId: string | number) =>
       `${BASE_URL}/orders/${orderId}/shipping-info`,
+    UPDATE_STATUS: (orderId: string | number) =>
+      `${BASE_URL}/orders/${orderId}/status`,
     CANCEL: (orderId: string | number) =>
       `${BASE_URL}/orders/${orderId}/cancel`,
   },
