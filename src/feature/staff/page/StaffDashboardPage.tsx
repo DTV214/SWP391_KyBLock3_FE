@@ -21,25 +21,8 @@ export default function StaffDashboardPage() {
 
   useEffect(() => {
     const fetchUnreadChats = async () => {
-      const conversations = await chatService.getAllConversations();
-
-      const unreadByConversation = await Promise.all(
-        conversations.map(async (conversation) => {
-          try {
-            const messages = await chatService.getConversationMessages(
-              conversation.id,
-            );
-            return messages.some(
-              (message) =>
-                !message.isRead && message.senderId === conversation.userId,
-            );
-          } catch {
-            return false;
-          }
-        }),
-      );
-
-      setUnreadChatCount(unreadByConversation.filter(Boolean).length);
+      const unreadCount = await chatService.getUnreadConversationCount();
+      setUnreadChatCount(unreadCount);
     };
 
     const fetchData = async () => {

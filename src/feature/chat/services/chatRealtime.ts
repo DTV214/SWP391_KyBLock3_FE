@@ -8,32 +8,52 @@ import BASE_URL from "@/api/apiConfig";
 
 type RealtimeListener = () => void;
 type ConnectionListener = (connected: boolean) => void;
+type PersistentGroupSubscription = {
+  methodNames: string[];
+  args: unknown[];
+  referenceCount: number;
+};
 
-const SIGNALR_EVENT_NAMES = [
-  "ReceiveMessage",
-  "MessageReceived",
-  "NewMessage",
-  "ChatMessageReceived",
-  "ReceiveChatMessage",
-  "ReceiveConversationMessage",
-  "ReceiveReply",
-  "ReplyReceived",
-  "ReceiveAdminMessage",
-  "AdminMessageReceived",
-  "ReceiveStaffMessage",
-  "StaffMessageReceived",
-  "ReceiveSupportMessage",
-  "SupportMessageReceived",
-  "ReceiveUserMessage",
-  "UserMessageReceived",
-  "MessagesRead",
-  "ConversationReadUpdated",
-  "ChatUpdated",
-  "ConversationUpdated",
-  "ReceiveConversationUpdate",
-  "UnreadCountUpdated",
-  "MessagesUpdated",
-];
+const SIGNALR_EVENT_NAMES = Array.from(
+  new Set([
+    "ReceiveMessage",
+    "MessageReceived",
+    "NewMessage",
+    "ChatMessageReceived",
+    "ReceiveChatMessage",
+    "ReceiveConversationMessage",
+    "ReceiveReply",
+    "ReplyReceived",
+    "ReceiveAdminMessage",
+    "AdminMessageReceived",
+    "ReceiveStaffMessage",
+    "StaffMessageReceived",
+    "ReceiveSupportMessage",
+    "SupportMessageReceived",
+    "ReceiveUserMessage",
+    "UserMessageReceived",
+    "MessagesRead",
+    "ConversationReadUpdated",
+    "ChatUpdated",
+    "ConversationUpdated",
+    "ReceiveConversationUpdate",
+    "ConversationListUpdated",
+    "ChatListUpdated",
+    "UnreadCountUpdated",
+    "UnreadUpdated",
+    "UnreadMessagesUpdated",
+    "UnreadConversationsUpdated",
+    "MessagesUpdated",
+    "MessageRead",
+    "ReceiveMessageRead",
+    "NewConversation",
+    "ConversationCreated",
+    "ChatNotificationReceived",
+    "ReceiveChatNotification",
+    "NotificationReceived",
+    "ReceiveNotification",
+  ]),
+);
 
 const normalizeUrl = (value: string): string => value.replace(/\/+$/, "");
 
@@ -60,6 +80,8 @@ class ChatRealtimeService {
   private startPromise: Promise<boolean> | null = null;
   private realtimeListeners = new Set<RealtimeListener>();
   private connectionListeners = new Set<ConnectionListener>();
+  private persistentGroups = new Map<string, PersistentGroupSubscription>();
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   subscribe(listener: RealtimeListener): () => void {
     this.realtimeListeners.add(listener);
@@ -93,6 +115,28 @@ class ChatRealtimeService {
     this.connectionListeners.forEach((listener) => listener(connected));
   }
 
+  private hasActiveListeners(): boolean {
+    return this.realtimeListeners.size > 0 || this.connectionListeners.size > 0;
+  }
+
+  private clearReconnectTimer(): void {
+    if (!this.reconnectTimer) return;
+    clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
+  }
+
+  private scheduleReconnect(delayMs = 1500): void {
+    if (this.reconnectTimer) return;
+    if (this.startPromise) return;
+    if (this.isConnected()) return;
+    if (!this.hasActiveListeners()) return;
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      void this.ensureConnected();
+    }, delayMs);
+  }
+
   private attachConnectionHandlers(connection: HubConnection): void {
     SIGNALR_EVENT_NAMES.forEach((eventName) => {
       connection.on(eventName, () => {
@@ -102,7 +146,7 @@ class ChatRealtimeService {
 
     connection.onreconnected(() => {
       this.emitConnection();
-      this.emitRealtime();
+      void this.rejoinPersistentGroups();
     });
 
     connection.onreconnecting(() => {
@@ -117,8 +161,44 @@ class ChatRealtimeService {
     });
   }
 
+  private async invokeOnConnection(
+    connection: HubConnection,
+    methodNames: string[],
+    args: unknown[],
+  ): Promise<boolean> {
+    for (const methodName of methodNames) {
+      try {
+        await connection.invoke(methodName, ...args);
+        return true;
+      } catch {
+        // Try the next candidate method name.
+      }
+    }
+
+    return false;
+  }
+
+  private async rejoinPersistentGroups(): Promise<void> {
+    if (!this.connection || this.connection.state !== HubConnectionState.Connected) {
+      return;
+    }
+
+    const connection = this.connection;
+    const groups = Array.from(this.persistentGroups.values());
+
+    await Promise.all(
+      groups.map((group) =>
+        this.invokeOnConnection(connection, group.methodNames, group.args),
+      ),
+    );
+
+    this.emitRealtime();
+  }
+
   private async createAndStartConnection(): Promise<boolean> {
     const tokenFactory = () => localStorage.getItem("token") || "";
+    const hadPreviousConnection = this.connection !== null;
+    this.clearReconnectTimer();
 
     for (const url of resolveHubCandidates()) {
       const connection = new HubConnectionBuilder()
@@ -134,6 +214,10 @@ class ChatRealtimeService {
       try {
         await connection.start();
         this.connection = connection;
+        if (hadPreviousConnection) {
+          await this.rejoinPersistentGroups();
+        }
+        this.clearReconnectTimer();
         this.emitConnection();
         return true;
       } catch {
@@ -155,9 +239,16 @@ class ChatRealtimeService {
       return this.startPromise;
     }
 
-    this.startPromise = this.createAndStartConnection().finally(() => {
-      this.startPromise = null;
-    });
+    this.startPromise = this.createAndStartConnection()
+      .then((connected) => {
+        if (!connected) {
+          this.scheduleReconnect();
+        }
+        return connected;
+      })
+      .finally(() => {
+        this.startPromise = null;
+      });
 
     return this.startPromise;
   }
@@ -171,16 +262,53 @@ class ChatRealtimeService {
       return false;
     }
 
-    for (const methodName of methodNames) {
-      try {
-        await this.connection.invoke(methodName, ...args);
-        return true;
-      } catch {
-        // Try the next candidate method name.
-      }
+    return this.invokeOnConnection(this.connection, methodNames, args);
+  }
+
+  async joinGroup(
+    key: string,
+    methodNames: string[],
+    ...args: unknown[]
+  ): Promise<boolean> {
+    const existing = this.persistentGroups.get(key);
+    if (existing) {
+      existing.referenceCount += 1;
+      existing.methodNames = [...methodNames];
+      existing.args = [...args];
+      void this.ensureConnected();
+      return true;
     }
 
-    return false;
+    this.persistentGroups.set(key, {
+      methodNames: [...methodNames],
+      args: [...args],
+      referenceCount: 1,
+    });
+    return this.invokeFirstSuccessful(methodNames, ...args);
+  }
+
+  async leaveGroup(
+    key: string,
+    methodNames: string[],
+    ...args: unknown[]
+  ): Promise<boolean> {
+    const existing = this.persistentGroups.get(key);
+    if (!existing) {
+      return false;
+    }
+
+    if (existing.referenceCount > 1) {
+      existing.referenceCount -= 1;
+      return true;
+    }
+
+    this.persistentGroups.delete(key);
+
+    if (!this.connection || this.connection.state !== HubConnectionState.Connected) {
+      return false;
+    }
+
+    return this.invokeOnConnection(this.connection, methodNames, args);
   }
 
   async stopIfIdle(): Promise<void> {
@@ -188,10 +316,12 @@ class ChatRealtimeService {
       return;
     }
 
+    this.clearReconnectTimer();
     if (!this.connection) return;
 
     const connection = this.connection;
     this.connection = null;
+    this.persistentGroups.clear();
     await connection.stop().catch(() => undefined);
     this.emitConnection();
   }

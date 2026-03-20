@@ -35,6 +35,26 @@ const formatMessageDate = (iso: string): string =>
 const renderMessageStatus = (isRead: boolean) =>
   isRead ? <CheckCheck size={12} /> : <Check size={12} />;
 
+const JOIN_CONVERSATION_METHODS = [
+  "JoinConversation",
+  "JoinConversationGroup",
+  "JoinChatConversation",
+  "JoinChatRoom",
+  "JoinRoom",
+];
+
+const LEAVE_CONVERSATION_METHODS = [
+  "LeaveConversation",
+  "LeaveConversationGroup",
+  "LeaveChatConversation",
+  "LeaveChatRoom",
+  "LeaveRoom",
+];
+
+type LoadOptions = {
+  silent?: boolean;
+};
+
 export default function AdminChatPage() {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [unreadMap, setUnreadMap] = useState<Record<number, number>>({});
@@ -87,18 +107,22 @@ export default function AdminChatPage() {
   const getDisplayName = (userId: number): string =>
     userNameMap[userId] || `User ${userId}`;
 
-  const loadConversations = async () => {
-    setIsLoadingConversations(true);
-    setError(null);
+  const loadConversations = async (options?: LoadOptions) => {
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setIsLoadingConversations(true);
+      setError(null);
+    }
     try {
       const data = await chatService.getAllConversations();
 
       const unreadEntries = await Promise.all(
         data.map(async (conversation) => {
           try {
-            const conversationMessages = await chatService.getConversationMessages(
-              conversation.id,
-            );
+            const conversationMessages =
+              conversation.messages && conversation.messages.length > 0
+                ? conversation.messages
+                : await chatService.getConversationMessages(conversation.id);
             const unreadCount = conversationMessages.filter(
               (message) =>
                 !message.isRead && message.senderId === conversation.userId,
@@ -135,28 +159,39 @@ export default function AdminChatPage() {
         setSelectedConversationId(data[0].id);
       }
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Không tải được danh sách chat.",
-      );
+      if (!silent) {
+        setError(
+          err instanceof Error ? err.message : "Không tải được danh sách chat.",
+        );
+      }
     } finally {
-      setIsLoadingConversations(false);
+      if (!silent) {
+        setIsLoadingConversations(false);
+      }
     }
   };
 
-  const loadMessages = async (conversationId: number) => {
-    setIsLoadingMessages(true);
-    setError(null);
+  const loadMessages = async (conversationId: number, options?: LoadOptions) => {
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setIsLoadingMessages(true);
+      setError(null);
+    }
     try {
       const data = await chatService.getConversationMessages(conversationId);
       setMessages(data);
     } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Không tải được nội dung hội thoại.",
-      );
+      if (!silent) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Không tải được nội dung hội thoại.",
+        );
+      }
     } finally {
-      setIsLoadingMessages(false);
+      if (!silent) {
+        setIsLoadingMessages(false);
+      }
     }
   };
 
@@ -213,9 +248,12 @@ export default function AdminChatPage() {
   useEffect(() => {
     if (!selectedConversationId) return;
 
+    const groupKey = `conversation:${selectedConversationId}`;
+
     const joinConversation = async () => {
-      await chatRealtimeService.invokeFirstSuccessful(
-        ["JoinConversation"],
+      await chatRealtimeService.joinGroup(
+        groupKey,
+        JOIN_CONVERSATION_METHODS,
         selectedConversationId,
       );
     };
@@ -223,8 +261,9 @@ export default function AdminChatPage() {
     void joinConversation();
 
     return () => {
-      void chatRealtimeService.invokeFirstSuccessful(
-        ["LeaveConversation"],
+      void chatRealtimeService.leaveGroup(
+        groupKey,
+        LEAVE_CONVERSATION_METHODS,
         selectedConversationId,
       );
     };
@@ -232,10 +271,10 @@ export default function AdminChatPage() {
 
   useEffect(() => {
     const unsubscribeRealtime = chatRealtimeService.subscribe(() => {
-      void loadConversations();
+      void loadConversations({ silent: true });
 
       if (selectedConversationId) {
-        void loadMessages(selectedConversationId);
+        void loadMessages(selectedConversationId, { silent: true });
         void markAsRead(selectedConversationId);
       }
     });
@@ -303,7 +342,13 @@ export default function AdminChatPage() {
       });
       setMessageInput("");
       setMessages((prev) => [...prev, sent]);
-      await loadConversations();
+      setConversations((prev) =>
+        prev.map((conversation) =>
+          conversation.id === selectedConversationId
+            ? { ...conversation, lastMessageAt: sent.createdAt }
+            : conversation,
+        ),
+      );
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Gửi phản hồi thất bại.");
     } finally {

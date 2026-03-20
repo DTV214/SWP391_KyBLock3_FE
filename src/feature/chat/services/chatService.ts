@@ -88,6 +88,39 @@ const markConversationRead = async (conversationId: number): Promise<void> => {
   await axiosClient.put(API_ENDPOINTS.CHAT.READ(conversationId));
 };
 
+const getUnreadConversationCount = async (): Promise<number> => {
+  const conversations = await getAllConversations();
+
+  const embeddedUnreadCount = conversations.filter((conversation) =>
+    (conversation.messages ?? []).some(
+      (message) => !message.isRead && message.senderId === conversation.userId,
+    ),
+  ).length;
+
+  const hasEmbeddedMessages = conversations.some(
+    (conversation) => (conversation.messages ?? []).length > 0,
+  );
+
+  if (hasEmbeddedMessages) {
+    return embeddedUnreadCount;
+  }
+
+  const unreadByConversation = await Promise.all(
+    conversations.map(async (conversation) => {
+      try {
+        const messages = await getConversationMessages(conversation.id);
+        return messages.some(
+          (message) => !message.isRead && message.senderId === conversation.userId,
+        );
+      } catch {
+        return false;
+      }
+    }),
+  );
+
+  return unreadByConversation.filter(Boolean).length;
+};
+
 const decodeJwtPayload = (token: string): Record<string, unknown> | null => {
   try {
     const parts = token.split(".");
@@ -155,5 +188,6 @@ export const chatService = {
   getConversationMessages,
   replyToConversation,
   markConversationRead,
+  getUnreadConversationCount,
 };
 

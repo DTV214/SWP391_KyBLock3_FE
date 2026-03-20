@@ -27,6 +27,38 @@ const formatMessageDate = (iso: string): string =>
 const renderMessageStatus = (isRead: boolean) =>
   isRead ? <CheckCheck size={12} /> : <Check size={12} />;
 
+const JOIN_CONVERSATION_METHODS = [
+  "JoinConversation",
+  "JoinConversationGroup",
+  "JoinChatConversation",
+  "JoinChatRoom",
+  "JoinRoom",
+];
+
+const LEAVE_CONVERSATION_METHODS = [
+  "LeaveConversation",
+  "LeaveConversationGroup",
+  "LeaveChatConversation",
+  "LeaveChatRoom",
+  "LeaveRoom",
+];
+
+const JOIN_USER_GROUP_METHODS = [
+  "JoinUserGroup",
+  "JoinCustomerGroup",
+  "JoinAccountGroup",
+  "JoinPersonalGroup",
+  "JoinUserRoom",
+];
+
+const LEAVE_USER_GROUP_METHODS = [
+  "LeaveUserGroup",
+  "LeaveCustomerGroup",
+  "LeaveAccountGroup",
+  "LeavePersonalGroup",
+  "LeaveUserRoom",
+];
+
 export default function CustomerChatWidget() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -122,35 +154,43 @@ export default function CustomerChatWidget() {
     if (!shouldRender) return;
     if (!conversation?.id) return;
 
-    const joinRealtimeTargets = async () => {
-      const userId = getCurrentUserId();
+    const userId = getCurrentUserId();
+    const conversationGroupKey = `conversation:${conversation.id}`;
+    const userGroupKey = userId ? `user:${userId}` : null;
 
-      await chatRealtimeService.invokeFirstSuccessful(
-        [
-          "JoinConversation",
-          "JoinConversationGroup",
-          "JoinChatConversation",
-          "JoinChatRoom",
-          "JoinRoom",
-        ],
+    const joinRealtimeTargets = async () => {
+      await chatRealtimeService.joinGroup(
+        conversationGroupKey,
+        JOIN_CONVERSATION_METHODS,
         conversation.id,
       );
 
       if (userId) {
-        await chatRealtimeService.invokeFirstSuccessful(
-          [
-            "JoinUserGroup",
-            "JoinCustomerGroup",
-            "JoinAccountGroup",
-            "JoinPersonalGroup",
-            "JoinUserRoom",
-          ],
+        await chatRealtimeService.joinGroup(
+          userGroupKey ?? `user:${userId}`,
+          JOIN_USER_GROUP_METHODS,
           userId,
         );
       }
     };
 
     void joinRealtimeTargets();
+
+    return () => {
+      void chatRealtimeService.leaveGroup(
+        conversationGroupKey,
+        LEAVE_CONVERSATION_METHODS,
+        conversation.id,
+      );
+
+      if (userId && userGroupKey) {
+        void chatRealtimeService.leaveGroup(
+          userGroupKey,
+          LEAVE_USER_GROUP_METHODS,
+          userId,
+        );
+      }
+    };
   }, [shouldRender, conversation?.id]);
 
   useEffect(() => {
