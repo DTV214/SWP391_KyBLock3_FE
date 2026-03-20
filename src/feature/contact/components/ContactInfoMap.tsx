@@ -377,7 +377,7 @@ export default function ContactInfoMap() {
               </div>
               <div className="flex items-center justify-between gap-3">
                 <h4 className="flex items-center gap-3 text-2xl font-bold text-tet-secondary">
-                  <Clock size={24} /> Gio mo cua
+                  <Clock size={24} /> Giờ mở cửa
                 </h4>
                 {detailLoading && (
                   <span className="text-xs text-white/70">Dang cap nhat...</span>
@@ -388,21 +388,21 @@ export default function ContactInfoMap() {
                 {selectedStore ? (
                   <div className="space-y-3 text-sm md:text-base">
                     <div className="flex justify-between border-b border-white/10 pb-2">
-                      <span className="opacity-80">Chi nhanh</span>
+                      <span className="opacity-80">Chi nhánh</span>
                       <span className="font-bold text-right">{selectedStore.name}</span>
                     </div>
                     <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-2">
-                      <span className="opacity-80">Dia chi</span>
+                      <span className="opacity-80">Địa chỉ</span>
                       <span className="max-w-[70%] text-right font-bold">
                         {selectedStore.addressLine}
                       </span>
                     </div>
                     <div className="flex justify-between border-b border-white/10 pb-2">
-                      <span className="opacity-80">Mo cua</span>
+                      <span className="opacity-80">Mở cửa</span>
                       <span className="font-bold italic">{selectedStore.openHoursText}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="opacity-80">Dien thoai</span>
+                      <span className="opacity-80">Điện thoại</span>
                       <span className="font-bold text-tet-secondary">
                         {selectedStore.phoneNumber}
                       </span>
@@ -410,7 +410,7 @@ export default function ContactInfoMap() {
                   </div>
                 ) : (
                   <p className="text-sm text-white/80">
-                    Chon mot cua hang tren ban do de xem thong tin.
+                    Chọn một cửa hàng trên màn hình để xem thông tin
                   </p>
                 )}
               </div>
@@ -464,7 +464,7 @@ export default function ContactInfoMap() {
                                 : "bg-white/10 text-white/70"
                             }`}
                           >
-                            {isActive ? "Dang xem" : "Mo ban do"}
+                            {isActive ? "Đang xem" : "Mở bản đồ"}
                           </span>
                         </div>
                       </button>
@@ -530,7 +530,7 @@ export default function ContactInfoMap() {
                         {searchingOrigin ? (
                           <div className="flex items-center gap-2 px-3 py-3 text-sm text-gray-500">
                             <Loader2 size={14} className="animate-spin" />
-                            Dang tim dia chi...
+                            Đang tìm địa chỉ...
                           </div>
                         ) : (
                           originSuggestions.map((suggestion, index) => (
