@@ -33,9 +33,7 @@ export default function BlogHero({ blog }: BlogHeroProps) {
 
   // Hàm hỗ trợ lấy full URL ảnh
   const getFullMediaUrl = (url: string | null) => {
-    if (!url) return defaultImage; // Trả về ảnh mặc định nếu bài viết không có ảnh
-    const serverUrl = BASE_URL.replace("/api", "");
-    return `${serverUrl}${url}`;
+    return url ? url : defaultImage;
   };
 
   return (

@@ -26,9 +26,7 @@ export default function BlogContent({ blog }: BlogContentProps) {
 
   // Hàm hỗ trợ lấy full URL ảnh/video
   const getFullMediaUrl = (url: string | null) => {
-    if (!url) return defaultImage;
-    const serverUrl = BASE_URL.replace("/api", "");
-    return `${serverUrl}${url}`;
+    return url ? url : defaultImage;
   };
 
   return (

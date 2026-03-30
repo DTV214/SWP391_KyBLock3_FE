@@ -19,6 +19,8 @@ import {
   type CreateBlogRequest,
   type UpdateBlogRequest,
 } from "@/api/blogAdminService";
+import axiosClient from "@/api/axiosClient";
+import { API_ENDPOINTS } from "@/api/apiConfig";
 import AdminPagination from "../components/AdminPagination";
 import BASE_URL from "@/api/apiConfig";
 
@@ -109,22 +111,13 @@ export default function AdminBlogs() {
   };
 
   // --- HÀM UPLOAD MEDIA ---
-  // TODO: Thay thế hàm này bằng API upload thực tế của bạn (gọi Cloudinary hoặc API Upload Media trên BE)
   const uploadMedia = async (file: File): Promise<string> => {
-    console.log("Đang upload file:", file.name);
-    // Ví dụ gọi API:
-    // const formData = new FormData(); formData.append("file", file);
-    // const res = await axiosClient.post('/api/media/upload', formData, { headers: { "Content-Type": "multipart/form-data" }});
-    // return res.data.url;
-
-    // Giả lập trả về một URL ngẫu nhiên sau 1 giây
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(
-          `https://res.cloudinary.com/demo/image/upload/sample.jpg?name=${encodeURIComponent(file.name)}`,
-        );
-      }, 1000);
-    });
+    const formData = new FormData();
+    formData.append("file", file);
+    const res: any = await axiosClient.post(API_ENDPOINTS.MEDIA.UPLOAD, formData);
+    const url = res?.data?.url;
+    if (!url) throw new Error("Upload ảnh thất bại: không nhận được URL từ server");
+    return url;
   };
 
   // Xử lý Submit Form (Create hoặc Update)

@@ -14,9 +14,7 @@ export default function BlogSidebar({ recentBlogs }: BlogSidebarProps) {
 
   // Hàm hỗ trợ lấy full URL ảnh
   const getFullMediaUrl = (url: string | null) => {
-    if (!url) return defaultImage;
-    const serverUrl = BASE_URL.replace("/api", "");
-    return `${serverUrl}${url}`;
+    return url ? url : defaultImage;
   };
 
   // Danh mục đồng bộ với BlogGrid

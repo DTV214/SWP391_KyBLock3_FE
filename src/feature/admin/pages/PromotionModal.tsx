@@ -1,3 +1,4 @@
+import React from 'react';
 import type { CreatePromotionRequest } from '../../checkout/services/promotionService';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -9,6 +10,10 @@ interface PromotionModalProps {
     onFormChange: (data: CreatePromotionRequest) => void;
     onSubmit: (e: React.FormEvent) => void;
     onClose: () => void;
+}
+
+interface FormErrors {
+    [key: string]: string;
 }
 
 const formatDatetimeForInput = (dateString: string): string => {
@@ -58,6 +63,57 @@ export default function PromotionModal({
     onSubmit,
     onClose,
 }: PromotionModalProps) {
+    const [errors, setErrors] = React.useState<FormErrors>({});
+
+    const validateForm = (): boolean => {
+        const newErrors: FormErrors = {};
+
+        // Kiểm tra Giảm giá >= 0
+        if (formData.discountValue < 0) {
+            newErrors.discountValue = 'Giảm giá phải lớn hơn hoặc bằng 0';
+        }
+
+        // Kiểm tra Giảm giá theo phần trăm: 0 <= discountValue <= 100
+        if (formData.isPercentage) {
+            if (formData.discountValue < 0 || formData.discountValue > 100) {
+                newErrors.discountValue = 'Giảm giá theo phần trăm phải từ 0 đến 100';
+            }
+            // Kiểm tra Giảm giá tối đa >= 0
+            if (formData.maxDiscountPrice < 0) {
+                newErrors.maxDiscountPrice = 'Giảm giá tối đa phải lớn hơn hoặc bằng 0';
+            }
+        }
+
+        // Kiểm tra Giá trị đơn tối thiểu >= 0
+        if (formData.minPriceToApply < 0) {
+            newErrors.minPriceToApply = 'Giá trị đơn tối thiểu phải lớn hơn hoặc bằng 0';
+        }
+
+        // Kiểm tra Số lượng giới hạn >= 0
+        if (formData.isLimited && formData.limitedCount < 0) {
+            newErrors.limitedCount = 'Số lượng giới hạn phải lớn hơn hoặc bằng 0';
+        }
+
+        // Kiểm tra thời gian hết hạn phải sau thời gian bắt đầu
+        if (formData.startTime && formData.expiryDate) {
+            const startTime = new Date(formData.startTime).getTime();
+            const expiryDate = new Date(formData.expiryDate).getTime();
+            if (expiryDate <= startTime) {
+                newErrors.expiryDate = 'Thời gian hết hạn phải sau thời gian bắt đầu';
+            }
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (validateForm()) {
+            onSubmit(e);
+        }
+    };
+
     if (!showModal) return null;
 
     return (
@@ -75,24 +131,23 @@ export default function PromotionModal({
                     </button>
                 </div>
 
-                <form onSubmit={onSubmit} className="p-6 space-y-6">
+                <form onSubmit={handleFormSubmit} className="p-6 space-y-6">
+                    {/* Code */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Mã Code *
+                        </label>
+                        <Input
+                            type="text"
+                            required
+                            value={formData.code}
+                            onChange={(e) =>
+                                onFormChange({ ...formData, code: e.target.value })
+                            }
+                            disabled={!!editingId}
+                        />
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Code */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Mã Code *
-                            </label>
-                            <Input
-                                type="text"
-                                required
-                                value={formData.code}
-                                onChange={(e) =>
-                                    onFormChange({ ...formData, code: e.target.value })
-                                }
-                                disabled={!!editingId}
-                            />
-                        </div>
-
                         {/* Discount Value */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -101,58 +156,53 @@ export default function PromotionModal({
                             <Input
                                 type="number"
                                 required
+                                min="0"
+                                max={formData.isPercentage ? "100" : undefined}
                                 value={formData.discountValue}
                                 onChange={(e) =>
                                     onFormChange({
                                         ...formData,
-                                        discountValue: parseFloat(e.target.value),
+                                        discountValue: parseFloat(e.target.value) || 0,
                                     })
                                 }
+                                className={errors.discountValue ? 'border-red-500' : ''}
                             />
+                            {errors.discountValue && (
+                                <p className="text-red-500 text-sm mt-1">{errors.discountValue}</p>
+                            )}
                         </div>
 
                         {/* Min Price To Apply */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Giá tối thiểu để áp dụng
+                                Giá trị đơn tối thiểu để áp dụng *
                             </label>
                             <Input
                                 type="number"
+                                min="0"
                                 value={formData.minPriceToApply}
                                 onChange={(e) =>
                                     onFormChange({
                                         ...formData,
-                                        minPriceToApply: parseFloat(e.target.value),
+                                        minPriceToApply: parseFloat(e.target.value) || 0,
                                     })
                                 }
+                                className={errors.minPriceToApply ? 'border-red-500' : ''}
                             />
-                        </div>
-
-                        {/* Max Discount Price */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Giảm giá tối đa
-                            </label>
-                            <Input
-                                type="number"
-                                value={formData.maxDiscountPrice}
-                                onChange={(e) =>
-                                    onFormChange({
-                                        ...formData,
-                                        maxDiscountPrice: parseFloat(e.target.value),
-                                    })
-                                }
-                            />
+                            {errors.minPriceToApply && (
+                                <p className="text-red-500 text-sm mt-1">{errors.minPriceToApply}</p>
+                            )}
                         </div>
 
                         {/* Start Time */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Ngày bắt đầu
+                                Thời gian bắt đầu *
                             </label>
                             <Input
                                 type="datetime-local"
-                                value={editingId ? formatDatetimeToISO(formData.startTime) : formatDatetimeForInput(formData.startTime)} onChange={(e) =>
+                                value={editingId ? formatDatetimeToISO(formData.startTime) : formatDatetimeForInput(formData.startTime)}
+                                onChange={(e) =>
                                     onFormChange({
                                         ...formData,
                                         startTime: formatDatetimeForInput(e.target.value)
@@ -164,7 +214,7 @@ export default function PromotionModal({
                         {/* Expiry Date */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Hạn sử dụng *
+                                Thời gian hết hạn *
                             </label>
                             <Input
                                 type="datetime-local"
@@ -176,7 +226,11 @@ export default function PromotionModal({
                                         expiryDate: formatDatetimeForInput(e.target.value)
                                     })
                                 }
+                                className={errors.expiryDate ? 'border-red-500' : ''}
                             />
+                            {errors.expiryDate && (
+                                <p className="text-red-500 text-sm mt-1">{errors.expiryDate}</p>
+                            )}
                         </div>
 
                         {/* Is Percentage */}
@@ -216,6 +270,31 @@ export default function PromotionModal({
                             </label>
                         </div>
 
+                        {/* Max Discount Price */}
+                        {formData.isPercentage && (
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Giảm giá tối đa
+                                </label>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    value={formData.maxDiscountPrice}
+                                    onChange={(e) =>
+                                        onFormChange({
+                                            ...formData,
+                                            maxDiscountPrice: parseFloat(e.target.value) || 0,
+                                        })
+                                    }
+                                    className={errors.maxDiscountPrice ? 'border-red-500' : ''}
+                                />
+                                {errors.maxDiscountPrice && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.maxDiscountPrice}</p>
+                                )}
+                            </div>
+                        )}
+
                         {/* Limited Count */}
                         {formData.isLimited && (
                             <div>
@@ -224,14 +303,20 @@ export default function PromotionModal({
                                 </label>
                                 <Input
                                     type="number"
+                                    min="0"
                                     value={formData.limitedCount}
+                                    disabled={!!editingId}
                                     onChange={(e) =>
                                         onFormChange({
                                             ...formData,
-                                            limitedCount: parseFloat(e.target.value),
+                                            limitedCount: parseFloat(e.target.value) || 0,
                                         })
                                     }
+                                    className={errors.limitedCount ? 'border-red-500' : ''}
                                 />
+                                {errors.limitedCount && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.limitedCount}</p>
+                                )}
                             </div>
                         )}
                     </div>
@@ -244,7 +329,11 @@ export default function PromotionModal({
                         >
                             Hủy
                         </Button>
-                        <Button type="submit" className="bg-tet-primary hover:bg-tet-accent">
+                        <Button
+                            type="submit"
+                            className="bg-tet-primary hover:bg-tet-accent"
+
+                        >
                             {editingId ? 'Cập nhật' : 'Tạo mới'}
                         </Button>
                     </div>

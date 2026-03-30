@@ -15,15 +15,15 @@ export interface BlogDto {
 export interface CreateBlogRequest {
   title: string;
   content: string;
-  imageFile?: File | null; // File ảnh upload lên
-  videoFile?: File | null; // File video upload lên
+  imageUrl?: string | null; // Link ảnh sau khi upload
+  videoUrl?: string | null; // Link video sau khi upload
 }
 
 export interface UpdateBlogRequest {
   title: string;
   content: string;
-  imageFile?: File | null; // File ảnh upload lên
-  videoFile?: File | null; // File video upload lên
+  imageUrl?: string | null; // Link ảnh sau khi upload
+  videoUrl?: string | null; // Link video sau khi upload
 }
 
 export interface ApiResponse<T> {
@@ -37,23 +37,7 @@ export interface ActionMessage {
   message: string;
 }
 
-// --- HÀM HỖ TRỢ ĐÓNG GÓI FORMDATA ---
-const createFormData = (
-  data: CreateBlogRequest | UpdateBlogRequest,
-): FormData => {
-  const formData = new FormData();
-  formData.append("title", data.title);
-  formData.append("content", data.content);
 
-  if (data.imageFile) {
-    formData.append("imageFile", data.imageFile);
-  }
-  if (data.videoFile) {
-    formData.append("videoFile", data.videoFile);
-  }
-
-  return formData;
-};
 
 // --- API Service Dành Riêng Cho Admin ---
 export const blogAdminService = {
@@ -93,17 +77,17 @@ export const blogAdminService = {
     }
   },
 
-  // 3. CREATE: Thêm mới Blog (Đã sửa để dùng FormData và ép header)
+  // 3. CREATE: Thêm mới Blog
   createBlog: async (data: CreateBlogRequest): Promise<BlogDto | null> => {
     try {
-      const formData = createFormData(data);
       const response = await axiosClient.post<
         ApiResponse<BlogDto>,
         ApiResponse<BlogDto>
-      >(API_ENDPOINTS.BLOGS.CREATE, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data", // <--- Ghi đè header mặc định
-        },
+      >(API_ENDPOINTS.BLOGS.CREATE, {
+        title: data.title,
+        content: data.content,
+        imageUrl: data.imageUrl || null,
+        videoUrl: data.videoUrl || null,
       });
 
       if (response && response.status === 200 && response.data) {
@@ -116,20 +100,20 @@ export const blogAdminService = {
     }
   },
 
-  // 4. UPDATE: Cập nhật Blog (Đã sửa để dùng FormData và ép header)
+  // 4. UPDATE: Cập nhật Blog
   updateBlog: async (
     id: string | number,
     data: UpdateBlogRequest,
   ): Promise<ApiResponse<ActionMessage>> => {
     try {
-      const formData = createFormData(data);
       const response = await axiosClient.put<
         ApiResponse<ActionMessage>,
         ApiResponse<ActionMessage>
-      >(API_ENDPOINTS.BLOGS.UPDATE(id), formData, {
-        headers: {
-          "Content-Type": "multipart/form-data", // <--- Ghi đè header mặc định
-        },
+      >(API_ENDPOINTS.BLOGS.UPDATE(id), {
+        title: data.title,
+        content: data.content,
+        imageUrl: data.imageUrl || null,
+        videoUrl: data.videoUrl || null,
       });
       return response;
     } catch (error: unknown) {

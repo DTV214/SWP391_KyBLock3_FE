@@ -34,9 +34,7 @@ export default function BlogGrid({ blogs }: BlogGridProps) {
     "https://res.cloudinary.com/dratbz8bh/image/upload/v1769521491/Gia-Dinh-Doan-Vien-T_v0n9to.png";
 
   const getFullMediaUrl = (url: string | null) => {
-    if (!url) return defaultImage;
-    const serverUrl = BASE_URL.replace("/api", "");
-    return `${serverUrl}${url}`;
+    return url ? url : defaultImage;
   };
 
   // Logic Hướng 1: Lọc bài viết "động" dựa theo từ khóa danh mục
@@ -73,11 +71,10 @@ export default function BlogGrid({ blogs }: BlogGridProps) {
             <button
               key={cat}
               onClick={() => handleCategoryClick(cat)}
-              className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
-                activeCategory === cat
+              className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeCategory === cat
                   ? "bg-tet-primary text-white shadow-lg"
                   : "bg-gray-100 text-gray-500 hover:bg-tet-secondary hover:text-tet-primary"
-              }`}
+                }`}
             >
               {cat}
             </button>
@@ -166,11 +163,10 @@ export default function BlogGrid({ blogs }: BlogGridProps) {
               <button
                 key={i}
                 onClick={() => setCurrentPage(i + 1)}
-                className={`w-10 h-10 rounded-full font-bold transition-all ${
-                  currentPage === i + 1
+                className={`w-10 h-10 rounded-full font-bold transition-all ${currentPage === i + 1
                     ? "bg-tet-primary text-white shadow-lg"
                     : "bg-gray-50 text-gray-600 hover:bg-tet-secondary"
-                }`}
+                  }`}
               >
                 {i + 1}
               </button>
