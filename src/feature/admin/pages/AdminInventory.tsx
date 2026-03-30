@@ -13,6 +13,7 @@ import {
   X,
   Save,
   Archive,
+  Info,
 } from "lucide-react";
 import {
   inventoryAdminService,
@@ -58,14 +59,12 @@ export default function AdminInventory() {
     quantity: 0,
     productionDate: "",
     expiryDate: "",
-    status: "ACTIVE",
   });
 
   // --- Fetching Logic ---
   const fetchProductsList = useCallback(async () => {
     try {
       const res = await productService.getAll();
-      // Xử lý an toàn Type-safe cho các cấu trúc trả về khác nhau từ API
       const responseData = res as unknown as {
         data?: { data?: Product[] } | Product[];
       };
@@ -133,12 +132,10 @@ export default function AdminInventory() {
       setFormData({
         productId: stock.productId,
         quantity: stock.quantity,
-        // Cắt lấy phần YYYY-MM-DD để đưa vào input type="date"
         productionDate: stock.productionDate
           ? stock.productionDate.substring(0, 10)
           : "",
         expiryDate: stock.expiryDate ? stock.expiryDate.substring(0, 10) : "",
-        status: stock.status || "ACTIVE",
       });
     } else {
       setEditingStock(null);
@@ -147,7 +144,6 @@ export default function AdminInventory() {
         quantity: 0,
         productionDate: "",
         expiryDate: "",
-        status: "ACTIVE",
       });
     }
     setShowModal(true);
@@ -171,24 +167,34 @@ export default function AdminInventory() {
       return;
     }
 
+    const prodDate = new Date(formData.productionDate);
+    const expDate = new Date(formData.expiryDate);
+
+    // Validate logic thời gian cơ bản (NSX không được sau HSD)
+    prodDate.setHours(0, 0, 0, 0);
+    expDate.setHours(0, 0, 0, 0);
+    if (prodDate > expDate) {
+      setError("Ngày sản xuất (NSX) không được lớn hơn Hạn sử dụng (HSD).");
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
 
+      // Gửi Payload gọn gàng, BE sẽ tự xử lý Status
       if (editingStock) {
-        // Cập nhật lô hàng
         const updatePayload: UpdateStockRequest = {
           quantity: formData.quantity,
           productionDate: new Date(formData.productionDate).toISOString(),
           expiryDate: new Date(formData.expiryDate).toISOString(),
-          status: formData.status,
+          status: "ACTIVE", // Truyền chuỗi mặc định, BE tự động ghi đè
         };
         await inventoryAdminService.updateStock(
           editingStock.stockId,
           updatePayload,
         );
       } else {
-        // Tạo mới lô hàng
         const createPayload: CreateStockRequest = {
           productId: formData.productId,
           quantity: formData.quantity,
@@ -220,7 +226,6 @@ export default function AdminInventory() {
       await inventoryAdminService.deleteStock(id);
       await fetchStocks();
 
-      // Chỉnh lùi trang nếu xóa item cuối cùng của page
       if (paginatedStocks.length === 1 && stocksPage > 1) {
         setStocksPage(stocksPage - 1);
       }
@@ -233,7 +238,7 @@ export default function AdminInventory() {
 
   // --- Derived Data & Pagination Logic ---
 
-  // 1. Alerts Logic
+  // 1. Alerts Logic (Đã fix logic BE trả về "Low")
   const filteredAlerts = lowStockData.filter(
     (item) =>
       item.productName?.toLowerCase().includes(alertSearch.toLowerCase()) ||
@@ -263,13 +268,12 @@ export default function AdminInventory() {
     stocksPage * itemsPerPage,
   );
 
-  // Stats
+  // Stats (Đã fix logic đọc biến "Low" thay vì "Low Stock")
   const criticalCount = lowStockData.filter(
     (i) => i.status === "Critical",
   ).length;
-  const lowCount = lowStockData.filter((i) => i.status === "Low Stock").length;
+  const lowCount = lowStockData.filter((i) => i.status === "Low").length;
 
-  // Xác định tên sản phẩm hiện tại đang chọn
   const currentProductName = editingStock
     ? editingStock.productName || "Sản phẩm không xác định"
     : products.find((p) => p.productid === formData.productId)?.productname ||
@@ -320,12 +324,6 @@ export default function AdminInventory() {
           </button>
         </div>
       </div>
-
-      {error && !showModal && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-red-700 text-sm font-medium">
-          {error}
-        </div>
-      )}
 
       {/* ================= TAB 1: ALERTS ================= */}
       {activeTab === "ALERTS" && (
@@ -542,73 +540,87 @@ export default function AdminInventory() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
-                      {paginatedStocks.map((stock) => (
-                        <tr key={stock.stockId} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 font-medium text-gray-600">
-                            #{stock.stockId}
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="font-bold text-tet-primary">
-                              {stock.productName || "Sản phẩm không rõ"}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              ID: {stock.productId}
-                            </p>
-                          </td>
-                          <td className="px-6 py-4 font-bold text-gray-800">
-                            {stock.quantity}
-                          </td>
-                          <td className="px-6 py-4 text-xs text-gray-500">
-                            <p>
-                              NSX:{" "}
-                              {stock.productionDate
-                                ? new Date(
-                                    stock.productionDate,
-                                  ).toLocaleDateString("vi-VN")
-                                : "-"}
-                            </p>
-                            <p>
-                              HSD:{" "}
-                              {stock.expiryDate
-                                ? new Date(stock.expiryDate).toLocaleDateString(
-                                    "vi-VN",
-                                  )
-                                : "-"}
-                            </p>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span
-                              className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                                stock.status === "ACTIVE"
-                                  ? "bg-green-100 text-green-700"
-                                  : stock.status === "OUT_OF_STOCK"
-                                    ? "bg-gray-200 text-gray-600"
-                                    : "bg-red-100 text-red-700"
-                              }`}
-                            >
-                              {stock.status || "UNKNOWN"}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => handleOpenModal(stock)}
-                                className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors"
-                                title="Sửa lô hàng"
+                      {paginatedStocks.map((stock) => {
+                        // Badge Status UI logic
+                        let badgeClass = "bg-gray-100 text-gray-700";
+                        if (stock.status === "ACTIVE")
+                          badgeClass = "bg-green-100 text-green-700";
+                        if (stock.status === "OUT_OF_STOCK")
+                          badgeClass = "bg-amber-100 text-amber-700";
+                        if (stock.status === "EXPIRED")
+                          badgeClass = "bg-red-100 text-red-700";
+
+                        const isRowExpired = stock.status === "EXPIRED";
+
+                        return (
+                          <tr
+                            key={stock.stockId}
+                            className={`transition-colors hover:bg-gray-50 ${isRowExpired ? "bg-red-50/30" : ""}`}
+                          >
+                            <td className="px-6 py-4 font-medium text-gray-600">
+                              #{stock.stockId}
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="font-bold text-tet-primary">
+                                {stock.productName || "Sản phẩm không rõ"}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                ID: {stock.productId}
+                              </p>
+                            </td>
+                            <td className="px-6 py-4 font-bold text-gray-800">
+                              {stock.quantity}
+                            </td>
+                            <td className="px-6 py-4 text-xs text-gray-500">
+                              <p>
+                                NSX:{" "}
+                                {stock.productionDate
+                                  ? new Date(
+                                      stock.productionDate,
+                                    ).toLocaleDateString("vi-VN")
+                                  : "-"}
+                              </p>
+                              <p
+                                className={
+                                  isRowExpired ? "text-red-600 font-bold" : ""
+                                }
                               >
-                                <Edit size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(stock.stockId)}
-                                className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
-                                title="Xóa lô hàng"
+                                HSD:{" "}
+                                {stock.expiryDate
+                                  ? new Date(
+                                      stock.expiryDate,
+                                    ).toLocaleDateString("vi-VN")
+                                  : "-"}
+                              </p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span
+                                className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}
                               >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                                {stock.status || "UNKNOWN"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleOpenModal(stock)}
+                                  className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors"
+                                  title="Sửa lô hàng"
+                                >
+                                  <Edit size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(stock.stockId)}
+                                  className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                                  title="Xóa lô hàng"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -646,13 +658,24 @@ export default function AdminInventory() {
               onSubmit={handleSubmit}
               className="p-8 space-y-5"
             >
+              {/* Thẻ nhắc nhở Business Logic */}
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl flex gap-3 text-blue-800 text-sm">
+                <Info size={20} className="shrink-0 text-blue-600 mt-0.5" />
+                <p>
+                  <strong>Lưu ý nghiệp vụ:</strong> Trạng thái của lô hàng{" "}
+                  <strong>KHÔNG</strong> do Admin tự chọn. Hệ thống (Backend) sẽ
+                  tự động tính toán Trạng thái lô hàng dựa vào số lượng và Hạn
+                  sử dụng (HSD) mà bạn nhập.
+                </p>
+              </div>
+
               {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-medium">
                   {error}
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
                 {/* --- CHỌN SẢN PHẨM --- */}
                 <div
                   className={
@@ -673,7 +696,7 @@ export default function AdminInventory() {
                     }
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent outline-none bg-white"
                     required
-                    disabled={!!editingStock} // Không cho đổi ID nếu đang sửa
+                    disabled={!!editingStock}
                   >
                     <option value="" disabled>
                       -- Chọn sản phẩm --
@@ -704,7 +727,7 @@ export default function AdminInventory() {
                   />
                 </div>
 
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-gray-700 mb-2">
                     Số lượng nhập <span className="text-red-500">*</span>
                   </label>
@@ -721,25 +744,6 @@ export default function AdminInventory() {
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent outline-none"
                     required
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Trạng thái
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) =>
-                      setFormData({ ...formData, status: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent outline-none bg-white"
-                  >
-                    <option value="ACTIVE">Hoạt động (Active)</option>
-                    <option value="OUT_OF_STOCK">
-                      Hết hàng (Out of Stock)
-                    </option>
-                    <option value="EXPIRED">Hết hạn (Expired)</option>
-                  </select>
                 </div>
 
                 <div>
