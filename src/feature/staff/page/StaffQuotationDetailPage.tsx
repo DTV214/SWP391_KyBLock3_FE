@@ -22,6 +22,7 @@ import {
   type QuotationProductDetail,
 } from "@/feature/quotation/services/quotationService";
 import { getQuotationStatusMeta } from "@/feature/quotation/utils/quotationStatus";
+import QuotationMessageMeta from "@/feature/quotation/components/QuotationMessageMeta";
 
 type FeeFormState = {
   isSubtracted: number;
@@ -610,7 +611,7 @@ export default function StaffQuotationDetailPage() {
                           <span>{formatDate(msg.createdAt)}</span>
                         </div>
                         <p className="mt-1 text-gray-700">{msg.message}</p>
-                        {msg.metaJson && <p className="mt-1 text-xs text-gray-500 break-all">Meta: {msg.metaJson}</p>}
+                        <QuotationMessageMeta metaJson={msg.metaJson} />
                       </div>
                     ))}
                   </div>

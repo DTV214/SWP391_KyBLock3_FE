@@ -111,11 +111,6 @@ export default function AdminSidebar() {
       icon: <FileText size={18} />,
     },
     {
-      path: "/admin/reviewing-quotations",
-      label: "Reviewing Quotations",
-      icon: <FileText size={18} />,
-    },
-    {
       path: "/admin/orders",
       label: "Đơn hàng",
       icon: <ShoppingCart size={18} />,
