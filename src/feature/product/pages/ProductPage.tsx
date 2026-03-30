@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useSearchParams, Link } from "react-router-dom";
 import { Gift, X, Eye, Copy, Save, Trash2, Package, ShoppingCart, Search, CheckCircle, AlertCircle, ChevronRight, Sparkles, Filter, ArrowUpDown } from "lucide-react";
 import ProductHero from "../components/ProductHero";
@@ -207,14 +207,7 @@ export default function ProductPage() {
   }, [availableProducts, productSearch]);
 
   /*  Cart  */
-  const handleAddToCart = async (product: Product) => {
-    try {
-      await addToCart(product, 1);
-      addToast("success", `Đã thêm "${product.productname}" vào giỏ hàng!`);
-    } catch {
-      addToast("error", "Không thể thêm vào giỏ hàng.");
-    }
-  };
+
 
   /*  Details modal (Removed)  */
   // const handleViewDetails = (template: Product) => {
