@@ -144,7 +144,7 @@ export const API_ENDPOINTS = {
     CREATE: `${BASE_URL}/orders`,
     LIST: `${BASE_URL}/orders`,
     DETAIL: (orderId: string | number) => `${BASE_URL}/orders/${orderId}`,
-    MY_ORDERS: `${BASE_URL}/orders/my-orders`,
+    MY_ORDERS: `${BASE_URL}/orders/me`,
     UPDATE_SHIPPING_INFO: (orderId: string | number) =>
       `${BASE_URL}/orders/${orderId}/shipping-info`,
     UPDATE_STATUS: (orderId: string | number) =>

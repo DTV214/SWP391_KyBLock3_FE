@@ -340,41 +340,80 @@ export default function OrderDetailModal({
                         <h3 className="text-lg font-serif font-bold text-tet-primary">
                             Sản phẩm đơn hàng
                         </h3>
-                        <div className="space-y-3 max-h-64 overflow-y-auto">
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
                             {displayOrder.items.map((item: OrderItem) => (
-                                <div
-                                    key={item.orderDetailId}
-                                    className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100"
-                                >
-                                    <div className="w-16 h-16 bg-white rounded-xl overflow-hidden border border-gray-100 shrink-0">
-                                        {item.imageUrl ? (
-                                            <img
-                                                src={item.imageUrl}
-                                                alt={item.productName}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-tet-secondary to-tet-primary/10">
-                                                <span className="text-xl">🎁</span>
+                                <div key={item.orderDetailId} className="space-y-2">
+                                    {/* Main item */}
+                                    <div className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div className="w-16 h-16 bg-white rounded-xl overflow-hidden border border-gray-100 shrink-0">
+                                            {item.imageUrl ? (
+                                                <img
+                                                    src={item.imageUrl}
+                                                    alt={item.productName}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-tet-secondary to-tet-primary/10">
+                                                    <span className="text-xl">🎁</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-tet-primary">
+                                                {item.productName}
+                                            </h4>
+                                            <p className="text-xs text-gray-400 uppercase font-bold">
+                                                SKU: {item.sku}
+                                            </p>
+                                            <div className="flex items-center justify-between mt-2">
+                                                <span className="text-sm text-gray-600">
+                                                    x{item.quantity}
+                                                </span>
+                                                <span className="font-bold text-tet-primary">
+                                                    {item.amount.toLocaleString()}đ
+                                                </span>
                                             </div>
-                                        )}
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-bold text-tet-primary">
-                                            {item.productName}
-                                        </h4>
-                                        <p className="text-xs text-gray-400 uppercase font-bold">
-                                            SKU: {item.sku}
-                                        </p>
-                                        <div className="flex items-center justify-between mt-2">
-                                            <span className="text-sm text-gray-600">
-                                                x{item.quantity}
-                                            </span>
-                                            <span className="font-bold text-tet-primary">
-                                                {item.amount.toLocaleString()}đ
-                                            </span>
                                         </div>
                                     </div>
+
+                                    {/* Product Details (nested items) */}
+                                    {item.productDetails && item.productDetails.length > 0 && (
+                                        <div className="ml-4 space-y-2 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                                            <p className="text-xs font-bold uppercase tracking-widest text-blue-600">
+                                                📦 Sản phẩm trong giỏ:
+                                            </p>
+                                            {item.productDetails.map((detail: any, index: number) => (
+                                                <div
+                                                    key={index}
+                                                    className="flex gap-3 p-3 bg-white rounded-lg border border-blue-100"
+                                                >
+                                                    <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
+                                                        {detail.imageurl ? (
+                                                            <img
+                                                                src={detail.imageurl}
+                                                                alt={detail.productname}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+                                                                <span className="text-xs">📷</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-bold text-gray-700">
+                                                            {detail.productname}
+                                                        </p>
+                                                        <div className="flex items-center justify-between mt-1">
+                                                            <span className="text-sm font-bold text-blue-600">
+                                                                x{detail.quantity}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>

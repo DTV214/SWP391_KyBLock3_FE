@@ -20,6 +20,19 @@ export interface OrderItem {
     price: number;
     amount: number;
     imageUrl: string;
+    productDetails?: ProductDetail[];
+}
+
+export interface ProductDetail {
+    productDetailId: number;
+    productParentId?: number;
+    productId?: number;
+    categoryId?: number;
+    productname?: string;
+    unit?: number;
+    price?: number;
+    imageurl?: string;
+    quantity?: number;
 }
 
 export interface OrderResponse {
@@ -51,6 +64,15 @@ export interface UpdateOrderStatusRequest {
     status: string;
 }
 
+// Paginated Response
+export interface PaginatedOrderResponse {
+    data: OrderResponse[];
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    pageSize: number;
+}
+
 /**
  * Tạo đơn hàng mới
  * POST /api/orders
@@ -70,13 +92,20 @@ export const createOrder = async (
 };
 
 /**
- * Lấy danh sách đơn hàng của người dùng
- * GET /api/orders/my-orders
+ * Lấy danh sách đơn hàng của người dùng (có phân trang)
+ * GET /api/orders/my-orders?pageNumber=1&pageSize=10
  */
-export const getMyOrders = async (token?: string): Promise<OrderResponse[]> => {
-    const response = await axiosClient.get<OrderResponse[]>(
+export const getMyOrders = async (
+    pageNumber: number = 1,
+    token?: string
+): Promise<PaginatedOrderResponse> => {
+    const response = await axiosClient.get<PaginatedOrderResponse>(
         API_ENDPOINTS.ORDERS.MY_ORDERS,
         {
+            params: {
+                pageNumber,
+                pageSize: 10,
+            },
             headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         }
     );
@@ -84,13 +113,20 @@ export const getMyOrders = async (token?: string): Promise<OrderResponse[]> => {
 };
 
 /**
- * Lấy danh sách tất cả đơn hàng (Admin)
- * GET /api/orders
+ * Lấy danh sách tất cả đơn hàng (Admin) (có phân trang)
+ * GET /api/orders?pageNumber=1&pageSize=10
  */
-export const getAllOrders = async (token?: string): Promise<OrderResponse[]> => {
-    const response = await axiosClient.get<OrderResponse[]>(
+export const getAllOrders = async (
+    pageNumber: number = 1,
+    token?: string
+): Promise<PaginatedOrderResponse> => {
+    const response = await axiosClient.get<PaginatedOrderResponse>(
         API_ENDPOINTS.ORDERS.LIST,
         {
+            params: {
+                pageNumber,
+                pageSize: 10,
+            },
             headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         }
     );

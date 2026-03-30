@@ -17,19 +17,22 @@ export default function OrderHistory() {
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [cancelledOrder, setCancelledOrder] = useState<OrderResponse | null>(null);
   const {
-    filteredOrders,
+    paginatedOrders,
     isLoading,
     error,
     sortBy,
+    currentPage,
+    totalPages,
     handleStatusFilterChange,
     handleDateRangeChange,
     handleSearch,
     handleSort,
+    goToPage,
     updateOrderInList
   } = useOrderHistory();
 
   const handleViewDetails = (orderId: number) => {
-    const order = filteredOrders.find((o) => o.orderId === orderId);
+    const order = paginatedOrders.find((o) => o.orderId === orderId);
     if (order) {
       setSelectedOrder(order);
     }
@@ -41,7 +44,7 @@ export default function OrderHistory() {
   };
 
   const handleCancel = (orderId: number) => {
-    const order = filteredOrders.find((o) => o.orderId === orderId);
+    const order = paginatedOrders.find((o) => o.orderId === orderId);
     if (order) {
       setOrderToCancel(order);
       setCancelModalOpen(true);
@@ -101,9 +104,9 @@ export default function OrderHistory() {
       />
 
       {/* DANH SÁCH ĐƠN HÀNG */}
-      {filteredOrders.length > 0 ? (
+      {paginatedOrders.length > 0 ? (
         <div className="space-y-4">
-          {filteredOrders.map((order) => (
+          {paginatedOrders.map((order) => (
             <OrderCard
               key={order.orderId}
               order={order}
@@ -125,19 +128,57 @@ export default function OrderHistory() {
         </div>
       )}
 
-      {/* PAGINATION - To be implemented */}
-      {filteredOrders.length > 10 && (
+      {/* PAGINATION */}
+      {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 pt-6">
-          <button className="px-4 py-2 rounded-xl border border-gray-100 text-sm font-bold text-gray-400 hover:bg-[#FBF5E8] hover:text-tet-primary transition-all">
+          {/* Previous Button */}
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-4 py-2 rounded-xl border border-gray-100 text-sm font-bold text-gray-400 hover:bg-[#FBF5E8] hover:text-tet-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Trước
           </button>
-          <button className="w-10 h-10 rounded-xl bg-tet-primary text-white font-bold shadow-lg">
-            1
-          </button>
-          <button className="w-10 h-10 rounded-xl border border-gray-100 text-sm font-bold text-gray-400 hover:bg-[#FBF5E8]">
-            2
-          </button>
-          <button className="px-4 py-2 rounded-xl border border-gray-100 text-sm font-bold text-gray-400 hover:bg-[#FBF5E8] hover:text-tet-primary transition-all">
+
+          {/* Page Numbers */}
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            if (totalPages <= 5) {
+              return i + 1;
+            }
+
+            if (currentPage <= 3) {
+              return i + 1;
+            }
+
+            if (currentPage >= totalPages - 2) {
+              return totalPages - 4 + i;
+            }
+
+            return currentPage - 2 + i;
+          }).map((page) => (
+            <button
+              key={page}
+              onClick={() => goToPage(page)}
+              className={`w-10 h-10 rounded-xl font-bold transition-all ${page === currentPage
+                  ? 'bg-tet-primary text-white shadow-lg'
+                  : 'border border-gray-100 text-sm text-gray-400 hover:bg-[#FBF5E8]'
+                }`}
+            >
+              {page}
+            </button>
+          ))}
+
+          {/* Show ellipsis if needed */}
+          {totalPages > 5 && currentPage < totalPages - 2 && (
+            <span className="text-gray-400">...</span>
+          )}
+
+          {/* Next Button */}
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 rounded-xl border border-gray-100 text-sm font-bold text-gray-400 hover:bg-[#FBF5E8] hover:text-tet-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Sau
           </button>
         </div>
