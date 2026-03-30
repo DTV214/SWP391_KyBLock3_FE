@@ -2,7 +2,6 @@
 import type { BlogDto } from "@/feature/blog/services/blogService";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import BASE_URL from "@/api/apiConfig"; // Import để lấy BASE_URL nối vào link ảnh
 
 interface BlogHeroProps {
   blog: BlogDto;

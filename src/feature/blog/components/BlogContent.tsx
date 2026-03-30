@@ -2,7 +2,6 @@
 
 import type { BlogDto } from "@/feature/blog/services/blogService";
 import { Calendar, Share2, Video } from "lucide-react";
-import BASE_URL from "@/api/apiConfig";
 
 interface BlogContentProps {
   blog: BlogDto;

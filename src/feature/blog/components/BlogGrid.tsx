@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Video } from "lucide-react";
 import type { BlogDto } from "@/feature/blog/services/blogService";
-import BASE_URL from "@/api/apiConfig";
 
 interface BlogGridProps {
   blogs: BlogDto[];
@@ -72,8 +71,8 @@ export default function BlogGrid({ blogs }: BlogGridProps) {
               key={cat}
               onClick={() => handleCategoryClick(cat)}
               className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeCategory === cat
-                  ? "bg-tet-primary text-white shadow-lg"
-                  : "bg-gray-100 text-gray-500 hover:bg-tet-secondary hover:text-tet-primary"
+                ? "bg-tet-primary text-white shadow-lg"
+                : "bg-gray-100 text-gray-500 hover:bg-tet-secondary hover:text-tet-primary"
                 }`}
             >
               {cat}
@@ -164,8 +163,8 @@ export default function BlogGrid({ blogs }: BlogGridProps) {
                 key={i}
                 onClick={() => setCurrentPage(i + 1)}
                 className={`w-10 h-10 rounded-full font-bold transition-all ${currentPage === i + 1
-                    ? "bg-tet-primary text-white shadow-lg"
-                    : "bg-gray-50 text-gray-600 hover:bg-tet-secondary"
+                  ? "bg-tet-primary text-white shadow-lg"
+                  : "bg-gray-50 text-gray-600 hover:bg-tet-secondary"
                   }`}
               >
                 {i + 1}

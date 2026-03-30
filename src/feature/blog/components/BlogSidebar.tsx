@@ -1,7 +1,6 @@
 // src/features/blog/components/BlogSidebar.tsx
 import { Link } from "react-router-dom";
 import type { BlogDto } from "@/feature/blog/services/blogService";
-import BASE_URL from "@/api/apiConfig";
 
 interface BlogSidebarProps {
   recentBlogs: BlogDto[];
