@@ -117,21 +117,7 @@ export default function Footer() {
 
           {/* CỘT 4: THANH TOÁN & TIN TỨC */}
           <div className="text-center sm:text-left space-y-8">
-            <div>
-              <h3 className="text-xl md:text-2xl font-bold mb-6 font-serif text-tet-secondary uppercase tracking-widest">
-                Thanh Toán
-              </h3>
-              <div className="flex flex-wrap justify-center sm:justify-start gap-3">
-                {["MOMO", "ZALOPAY", "VISA", "ATM", "VNPAY"].map((pay) => (
-                  <div
-                    key={pay}
-                    className="bg-white px-3 py-1.5 rounded-lg text-tet-primary font-black text-[10px] shadow-lg transform transition-transform hover:-translate-y-1 cursor-default"
-                  >
-                    {pay}
-                  </div>
-                ))}
-              </div>
-            </div>
+            
             {/* Đăng ký nhận tin */}
             <div className="pt-2">
               <p className="text-xs italic opacity-70 mb-3 text-center sm:text-left">

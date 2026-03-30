@@ -137,9 +137,9 @@ export default function CustomerChatWidget() {
     const loadOrders = async () => {
       try {
         const orders = await orderService.getMyOrders();
-        setMyOrders(orders);
+        setMyOrders(orders.data);
         setOrderMap(
-          Object.fromEntries(orders.map((order) => [order.orderId, order])),
+          Object.fromEntries(orders.data.map((order) => [order.orderId, order])),
         );
       } catch {
         // silent order-loading error
@@ -373,14 +373,14 @@ export default function CustomerChatWidget() {
                   const isMine = isMessageMine(message);
                   const attachedOrder = message.orderId
                     ? orderMap[message.orderId] ??
-                      myOrders.find((order) => order.orderId === message.orderId)
+                    myOrders.find((order) => order.orderId === message.orderId)
                     : undefined;
                   const previousMessage =
                     sortedMessages[sortedMessages.indexOf(message) - 1];
                   const showDateDivider =
                     !previousMessage ||
                     formatMessageDate(previousMessage.createdAt) !==
-                      formatMessageDate(message.createdAt);
+                    formatMessageDate(message.createdAt);
 
                   return (
                     <div key={message.id}>
@@ -394,16 +394,14 @@ export default function CustomerChatWidget() {
                         </div>
                       )}
                       <div
-                        className={`flex ${
-                          isMine ? "justify-end" : "justify-start"
-                        }`}
+                        className={`flex ${isMine ? "justify-end" : "justify-start"
+                          }`}
                       >
                         <div
-                          className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${
-                            isMine
+                          className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${isMine
                               ? "bg-tet-primary text-white"
                               : "bg-white border border-gray-200 text-gray-800"
-                          }`}
+                            }`}
                         >
                           {message.orderId && (
                             <div className="mb-2 min-w-[220px]">
@@ -418,11 +416,10 @@ export default function CustomerChatWidget() {
                             {message.content}
                           </p>
                           <div
-                            className={`mt-1 flex items-center gap-1 text-[10px] ${
-                              isMine
+                            className={`mt-1 flex items-center gap-1 text-[10px] ${isMine
                                 ? "justify-end text-white/80"
                                 : "justify-end text-gray-500"
-                            }`}
+                              }`}
                           >
                             <span>{formatTime(message.createdAt)}</span>
                             {renderMessageStatus(message.isRead)}
@@ -468,11 +465,10 @@ export default function CustomerChatWidget() {
               <button
                 type="button"
                 onClick={() => setShowOrderPicker((prev) => !prev)}
-                className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
-                  showOrderPicker || selectedOrderId !== null
+                className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${showOrderPicker || selectedOrderId !== null
                     ? "border-[#d77a45] bg-[#fff2e8] text-[#7a160e]"
                     : "border-[#f1e1d6] bg-[#fffaf5] text-[#7a160e] hover:bg-[#fff2e8]"
-                }`}
+                  }`}
                 aria-label="Gan don hang"
                 title={selectedOrderId ? `Đã bind #${selectedOrderId}` : "Gắn đơn hàng"}
               >
@@ -497,11 +493,10 @@ export default function CustomerChatWidget() {
                         setSelectedOrderId(null);
                         setShowOrderPicker(false);
                       }}
-                      className={`w-full rounded-xl px-3 py-2 text-left text-xs font-medium transition-colors ${
-                        selectedOrderId === null
+                      className={`w-full rounded-xl px-3 py-2 text-left text-xs font-medium transition-colors ${selectedOrderId === null
                           ? "bg-[#fff2e8] text-[#7a160e]"
                           : "text-gray-600 hover:bg-[#fffaf5]"
-                      }`}
+                        }`}
                     >
                       Không gắn đơn hàng
                     </button>
@@ -515,11 +510,10 @@ export default function CustomerChatWidget() {
                             setSelectedOrderId(order.orderId);
                             setShowOrderPicker(false);
                           }}
-                          className={`w-full rounded-xl p-0 text-left transition-all ${
-                            selectedOrderId === order.orderId
+                          className={`w-full rounded-xl p-0 text-left transition-all ${selectedOrderId === order.orderId
                               ? "ring-2 ring-[#d77a45]"
                               : ""
-                          }`}
+                            }`}
                         >
                           <ChatOrderCard
                             orderId={order.orderId}
