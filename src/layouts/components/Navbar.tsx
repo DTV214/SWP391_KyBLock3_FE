@@ -39,7 +39,7 @@ export default function Navbar() {
   const isStaff = role === "STAFF";
   const isAdmin = role === "ADMIN";
   const isBackoffice = role === "ADMIN" || role === "STAFF";
-  const panelLabel = isStaff ? "Staff Panel" : isAdmin ? "Admin Panel" : null;
+  const panelLabel = isStaff ? "Staff" : isAdmin ? "Admin" : null;
   const panelPath = isStaff ? "/staff" : isAdmin ? "/admin" : null;
   const displayName = panelLabel || user.username || "Tài khoản";
   const avatarName = panelLabel || user.username || "User";
