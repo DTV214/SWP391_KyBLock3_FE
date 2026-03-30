@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import RevenueChart from "../components/RevenueChart";
 import {
-  TrendingUp,
   Package,
   ShoppingCart,
   Users,
@@ -9,39 +11,90 @@ import {
   Gift,
   Tag,
   Settings,
+  Loader2,
 } from "lucide-react";
+import adminDashboardService, { type DashboardSummary } from "../services/adminDashboardService";
 
 export default function AdminOverview() {
-  // Mock data - replace with real API calls
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<DashboardSummary | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const result = await adminDashboardService.getDashboardSummary();
+        setData(result);
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch dashboard data:", err);
+        setError("Không thể tải dữ liệu tổng quan. Vui lòng thử lại sau.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <Loader2 className="animate-spin text-tet-accent" size={48} />
+        <p className="text-gray-500 animate-pulse">Đang tải dữ liệu tổng quan...</p>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="bg-red-50 p-8 rounded-3xl border border-red-100 text-center">
+        <h2 className="text-xl font-bold text-red-700 mb-2">Đã có lỗi xảy ra</h2>
+        <p className="text-red-600 mb-4">{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  }
+
   const stats = [
     {
       label: "Tổng doanh thu",
-      value: "125,450,000đ",
-      change: "+12.5%",
+      value: new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+      }).format(data.revenue?.totalRevenue ?? 0),
+      change: "+0%",
       trend: "up",
       icon: <DollarSign size={24} />,
       color: "from-green-500 to-emerald-600",
     },
     {
       label: "Đơn hàng",
-      value: "234",
-      change: "+8.2%",
+      value: (data.orders?.total ?? 0).toString(),
+      change: "+0%",
       trend: "up",
       icon: <ShoppingCart size={24} />,
       color: "from-blue-500 to-cyan-600",
     },
     {
       label: "Sản phẩm",
-      value: "156",
-      change: "+15",
+      value: (data.totalProducts ?? 0).toString(),
+      change: "+0%",
       trend: "up",
       icon: <Package size={24} />,
       color: "from-purple-500 to-pink-600",
     },
     {
       label: "Khách hàng",
-      value: "1,245",
-      change: "+5.3%",
+      value: (data.totalCustomers ?? 0).toString(),
+      change: "+0%",
       trend: "up",
       icon: <Users size={24} />,
       color: "from-orange-500 to-red-600",
@@ -55,53 +108,6 @@ export default function AdminOverview() {
     { label: "Tạo cấu hình", icon: <Settings size={20} />, path: "/admin/configs" },
   ];
 
-  const recentOrders = [
-    {
-      id: "DH001245",
-      customer: "Nguyễn Văn A",
-      total: "2,450,000đ",
-      status: "Đang xử lý",
-      statusColor: "bg-blue-100 text-blue-700",
-      date: "2 giờ trước",
-    },
-    {
-      id: "DH001244",
-      customer: "Trần Thị B",
-      total: "1,850,000đ",
-      status: "Đã giao",
-      statusColor: "bg-green-100 text-green-700",
-      date: "5 giờ trước",
-    },
-    {
-      id: "DH001243",
-      customer: "Lê Văn C",
-      total: "3,200,000đ",
-      status: "Đang giao",
-      statusColor: "bg-yellow-100 text-yellow-700",
-      date: "1 ngày trước",
-    },
-  ];
-
-  const topProducts = [
-    {
-      name: "Giỏ Tết Sang Trọng",
-      sold: 45,
-      revenue: "39,150,000đ",
-      image: "https://via.placeholder.com/60",
-    },
-    {
-      name: "Giỏ Tết Truyền Thống",
-      sold: 38,
-      revenue: "28,500,000đ",
-      image: "https://via.placeholder.com/60",
-    },
-    {
-      name: "Giỏ Tết Cao Cấp",
-      sold: 32,
-      revenue: "35,200,000đ",
-      image: "https://via.placeholder.com/60",
-    },
-  ];
 
   return (
     <div className="space-y-6">
@@ -160,6 +166,7 @@ export default function AdminOverview() {
           {quickActions.map((action, index) => (
             <button
               key={index}
+              onClick={() => navigate(action.path)}
               className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-tet-accent hover:bg-tet-secondary/30 transition-all group"
             >
               <div className="w-10 h-10 rounded-full bg-tet-secondary flex items-center justify-center text-tet-accent group-hover:scale-110 transition-transform">
@@ -173,84 +180,7 @@ export default function AdminOverview() {
         </div>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Orders */}
-        <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-serif font-bold text-tet-primary">
-              Đơn hàng gần đây
-            </h3>
-            <button className="text-tet-accent text-sm font-bold hover:underline">
-              Xem tất cả
-            </button>
-          </div>
-          <div className="space-y-3">
-            {recentOrders.map((order) => (
-              <div
-                key={order.id}
-                className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all cursor-pointer"
-              >
-                <div className="flex-1">
-                  <p className="font-bold text-sm text-tet-primary">
-                    {order.id}
-                  </p>
-                  <p className="text-xs text-gray-500">{order.customer}</p>
-                  <p className="text-xs text-gray-400 mt-1">{order.date}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-sm text-tet-accent">
-                    {order.total}
-                  </p>
-                  <span
-                    className={`inline-block px-2 py-1 rounded-full text-[10px] font-bold mt-1 ${order.statusColor}`}
-                  >
-                    {order.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Top Products */}
-        <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-serif font-bold text-tet-primary">
-              Sản phẩm bán chạy
-            </h3>
-            <TrendingUp className="text-tet-accent" size={20} />
-          </div>
-          <div className="space-y-4">
-            {topProducts.map((product, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-all"
-              >
-                <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-tet-primary truncate">
-                    {product.name}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Đã bán: {product.sold} sản phẩm
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-sm text-tet-accent">
-                    {product.revenue}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
+      <RevenueChart />
 
       {/* System Status */}
       <section className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-3xl border border-blue-100">

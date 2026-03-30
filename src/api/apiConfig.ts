@@ -231,6 +231,15 @@ export const API_ENDPOINTS = {
     UPLOAD: `${BASE_URL}/media/upload`,
     DELETE: `${BASE_URL}/media/delete`,
   },
+  DASHBOARD: {
+    SUMMARY: (period: string = "month") => `${BASE_URL}/dashboards/summary?period=${period}`,
+    REVENUE: (period: string = "day", startDate?: string, endDate?: string) => {
+      let url = `${BASE_URL}/dashboards/revenue?period=${period}`;
+      if (startDate) url += `&startDate=${encodeURIComponent(startDate)}`;
+      if (endDate) url += `&endDate=${encodeURIComponent(endDate)}`;
+      return url;
+    },
+  },
 };
 
 export default BASE_URL;
