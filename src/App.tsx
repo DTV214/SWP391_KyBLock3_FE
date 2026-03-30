@@ -46,8 +46,6 @@ import AdminCategories from "@/feature/admin/pages/AdminCategories";
 import AdminConfigs from "@/feature/admin/pages/AdminConfigs";
 import AdminTemplates from "@/feature/admin/pages/AdminTemplates";
 import AdminPromotions from "@/feature/admin/pages/AdminPromotions";
-import AdminQuotationsPage from "@/feature/admin/pages/AdminQuotationsPage";
-import AdminQuotationDetailPage from "@/feature/admin/pages/AdminQuotationDetailPage";
 import AdminApprovalQuotationsPage from "@/feature/admin/pages/AdminApprovalQuotationsPage";
 import AdminApprovalQuotationDetailPage from "@/feature/admin/pages/AdminApprovalQuotationDetailPage";
 import AdminOrderHistory from "@/feature/admin/pages/AdminOrderHistory";
@@ -110,6 +108,9 @@ const StaffRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
+  const role = localStorage.getItem("role");
+  const shouldShowAiChatbot = role !== "ADMIN" && role !== "STAFF";
+
   return (
     <CartProvider>
       <Router>
@@ -238,14 +239,6 @@ function App() {
                   path="quotations/:id"
                   element={<AdminApprovalQuotationDetailPage />}
                 />
-                <Route
-                  path="reviewing-quotations"
-                  element={<AdminQuotationsPage />}
-                />
-                <Route
-                  path="reviewing-quotations/:id"
-                  element={<AdminQuotationDetailPage />}
-                />
               </Route>
 
               {/* --- CHECKOUT ROUTES --- */}
@@ -264,7 +257,7 @@ function App() {
           </main>
           <Footer />
           <BackToTop />
-          <ChatBot />
+          {shouldShowAiChatbot && <ChatBot />}
           <CartSidebar />
           <CustomerChatWidget />
         </div>

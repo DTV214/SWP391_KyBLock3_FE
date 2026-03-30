@@ -4,14 +4,7 @@ import { Headphones } from "lucide-react";
 export default function ContactHero() {
   return (
     <section className="relative py-20 md:py-28 bg-[#FBF5E8]/50 overflow-hidden">
-      {/* Họa tiết icon bay nhẹ nhàng */}
-      <motion.div
-        animate={{ y: [0, -20, 0] }}
-        transition={{ duration: 5, repeat: Infinity }}
-        className="absolute top-10 right-20 text-6xl opacity-10 pointer-events-none"
-      >
-        🌸
-      </motion.div>
+      
 
       <div className="container mx-auto max-w-7xl px-6 relative z-10 text-center">
         <motion.div

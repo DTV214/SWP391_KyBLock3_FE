@@ -372,9 +372,7 @@ export default function ContactInfoMap() {
               viewport={{ once: true }}
               className="relative overflow-hidden rounded-[2.5rem] bg-tet-primary p-8 text-white shadow-xl md:p-10"
             >
-              <div className="absolute right-0 top-0 p-4 opacity-5">
-                <Clock size={100} />
-              </div>
+              
               <div className="flex items-center justify-between gap-3">
                 <h4 className="flex items-center gap-3 text-2xl font-bold text-tet-secondary">
                   <Clock size={24} /> Giờ mở cửa

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, FileText, Filter } from "lucide-react";
 import {
@@ -10,16 +10,33 @@ import {
   getQuotationStatusMeta,
 } from "@/feature/quotation/utils/quotationStatus";
 
+const PAGE_SIZE = 5;
+
+const mergeQuotationRows = (...groups: QuotationSummary[][]) => {
+  const rowMap = new Map<number, QuotationSummary>();
+
+  groups.flat().forEach((item) => {
+    if (!item || item.status === "DRAFT") return;
+    rowMap.set(item.quotationId, item);
+  });
+
+  return Array.from(rowMap.values()).sort(
+    (a, b) =>
+      new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime(),
+  );
+};
+
 export default function AdminApprovalQuotationsPage() {
-  const PAGE_SIZE = 5;
-  const [status, setStatus] = useState("WAITING_ADMIN");
+  const [status, setStatus] = useState("");
   const [rows, setRows] = useState<QuotationSummary[]>([]);
+  const [allRows, setAllRows] = useState<QuotationSummary[]>([]);
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const statusOptions = QUOTATION_STATUS_OPTIONS.filter(
-    (option) => option.value !== "" && option.value !== "DRAFT",
+    (option) => option.value !== "DRAFT",
   );
 
   useEffect(() => {
@@ -28,20 +45,22 @@ export default function AdminApprovalQuotationsPage() {
         setLoading(true);
         setError(null);
 
-        const [filteredResponse, allResponse] = await Promise.all([
-          quotationService.getAdminQuotations(status || undefined),
+        const [staffResponse, adminResponse] = await Promise.all([
+          quotationService.getStaffQuotations(),
           quotationService.getAdminQuotations(),
         ]);
 
-        setRows((filteredResponse?.data || []) as QuotationSummary[]);
-
-        const allRows = ((allResponse?.data || []) as QuotationSummary[]).filter(
-          (item) => item.status !== "DRAFT",
+        const mergedRows = mergeQuotationRows(
+          (staffResponse?.data || []) as QuotationSummary[],
+          (adminResponse?.data || []) as QuotationSummary[],
         );
-        const counts = allRows.reduce<Record<string, number>>((acc, item) => {
+
+        const counts = mergedRows.reduce<Record<string, number>>((acc, item) => {
           acc[item.status] = (acc[item.status] ?? 0) + 1;
           return acc;
         }, {});
+
+        setAllRows(mergedRows);
         setStatusCounts(counts);
       } catch (err) {
         console.error(err);
@@ -51,18 +70,28 @@ export default function AdminApprovalQuotationsPage() {
       }
     };
 
-    fetchData();
-  }, [status]);
+    void fetchData();
+  }, []);
+
+  useEffect(() => {
+    setRows(status ? allRows.filter((item) => item.status === status) : allRows);
+  }, [allRows, status]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [status]);
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-  const paginatedRows = rows.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(rows.length / PAGE_SIZE)),
+    [rows],
   );
+
+  const paginatedRows = useMemo(
+    () =>
+      rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [currentPage, rows],
+  );
+
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
@@ -75,7 +104,7 @@ export default function AdminApprovalQuotationsPage() {
         <div>
           <h1 className="text-2xl font-bold text-tet-primary">Quotations</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Danh sách quotation chờ admin duyệt hoặc theo dõi.
+            Danh sách quotation dành cho admin theo dõi, review phí và phê duyệt.
           </p>
         </div>
 
@@ -106,7 +135,7 @@ export default function AdminApprovalQuotationsPage() {
                         : "bg-white border border-[#e8d4c8] text-[#7a160e]"
                     }`}
                   >
-                    {statusCounts[option.value] ?? 0}
+                    {option.value ? (statusCounts[option.value] ?? 0) : allRows.length}
                   </span>
                 </button>
               );

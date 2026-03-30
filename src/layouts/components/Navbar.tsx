@@ -46,9 +46,12 @@ export default function Navbar() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const role = localStorage.getItem("role");
   const isStaff = role === "STAFF";
-  const isAdmin = role === "ADMIN" || role === "STAFF";
-  const displayName = isStaff ? "Staff" : user.username || "Tài khoản";
-  const avatarName = isStaff ? "Staff" : user.username || "User";
+  const isAdmin = role === "ADMIN";
+  const isBackoffice = role === "ADMIN" || role === "STAFF";
+  const panelLabel = isStaff ? "Staff" : isAdmin ? "Admin" : null;
+  const panelPath = isStaff ? "/staff" : isAdmin ? "/admin" : null;
+  const displayName = panelLabel || user.username || "Tài khoản";
+  const avatarName = panelLabel || user.username || "User";
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -61,7 +64,7 @@ export default function Navbar() {
   return (
     <nav className="w-full flex flex-col shadow-md sticky top-0 z-[100]">
       {/* 1. THANH CÔNG CỤ TRÊN (TOP BAR) */}
-      <div className="bg-tet-primary py-2 md:py-3 px-4 md:px-8 flex items-center justify-between gap-4">
+      <div className="relative z-[2] bg-tet-primary py-2 md:py-3 px-4 md:px-8 flex items-center justify-between gap-4">
         <button
           className="text-white md:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
           onClick={() => setIsMenuOpen(true)}
@@ -112,7 +115,7 @@ export default function Navbar() {
               <span>Đăng nhập</span>
             </Link>
           ) : (
-            <div className="relative hidden lg:block">
+            <div className="relative z-[160] hidden lg:block">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center gap-1.5 hover:text-tet-secondary transition-colors outline-none"
@@ -139,14 +142,14 @@ export default function Navbar() {
                     className="fixed inset-0 z-[-1]"
                     onClick={() => setIsUserMenuOpen(false)}
                   ></div>
-                  <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 text-tet-primary overflow-hidden animate-in fade-in zoom-in duration-200">
-                    {isAdmin && (
+                  <div className="absolute right-0 z-[170] mt-3 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 text-tet-primary overflow-hidden animate-in fade-in zoom-in duration-200">
+                    {isBackoffice && panelLabel && panelPath && (
                       <Link
-                        to="/admin"
+                        to={panelPath}
                         onClick={() => setIsUserMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-2.5 hover:bg-purple-50 transition-colors font-bold text-xs uppercase text-purple-600 border-b border-gray-50"
                       >
-                        <Settings size={16} /> Admin Panel
+                        <Settings size={16} /> {panelLabel}
                       </Link>
                     )}
                     <Link
@@ -194,7 +197,7 @@ export default function Navbar() {
       </div>
 
       {/* 2. THANH MENU CHÍNH (DESKTOP) */}
-      <div className="hidden md:flex bg-[#4a0d06] text-white py-3 justify-center gap-10 lg:gap-14 text-xs lg:text-sm font-medium border-t border-white/5 uppercase tracking-widest">
+      <div className="relative z-[1] hidden md:flex bg-[#4a0d06] text-white py-3 justify-center gap-10 lg:gap-14 text-xs lg:text-sm font-medium border-t border-white/5 uppercase tracking-widest">
         {navItems.map((item) => (
           <Link
             key={item.name}
@@ -209,7 +212,7 @@ export default function Navbar() {
           <button className="relative hover:text-tet-secondary transition-colors after:content-[''] after:absolute after:w-0 after:h-[1px] after:bg-tet-secondary after:bottom-[-4px] after:left-0 group-hover:after:w-full after:transition-all">
             BÁO GIÁ
           </button>
-          <div className="invisible absolute left-1/2 top-full z-50 mt-3 w-52 -translate-x-1/2 rounded-xl bg-white py-2 text-xs font-semibold text-tet-primary shadow-xl opacity-0 transition-all duration-200 group-hover:visible group-hover:opacity-100">
+          <div className="invisible absolute left-1/2 top-full z-40 mt-3 w-52 -translate-x-1/2 rounded-xl bg-white py-2 text-xs font-semibold text-tet-primary shadow-xl opacity-0 transition-all duration-200 group-hover:visible group-hover:opacity-100">
             <Link
               to="/quotation"
               className="block px-4 py-2 hover:bg-[#FBF5E8] transition-colors"
