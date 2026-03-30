@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { Plus, Minus, ShoppingCart } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 
 interface ProductCardProps {
@@ -19,9 +18,6 @@ export default function ProductCard({ id, title, price, img }: ProductCardProps)
           alt={title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
-        <Badge className="absolute top-4 left-4 bg-tet-accent text-white uppercase text-[10px] font-bold px-3 py-1">
-          Best Seller
-        </Badge>
       </div>
 
       <div className="p-6 space-y-4 text-center">
@@ -60,9 +56,6 @@ export default function ProductCard({ id, title, price, img }: ProductCardProps)
             <ShoppingCart size={18} /> Thêm vào giỏ
           </button>
         </div>
-        <p className="text-[10px] text-green-600 font-bold italic">
-          🌸 Giao hàng nhanh 2-3 ngày
-        </p>
       </div>
     </motion.div>
   );

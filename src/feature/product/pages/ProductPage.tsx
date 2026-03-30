@@ -501,6 +501,7 @@ export default function ProductPage() {
                     viewport={{ once: true }}
                   >
                     <ProductCard
+                      id={product.productid}
                       title={product.productname ?? "Sản phẩm Tết"}
                       price={(product.price ?? 0).toLocaleString("vi-VN")}
                       image={product.imageUrl ?? ""}
@@ -665,6 +666,7 @@ export default function ProductPage() {
                     className="relative"
                   >
                     <ProductCard
+                      id={basket.productid}
                       title={basket.productname ?? "Giỏ quà Tết"}
                       price={(basket.price ?? 0).toLocaleString("vi-VN")}
                       image={basket.imageUrl ?? ""}
