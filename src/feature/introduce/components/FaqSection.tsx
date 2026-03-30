@@ -95,7 +95,10 @@ export default function FaqSection() {
           <p className="text-gray-500 mb-6 italic">
             Bạn vẫn còn thắc mắc khác?
           </p>
-          <button className="bg-tet-primary text-white px-10 py-4 rounded-full font-bold shadow-lg hover:bg-tet-accent transition-all hover:-translate-y-1">
+          <button
+            className="bg-tet-primary text-white px-10 py-4 rounded-full font-bold shadow-lg hover:bg-tet-accent transition-all hover:-translate-y-1"
+            onClick={() => window.location.href = '/contact'}
+          >
             Liên hệ với chúng tôi ngay
           </button>
         </div>

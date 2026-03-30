@@ -50,13 +50,17 @@ export default function IntroHero() {
 
           {/* 3. Nút bấm Shadcn được thiết kế đẹp */}
           <div className="flex flex-col sm:flex-row justify-center items-center gap-6 pt-6">
-            <Button className="bg-tet-primary hover:bg-[#4a0d06] text-white px-10 py-7 rounded-full text-lg font-bold shadow-2xl transition-all hover:scale-105 active:scale-95">
+            <Button
+              className="bg-tet-primary hover:bg-[#4a0d06] text-white px-10 py-7 rounded-full text-lg font-bold shadow-2xl transition-all hover:scale-105 active:scale-95"
+              onClick={() => window.location.href = '/products'}
+            >
               <Gift className="mr-2" /> Khám Phá Quà Tết
             </Button>
 
             <Button
               variant="outline"
               className="border-2 border-tet-primary text-tet-primary hover:bg-tet-secondary px-10 py-7 rounded-full text-lg font-bold transition-all hover:scale-105 active:scale-95"
+              onClick={() => window.location.href = '/custom-basket'}
             >
               Tạo Hộp Quà Riêng
             </Button>

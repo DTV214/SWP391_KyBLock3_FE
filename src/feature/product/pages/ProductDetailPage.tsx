@@ -328,7 +328,7 @@ export default function ProductDetailPage() {
           <h3 className="text-4xl font-serif font-bold text-tet-primary text-center">
             Gợi ý khác cho bạn
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
             <ProductCard
               title="Hộp quà Xuân Đoàn Viên"
               price="1,250,000đ"

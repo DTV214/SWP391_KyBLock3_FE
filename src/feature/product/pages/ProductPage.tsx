@@ -1,7 +1,9 @@
-﻿import { useEffect, useState, useMemo, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams, Link } from "react-router-dom";
 import { Gift, X, Eye, Copy, Save, Trash2, Package, ShoppingCart, Search, CheckCircle, AlertCircle, ChevronRight, Sparkles, Filter, ArrowUpDown } from "lucide-react";
 import ProductHero from "../components/ProductHero";
+import ProductCard from "@/components/common/ProductCard";
 import { useCart } from "@/feature/cart/context/CartContext";
 import { productService, type Product, type ProductDetailRequest, type UpdateComboProductRequest } from "@/api/productService";
 import { configService, type ProductConfig } from "@/api/configService";
@@ -92,9 +94,18 @@ export default function ProductPage() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
   }, []);
 
-  /*  Details modal  */
-  const [selectedTemplate, setSelectedTemplate] = useState<Product | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  /*  Pagination constants  */
+  const ITEMS_PER_PAGE = 12;
+  const [singlePage, setSinglePage] = useState(1);
+  const [basketPage, setBasketPage] = useState(1);
+
+  /* Reset page when filters change */
+  useEffect(() => setSinglePage(1), [selectedCategory, singlePriceRange, singleSortBy, searchParams]);
+  useEffect(() => setBasketPage(1), [basketSearch, basketPriceRange, basketSortBy, searchParams]);
+
+  /*  Details modal (Removed - navigated to detail page instead)  */
+  // const [selectedTemplate, setSelectedTemplate] = useState<Product | null>(null);
+  // const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   /*  Clone modal  */
   const [showCloneModal, setShowCloneModal] = useState(false);
@@ -143,19 +154,39 @@ export default function ProductPage() {
   /*  Filtered / sorted single products  */
   const filteredSingleProducts = useMemo(() => {
     let list = [...singleProducts];
+    const query = searchParams.get("q")?.toLowerCase();
+    
+    if (query) {
+      list = list.filter(p => 
+        p.productname?.toLowerCase().includes(query) || 
+        p.description?.toLowerCase().includes(query) ||
+        p.sku?.toLowerCase().includes(query)
+      );
+    }
+
     if (selectedCategory) list = list.filter(p => p.categoryid === selectedCategory);
     if (singlePriceRange.min !== undefined) list = list.filter(p => (p.price ?? 0) >= singlePriceRange.min!);
     if (singlePriceRange.max !== undefined) list = list.filter(p => (p.price ?? 0) <= singlePriceRange.max!);
+    
     switch (singleSortBy) {
       case "price-asc":  return list.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
       case "price-desc": return list.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
       default:           return list.sort((a, b) => (a.productname ?? "").localeCompare(b.productname ?? "", "vi"));
     }
-  }, [singleProducts, singleSortBy, selectedCategory, singlePriceRange]);
+  }, [singleProducts, singleSortBy, selectedCategory, singlePriceRange, searchParams]);
 
   /*  Filtered / sorted baskets  */
   const filteredBaskets = useMemo(() => {
     let list = [...baskets];
+    const query = searchParams.get("q")?.toLowerCase();
+
+    if (query) {
+      list = list.filter(p => 
+        p.productname?.toLowerCase().includes(query) || 
+        p.description?.toLowerCase().includes(query)
+      );
+    }
+
     if (basketSearch.trim()) {
       const q = basketSearch.toLowerCase();
       list = list.filter(p => p.productname?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q));
@@ -166,7 +197,7 @@ export default function ProductPage() {
       case "price-desc": return list.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
       default:           return list.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
     }
-  }, [baskets, basketSortBy, basketSearch, basketPriceRange]);
+  }, [baskets, basketSortBy, basketSearch, basketPriceRange, searchParams]);
 
   /*  Filtered available products for clone modal  */
   const filteredAvailableProducts = useMemo(() => {
@@ -185,11 +216,11 @@ export default function ProductPage() {
     }
   };
 
-  /*  Details modal  */
-  const handleViewDetails = (template: Product) => {
-    setSelectedTemplate(template);
-    setShowDetailsModal(true);
-  };
+  /*  Details modal (Removed)  */
+  // const handleViewDetails = (template: Product) => {
+  //   setSelectedTemplate(template);
+  //   setShowDetailsModal(true);
+  // };
 
   /*  Clone modal  */
   const handleOpenCloneModal = async (template: Product) => {
@@ -338,7 +369,26 @@ export default function ProductPage() {
 
       <ProductHero />
 
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-14 space-y-20">
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {searchParams.get("q") && (
+          <div className="mb-8 flex items-center gap-3 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="w-12 h-12 rounded-xl bg-tet-primary/10 flex items-center justify-center text-tet-primary">
+              <Search size={22} />
+            </div>
+            <div>
+              <p className="text-sm text-gray-400 font-medium">Kết quả tìm kiếm cho:</p>
+              <h2 className="text-xl font-bold text-gray-800">"{searchParams.get("q")}"</h2>
+            </div>
+            <Link 
+              to="/products"
+              className="ml-auto text-sm font-bold text-tet-accent hover:underline flex items-center gap-1.5"
+            >
+              <X size={14} /> Xóa tìm kiếm
+            </Link>
+          </div>
+        )}
+
+        <div className="space-y-20 pt-4">
 
         {/* 
             SECTION 1  Sản phẩm đơn lẻ
@@ -438,8 +488,8 @@ export default function ProductPage() {
           </div>
 
           {singleLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
-              {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : filteredSingleProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-300">
@@ -448,36 +498,57 @@ export default function ProductPage() {
               <p className="text-sm text-gray-300 mt-1">Thử chọn danh mục khác</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
-              {filteredSingleProducts.map(product => (
-                <div key={product.productid} className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
-                  {/* Image */}
-                  <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-orange-50 to-red-50">
-                    {product.imageUrl ? (
-                      <img src={product.imageUrl} alt={product.productname} className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Gift size={48} className="text-tet-primary/20" />
-                      </div>
-                    )}
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100">
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {filteredSingleProducts.slice((singlePage - 1) * ITEMS_PER_PAGE, singlePage * ITEMS_PER_PAGE).map(product => (
+                  <motion.div
+                    key={product.productid}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                  >
+                    <ProductCard
+                      title={product.productname ?? "Sản phẩm Tết"}
+                      price={(product.price ?? 0).toLocaleString("vi-VN")}
+                      image={product.imageUrl ?? ""}
+                      onAddToCart={(qty) => addToCart(product, qty)}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Pagination UI */}
+              {filteredSingleProducts.length > ITEMS_PER_PAGE && (
+                <div className="mt-12 flex justify-center items-center gap-2">
+                  <button
+                    disabled={singlePage === 1}
+                    onClick={() => { setSinglePage(p => p - 1); window.scrollTo({ top: 300, behavior: "smooth" }); }}
+                    className="p-2.5 rounded-xl border border-gray-200 text-gray-400 hover:text-tet-primary hover:border-tet-primary disabled:opacity-30 disabled:hover:text-gray-400 disabled:hover:border-gray-200 transition-all font-bold"
+                  >
+                    Trang trước
+                  </button>
+                  <div className="flex gap-1.5">
+                    {Array.from({ length: Math.ceil(filteredSingleProducts.length / ITEMS_PER_PAGE) }).map((_, i) => (
                       <button
-                        onClick={() => handleAddToCart(product)}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-white text-tet-primary rounded-full text-xs font-bold shadow-lg hover:bg-tet-primary hover:text-white transition-all"
+                        key={i}
+                        onClick={() => { setSinglePage(i + 1); window.scrollTo({ top: 300, behavior: "smooth" }); }}
+                        className={`w-10 h-10 rounded-xl text-sm font-bold transition-all
+                          ${singlePage === i + 1 ? "bg-tet-primary text-white shadow-lg shadow-tet-primary/30" : "bg-white text-gray-500 border border-gray-100 hover:border-tet-primary"}`}
                       >
-                        <ShoppingCart size={13} /> Thêm vào giỏ
+                        {i + 1}
                       </button>
-                    </div>
+                    ))}
                   </div>
-                  {/* Info */}
-                  <div className="p-3.5 flex flex-col flex-1">
-                    <p className="text-sm font-bold text-gray-800 line-clamp-2 flex-1 leading-snug mb-2">{product.productname}</p>
-                    <p className="text-base font-extrabold text-tet-accent">{(product.price || 0).toLocaleString("vi-VN")}đ</p>
-                  </div>
+                  <button
+                    disabled={singlePage === Math.ceil(filteredSingleProducts.length / ITEMS_PER_PAGE)}
+                    onClick={() => { setSinglePage(p => p + 1); window.scrollTo({ top: 300, behavior: "smooth" }); }}
+                    className="p-2.5 rounded-xl border border-gray-200 text-gray-400 hover:text-tet-primary hover:border-tet-primary disabled:opacity-30 disabled:hover:text-gray-400 disabled:hover:border-gray-200 transition-all font-bold"
+                  >
+                    Trang sau
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </section>
 
@@ -578,8 +649,8 @@ export default function ProductPage() {
           </div>
 
           {basketLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} tall />)}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => <SkeletonCard key={i} tall />)}
             </div>
           ) : filteredBaskets.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-300">
@@ -590,142 +661,82 @@ export default function ProductPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredBaskets.map(basket => (
-                <div key={basket.productid} className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col">
-                  {/* Image */}
-                  <div className="relative h-52 overflow-hidden bg-gradient-to-br from-red-50 to-orange-100">
-                    {basket.imageUrl ? (
-                      <img src={basket.imageUrl} alt={basket.productname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Gift size={72} className="text-tet-primary/20" />
-                      </div>
-                    )}
-                    {/* Items badge */}
-                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-tet-primary text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
-                      {basket.productDetails?.length || 0} món
-                    </div>
-                  </div>
-                  {/* Info */}
-                  <div className="p-4 flex flex-col flex-1">
-                    <h3 className="text-sm font-bold text-gray-800 line-clamp-2 flex-1 leading-snug mb-1">{basket.productname}</h3>
-                    <p className="text-xs text-gray-400 line-clamp-1 mb-3">{basket.description || "Giỏ quà Tết cao cấp"}</p>
-                    <div className="mb-4">
-                      <p className="text-xl font-extrabold text-tet-accent">{(basket.price || 0).toLocaleString("vi-VN")}đ</p>
-                    </div>
-                    {/* Actions */}
-                    <div className="flex flex-col gap-2">
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {filteredBaskets.slice((basketPage - 1) * ITEMS_PER_PAGE, basketPage * ITEMS_PER_PAGE).map(basket => (
+                  <motion.div
+                    key={basket.productid}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="relative"
+                  >
+                    <ProductCard
+                      title={basket.productname ?? "Giỏ quà Tết"}
+                      price={(basket.price ?? 0).toLocaleString("vi-VN")}
+                      image={basket.imageUrl ?? ""}
+                      onAddToCart={(qty) => addToCart(basket, qty)}
+                    />
+                    {/* Extra action for custom basket */}
+                    <div className="absolute top-5 right-5 flex flex-col gap-2 z-20">
                       <button
-                        onClick={() => handleViewDetails(basket)}
-                        className="flex items-center justify-center gap-2 py-2.5 bg-tet-primary text-white rounded-xl text-sm font-bold hover:bg-tet-primary/90 transition-all active:scale-95"
+                        onClick={() => handleOpenCloneModal(basket)}
+                        className="bg-white/80 backdrop-blur-sm p-2 rounded-full text-purple-600 shadow-lg hover:bg-purple-600 hover:text-white transition-all active:scale-95"
+                        title="Tùy chỉnh giỏ quà"
                       >
-                        <Eye size={14} /> Xem chi tiết
+                        <Copy size={16} />
                       </button>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => handleAddToCart(basket)}
-                          className="flex items-center justify-center gap-1.5 py-2 border-2 border-tet-accent text-tet-accent rounded-xl text-xs font-bold hover:bg-tet-accent hover:text-white transition-all active:scale-95"
-                        >
-                          <ShoppingCart size={12} /> Mua ngay
-                        </button>
-                        <button
-                          onClick={() => handleOpenCloneModal(basket)}
-                          className="flex items-center justify-center gap-1.5 py-2 border-2 border-purple-400 text-purple-600 rounded-xl text-xs font-bold hover:bg-purple-600 hover:text-white transition-all active:scale-95"
-                        >
-                          <Copy size={12} /> Tùy chỉnh
-                        </button>
-                      </div>
+                      <Link
+                        to={`/product/${basket.productid}`}
+                        className="bg-white/80 backdrop-blur-sm p-2 rounded-full text-tet-primary shadow-lg hover:bg-tet-primary hover:text-white transition-all active:scale-95"
+                        title="Xem chi tiết"
+                      >
+                        <Eye size={16} />
+                      </Link>
                     </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Pagination UI */}
+              {filteredBaskets.length > ITEMS_PER_PAGE && (
+                <div className="mt-12 flex justify-center items-center gap-2">
+                  <button
+                    disabled={basketPage === 1}
+                    onClick={() => { setBasketPage(p => p - 1); window.scrollTo({ top: 800, behavior: "smooth" }); }}
+                    className="p-2.5 rounded-xl border border-gray-200 text-gray-400 hover:text-tet-primary hover:border-tet-primary disabled:opacity-30 disabled:hover:text-gray-400 disabled:hover:border-gray-200 transition-all font-bold"
+                  >
+                    Trang trước
+                  </button>
+                  <div className="flex gap-1.5">
+                    {Array.from({ length: Math.ceil(filteredBaskets.length / ITEMS_PER_PAGE) }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => { setBasketPage(i + 1); window.scrollTo({ top: 800, behavior: "smooth" }); }}
+                        className={`w-10 h-10 rounded-xl text-sm font-bold transition-all
+                          ${basketPage === i + 1 ? "bg-tet-primary text-white shadow-lg shadow-tet-primary/30" : "bg-white text-gray-500 border border-gray-100 hover:border-tet-primary"}`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
                   </div>
+                  <button
+                    disabled={basketPage === Math.ceil(filteredBaskets.length / ITEMS_PER_PAGE)}
+                    onClick={() => { setBasketPage(p => p + 1); window.scrollTo({ top: 800, behavior: "smooth" }); }}
+                    className="p-2.5 rounded-xl border border-gray-200 text-gray-400 hover:text-tet-primary hover:border-tet-primary disabled:opacity-30 disabled:hover:text-gray-400 disabled:hover:border-gray-200 transition-all font-bold"
+                  >
+                    Trang sau
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </section>
       </div>
 
       {/* 
-          DETAILS MODAL
+          DETAILS MODAL (Removed - navigated to detail page instead)
        */}
-      {showDetailsModal && selectedTemplate && (
-        <div className="fixed inset-0 z-[9990] flex items-center justify-center p-4" onClick={() => setShowDetailsModal(false)}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="relative h-56 shrink-0 overflow-hidden bg-gradient-to-br from-tet-primary to-tet-accent">
-              {selectedTemplate.imageUrl && (
-                <img src={selectedTemplate.imageUrl} alt={selectedTemplate.productname} className="absolute inset-0 w-full h-full object-cover opacity-40" />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="absolute top-4 right-4 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-all"
-              >
-                <X size={18} />
-              </button>
-              <div className="absolute bottom-0 left-0 p-6 text-white">
-                <h3 className="text-2xl font-extrabold mb-1 leading-tight">{selectedTemplate.productname}</h3>
-                <p className="text-sm opacity-80 line-clamp-2">{selectedTemplate.description || "Giỏ quà Tết cao cấp"}</p>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-4 border-b border-gray-100 shrink-0">
-              {[
-                { label: "Giá", value: (selectedTemplate.price || 0).toLocaleString("vi-VN") + "đ", color: "text-tet-accent" },
-                { label: "Trọng lượng", value: (selectedTemplate.unit || 0) + "g", color: "text-green-600" },
-                { label: "Số món", value: String(selectedTemplate.productDetails?.length || 0), color: "text-purple-600" },
-                { label: "Tồn kho", value: String(selectedTemplate.totalQuantity || 0), color: "text-amber-600" },
-              ].map((stat, i) => (
-                <div key={i} className="py-4 text-center border-r last:border-r-0 border-gray-100">
-                  <p className={`text-lg font-extrabold ${stat.color}`}>{stat.value}</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Product list */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-2.5">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Sản phẩm trong giỏ</p>
-              {selectedTemplate.productDetails?.length ? selectedTemplate.productDetails.map((detail, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
-                  {detail.childProduct?.imageUrl
-                    ? <img src={detail.childProduct.imageUrl} alt={detail.childProduct.productname} className="w-14 h-14 rounded-xl object-cover shrink-0" />
-                    : <div className="w-14 h-14 rounded-xl bg-gray-200 flex items-center justify-center shrink-0"><Gift size={22} className="text-gray-400" /></div>
-                  }
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-800 text-sm truncate">{detail.childProduct?.productname || "Sản phẩm"}</p>
-                    <p className="text-xs text-tet-accent font-semibold mt-0.5">{(detail.childProduct?.price || 0).toLocaleString("vi-VN")}đ</p>
-                  </div>
-                  <span className="bg-tet-primary text-white text-xs font-bold px-3 py-1 rounded-full shrink-0">{detail.quantity || 1}</span>
-                </div>
-              )) : (
-                <div className="flex flex-col items-center py-10 text-gray-300">
-                  <Package size={48} strokeWidth={1} />
-                  <p className="mt-2 text-sm">Chưa có sản phẩm</p>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="shrink-0 p-5 border-t border-gray-100 flex gap-3">
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="flex-1 py-3 rounded-2xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition-all"
-              >
-                Đóng
-              </button>
-              <button
-                onClick={() => { setShowDetailsModal(false); handleOpenCloneModal(selectedTemplate); }}
-                className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-500 text-white font-bold text-sm hover:shadow-lg hover:shadow-purple-200 transition-all flex items-center justify-center gap-2"
-              >
-                <Copy size={15} /> Clone & Tùy chỉnh
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 
           CLONE MODAL
@@ -968,6 +979,7 @@ export default function ProductPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

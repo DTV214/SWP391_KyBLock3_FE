@@ -31,6 +31,15 @@ export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { openCart, getTotalItems } = useCart();
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
+      setIsMenuOpen(false); // Đóng menu nếu ở trên mobile
+    }
+  };
 
   // Kiểm tra token để xác định trạng thái đăng nhập
   const token = localStorage.getItem("token");
@@ -73,16 +82,24 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="hidden sm:flex flex-1 max-w-xl mx-4 relative">
+        <form 
+          onSubmit={handleSearch}
+          className="hidden sm:flex flex-1 max-w-xl mx-4 relative"
+        >
           <input
             type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm kiếm hộp quà cao cấp..."
             className="w-full py-2 px-5 pr-12 rounded-full bg-[#fdfaf3] text-sm focus:outline-none focus:ring-2 focus:ring-tet-secondary text-tet-primary placeholder:text-gray-400 shadow-inner"
           />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 bg-tet-primary p-1.5 rounded-full text-white cursor-pointer hover:bg-tet-accent transition-colors">
+          <button 
+            type="submit"
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-tet-primary p-1.5 rounded-full text-white cursor-pointer hover:bg-tet-accent transition-colors"
+          >
             <Search size={16} />
-          </div>
-        </div>
+          </button>
+        </form>
 
         <div className="flex items-center gap-2 md:gap-5 text-white text-sm font-medium">
           {/* LOGIC HIỂN THỊ TÀI KHOẢN */}
