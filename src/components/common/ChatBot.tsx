@@ -57,36 +57,43 @@ export default function ChatBot() {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-28 right-6 z-[300] bg-gradient-to-r from-tet-primary to-red-600 text-white p-4 rounded-full shadow-2xl border-2 border-tet-secondary/50 group transition-all ${
-          isOpen ? "opacity-0 pointer-events-none" : ""
+        className={`fixed bottom-6 right-6 z-[9999] bg-gradient-to-tr from-tet-primary to-red-600 text-white p-3.5 rounded-full shadow-2xl border-2 border-white/20 group transition-all duration-300 hover:shadow-tet-primary/40 ${
+          isOpen ? "opacity-0 scale-0 pointer-events-none" : "opacity-100 scale-100"
         }`}
       >
-        <Bot className="w-6 h-6 group-hover:scale-110 transition-transform" />
+        <Bot className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+        <span className="absolute -top-1 -right-1 flex h-4 w-4">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-tet-secondary opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-4 w-4 bg-tet-secondary"></span>
+        </span>
       </motion.button>
 
       {/* Chat Window */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 100, scale: 0.8 }}
-            className="fixed bottom-28 right-6 z-[300] w-96 h-[600px] bg-white rounded-2xl shadow-2xl border-2 border-tet-primary/30 flex flex-col overflow-hidden"
+            initial={{ opacity: 0, scale: 0.95, y: 20, transformOrigin: "bottom right" }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="fixed bottom-6 right-6 z-[9999] w-[calc(100vw-48px)] sm:w-96 h-[500px] max-h-[calc(100vh-48px)] bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-gray-100 flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-tet-primary to-red-600 text-white p-4 flex items-center justify-between">
+            <div className="bg-gradient-to-br from-tet-primary to-red-700 text-white p-5 flex items-center justify-between shadow-lg relative z-10">
               <div className="flex items-center gap-3">
-                <div className="bg-white/20 p-2 rounded-full">
-                  <Bot className="w-5 h-5" />
+                <div className="bg-white/10 p-2.5 rounded-2xl backdrop-blur-md border border-white/10">
+                  <Bot className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">AI Chatbot</h3>
-                  <p className="text-xs opacity-90">Hỗ trợ tìm kiếm sản phẩm</p>
+                  <h3 className="font-extrabold text-base tracking-tight">Trợ lý Quà Tết AI</h3>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+                    <p className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Đang trực tuyến</p>
+                  </div>
                 </div>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="hover:bg-white/20 p-2 rounded-full transition-colors"
+                className="hover:bg-black/10 p-2 rounded-xl transition-all active:scale-90"
               >
                 <X className="w-5 h-5" />
               </button>

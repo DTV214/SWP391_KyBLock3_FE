@@ -9,7 +9,7 @@ import { useCart } from "@/feature/cart/context/CartContext";
 const DEFAULT_IMAGE =
   "https://res.cloudinary.com/dratbz8bh/image/upload/v1769521638/HOP-BANH-TRUNG-THU-VEN-TRON-3_get5up.jpg";
 
-const MAX_DISPLAY = 9;
+const MAX_DISPLAY = 8;
 
 // Hiệu ứng cho Container (Stagger)
 const containerVariants = {
@@ -85,7 +85,7 @@ export default function ProductGridHome() {
 
         {/* Lưới sản phẩm Responsive: 1 cột (Mobile), 2 cột (Tablet), 3 cột (Desktop) */}
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 md:gap-10"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
@@ -120,7 +120,7 @@ export default function ProductGridHome() {
           className="mt-16 md:mt-20 text-center"
         >
           <button
-            onClick={() => { navigate("/all-products"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            onClick={() => { navigate("/products"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
             className="bg-tet-primary text-white px-10 md:px-12 py-3 md:py-4 rounded-full font-bold text-base md:text-lg hover:bg-[#4a0d06] hover:scale-105 transition-all shadow-[0_10px_30px_rgba(90,17,7,0.2)]"
           >
             Xem thêm sản phẩm

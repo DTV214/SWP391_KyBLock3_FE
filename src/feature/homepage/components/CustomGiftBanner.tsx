@@ -81,9 +81,9 @@ export default function CustomGiftBanner() {
             </div>
           </div>
 
-          <button className="w-full md:w-auto bg-tet-primary text-white px-10 md:px-12 py-4 md:py-5 rounded-2xl font-bold shadow-lg hover:bg-[#4a0d06] hover:-translate-y-1 transition-all uppercase tracking-widest text-sm md:text-base">
+          <a href="/quotation" className="w-full md:w-auto bg-tet-primary text-white px-10 md:px-12 py-4 md:py-5 rounded-2xl font-bold shadow-lg hover:bg-[#4a0d06] hover:-translate-y-1 transition-all uppercase tracking-widest text-sm md:text-base flex items-center justify-center">
             Nhận Báo Giá Ngay
-          </button>
+          </a>
         </div>
       </div>
 

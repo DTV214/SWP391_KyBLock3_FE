@@ -57,6 +57,7 @@ export default function QualitySection() {
               transition={{ delay: index * 0.1, duration: 0.5 }}
               viewport={{ once: true }}
               className="group relative h-[400px] md:h-[500px] rounded-3xl overflow-hidden shadow-xl border-4 border-white cursor-pointer"
+              onClick={() => window.location.href = '/products'}
             >
               {/* Hình ảnh nền */}
               <img
