@@ -1,5 +1,7 @@
 import axiosClient from './axiosClient';
 import { API_ENDPOINTS } from './apiConfig';
+import { inventoryAdminService } from './inventoryAdminService';
+import { stockUtils } from '@/lib/stockUtils';
 
 import type {
   ProductDto,
@@ -321,4 +323,40 @@ export const productService = {
       return response;
     },
   },
+
+  // --- NEW: FE-only Available Products for Customer ---
+  getAvailableProductsForCustomer: async () => {
+    try {
+      // 1. Fetch products and stocks in parallel
+      const [productsRes, stocks] = await Promise.all([
+        axiosClient.get(API_ENDPOINTS.PRODUCTS.LIST),
+        inventoryAdminService.getAllStocks()
+      ]);
+
+      const allProducts: ProductDto[] = (productsRes as any)?.data?.data ?? (productsRes as any)?.data ?? [];
+
+      // 2. Filter products based on stock availability
+      return stockUtils.filterInStockProducts(allProducts, stocks);
+    } catch (error) {
+      console.error("[productService] Error fetching available products:", error);
+      throw error;
+    }
+  },
+
+  getAvailableShopBasketsForCustomer: async () => {
+    try {
+      const [basketsRes, stocks] = await Promise.all([
+        axiosClient.get(API_ENDPOINTS.PRODUCTS.SHOP_BASKETS),
+        inventoryAdminService.getAllStocks()
+      ]);
+
+      const allBaskets: ProductDto[] = (basketsRes as any)?.data?.data ?? (basketsRes as any)?.data ?? [];
+      
+      // Filter baskets based on stock availability
+      return stockUtils.filterInStockProducts(allBaskets, stocks);
+    } catch (error) {
+      console.error("[productService] Error fetching available shop baskets:", error);
+      throw error;
+    }
+  }
 };

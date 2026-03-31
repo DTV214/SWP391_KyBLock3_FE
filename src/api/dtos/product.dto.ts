@@ -3,10 +3,10 @@
 export interface StockDto {
   stockId: number;
   productId: number;
-  productName: string;
+  productName?: string | null;
   quantity: number;
   expiryDate?: string | null;
-  status: string;
+  status?: string | null;
   productionDate?: string | null;
   lastUpdated?: string | null;
 }

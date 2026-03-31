@@ -129,17 +129,18 @@ export default function ProductPage() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [productsRes, basketsRes, catsRes] = await Promise.all([
-          productService.getAll(),
-          productService.templates.getAdminBaskets(),
+        const [availableProducts, availableBaskets, catsRes] = await Promise.all([
+          productService.getAvailableProductsForCustomer(),
+          productService.getAvailableShopBasketsForCustomer(),
           categoryService.getAll(),
         ]);
-        const allProducts: Product[] = (productsRes as any)?.data?.data ?? (productsRes as any)?.data ?? [];
-        setSingleProducts(allProducts.filter((p: Product) => p.status === "ACTIVE" && !p.configid));
+        
+        setSingleProducts(availableProducts.filter((p: Product) => p.status === "ACTIVE" && !p.configid));
         setSingleLoading(false);
-        const allBaskets: Product[] = (basketsRes as any)?.data?.data ?? (basketsRes as any)?.data ?? [];
-        setBaskets(allBaskets.filter((p: Product) => p.status === "ACTIVE"));
+        
+        setBaskets(availableBaskets.filter((p: Product) => p.status === "ACTIVE"));
         setBasketLoading(false);
+        
         const cats: Category[] = (catsRes as any)?.data?.data ?? (catsRes as any)?.data ?? [];
         setCategories(cats);
       } catch (err) {
@@ -233,10 +234,8 @@ export default function ProductPage() {
       } else {
         setSelectedConfig(null);
       }
-      const productsRes = await productService.getAll();
-      const rawData = productsRes.data;
-      const allProds: Product[] = Array.isArray(rawData) ? rawData : Array.isArray(rawData?.items) ? rawData.items : [];
-      setAvailableProducts(allProds.filter((p: Product) => p.status === "ACTIVE" && !p.configid));
+      const availableProds = await productService.getAvailableProductsForCustomer();
+      setAvailableProducts(availableProds.filter((p: Product) => p.status === "ACTIVE" && !p.configid));
     } catch {
       addToast("error", "Không thể tải dữ liệu. Vui lòng thử lại.");
       setShowCloneModal(false);

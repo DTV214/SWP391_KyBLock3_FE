@@ -62,19 +62,14 @@ export default function CustomBasketPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [configsData, productRes] = await Promise.all([
+        const [configsData, availableProducts] = await Promise.all([
           configService.getAllConfig(),
-          productService.getAll(),
+          productService.getAvailableProductsForCustomer(),
         ]);
-
-        const rawProducts =
-          (productRes as any)?.data?.data ??
-          (productRes as any)?.data ??
-          [];
 
         setConfigs(configsData);
         setSingleProducts(
-          rawProducts.filter(
+          availableProducts.filter(
             (p: Product) =>
               p.status?.toUpperCase() === "ACTIVE" && !p.configid
           )
