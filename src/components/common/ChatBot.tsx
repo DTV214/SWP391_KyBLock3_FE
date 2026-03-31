@@ -1,14 +1,22 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, X, Send, Loader2 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { chatService } from "@/api/chatService";
 
 export default function ChatBot() {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{ role: "user" | "bot"; text: string }>>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const role = (localStorage.getItem("role") || "").toUpperCase();
+  const isBackoffice = role === "ADMIN" || role === "STAFF";
+  const isAuthPage =
+    location.pathname.startsWith("/login") ||
+    location.pathname.startsWith("/register");
+  const shouldRender = !isBackoffice && !isAuthPage;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -47,6 +55,8 @@ export default function ChatBot() {
       handleSendMessage();
     }
   };
+
+  if (!shouldRender) return null;
 
   return (
     <>

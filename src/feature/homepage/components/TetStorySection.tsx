@@ -3,10 +3,7 @@ import { motion } from "framer-motion";
 export default function TetStorySection() {
   return (
     <section className="relative py-16 md:py-28 px-4 bg-white overflow-hidden border-b border-gray-100">
-      {/* Họa tiết hoa đào chìm trang trí - Tự động thu nhỏ trên điện thoại */}
-      <div className="absolute top-0 right-0 opacity-10 pointer-events-none translate-x-1/4 -translate-y-1/4 select-none">
-        <span className="text-[150px] md:text-[300px]">🌸</span>
-      </div>
+      
 
       <div className="container mx-auto max-w-7xl">
         <div className="flex flex-col md:flex-row gap-12 md:gap-16 items-center relative z-10">
@@ -31,21 +28,7 @@ export default function TetStorySection() {
               tri ân, gắn kết tình thân qua những món quà ý nghĩa nhất.
             </p>
 
-            {/* Icons sống động có hiệu ứng hover */}
-            <div className="flex justify-center md:justify-start gap-4 md:gap-6">
-              <motion.div
-                whileHover={{ rotate: 15, scale: 1.1 }}
-                className="p-4 md:p-5 bg-tet-bg rounded-2xl shadow-sm cursor-help transition-shadow hover:shadow-md"
-              >
-                <span className="text-2xl md:text-3xl">🏮</span>
-              </motion.div>
-              <motion.div
-                whileHover={{ rotate: -15, scale: 1.1 }}
-                className="p-4 md:p-5 bg-tet-bg rounded-2xl shadow-sm cursor-help transition-shadow hover:shadow-md"
-              >
-                <span className="text-2xl md:text-3xl">🌸</span>
-              </motion.div>
-            </div>
+            
           </motion.div>
 
           {/* Cột Lưới Ảnh: Chiều cao co giãn linh hoạt theo thiết bị */}

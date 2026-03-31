@@ -108,9 +108,6 @@ const StaffRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
-  const role = localStorage.getItem("role");
-  const shouldShowAiChatbot = role !== "ADMIN" && role !== "STAFF";
-
   return (
     <CartProvider>
       <Router>
@@ -257,7 +254,7 @@ function App() {
           </main>
           <Footer />
           <BackToTop />
-          {shouldShowAiChatbot && <ChatBot />}
+          <ChatBot />
           <CartSidebar />
           <CustomerChatWidget />
         </div>

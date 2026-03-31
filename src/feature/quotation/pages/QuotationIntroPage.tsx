@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 import {
   Palette,
   ReceiptText,
@@ -8,9 +8,6 @@ import {
   MessageCircle,
   FileCheck2,
   Sparkles,
-  PhoneCall,
-  Mail,
-  MapPin,
 } from "lucide-react";
 import {
   Accordion,
@@ -59,7 +56,7 @@ const steps = [
     id: "3",
     icon: FileCheck2,
     title: "Nhận báo giá",
-    description: "Nhận báo giá kèm tuỳ chọn cá nhân hóa.",
+    description: "Nhận báo giá kèm tùy chọn cá nhân hóa.",
   },
   {
     id: "4",
@@ -113,7 +110,7 @@ export default function QuotationIntroPage() {
           <div className="mt-6 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div>
               <h1 className="text-3xl font-bold leading-tight md:text-5xl">
-                Quà Tết Doanh Nghiệp — Yêu cầu báo giá
+                Quà Tết Doanh Nghiệp - Yêu cầu báo giá
               </h1>
               <p className="mt-4 text-base text-[#6d3b2e] md:text-lg">
                 Nhận báo giá nhanh cho quà Tết doanh nghiệp. Giá tốt cho đơn số
@@ -299,69 +296,6 @@ export default function QuotationIntroPage() {
               </AccordionItem>
             ))}
           </Accordion>
-        </div>
-      </section>
-
-      <section className="bg-[#fff7ee]">
-        <div className="container mx-auto max-w-6xl px-4 py-16 md:px-8">
-          <div className="grid gap-10 lg:grid-cols-[1fr_1.1fr]">
-            <div className="rounded-3xl border border-[#f1e1d6] bg-white p-8 shadow-sm">
-              <h3 className="text-xl font-semibold">Vẫn cần tư vấn thêm?</h3>
-              <p className="mt-2 text-sm text-[#7b5a4c]">
-                Đội ngũ doanh nghiệp sẵn sàng tư vấn để bạn có trải nghiệm quà
-                tặng trọn vẹn.
-              </p>
-
-              <div className="mt-6 space-y-4 text-sm text-[#6d3b2e]">
-                <div className="flex items-center gap-3">
-                  <PhoneCall size={18} />
-                  <span>Hotline dự án: 1900 1234</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Mail size={18} />
-                  <span>sales@happybox.vn</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MapPin size={18} />
-                  <span>123 Nguyễn Huệ, Q.1, TP.HCM</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-[#f1e1d6] bg-white p-8 shadow-sm">
-              <h3 className="text-xl font-semibold">Form liên hệ nhanh</h3>
-              <form className="mt-6 space-y-4">
-                <input
-                  className="w-full rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none"
-                  placeholder="Tên công ty"
-                />
-                <input
-                  className="w-full rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none"
-                  placeholder="Người liên hệ"
-                />
-                <input
-                  type="email"
-                  className="w-full rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none"
-                  placeholder="Email"
-                />
-                <input
-                  className="w-full rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none"
-                  placeholder="Số điện thoại"
-                />
-                <textarea
-                  rows={4}
-                  className="w-full rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none"
-                  placeholder="Mô tả nhu cầu quà tặng"
-                />
-                <button
-                  type="button"
-                  className="w-full rounded-full bg-[#7a160e] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#7a160e]/20 transition hover:-translate-y-0.5 hover:bg-[#5c0f09]"
-                >
-                  Gửi thông tin
-                </button>
-              </form>
-            </div>
-          </div>
         </div>
       </section>
     </div>

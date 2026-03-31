@@ -61,10 +61,7 @@ export default function FlashSellCarousel() {
 
   return (
     <section className="relative py-12 md:py-20 px-4 md:px-10 bg-white overflow-hidden">
-      {/* Họa tiết trang trí chìm sống động */}
-      <div className="absolute top-10 right-10 opacity-5 pointer-events-none hidden md:block select-none">
-        <span className="text-9xl">🧧</span>
-      </div>
+      
       <div className="absolute inset-0 bg-cloud-pattern opacity-[0.02] pointer-events-none"></div>
 
       <div className="container mx-auto max-w-7xl relative z-10">

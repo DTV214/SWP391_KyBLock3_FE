@@ -8,18 +8,7 @@ export default function IntroHero() {
       {/* 1. Background Họa tiết & Icon Nhấn mạnh */}
       <div className="absolute inset-0 bg-cloud-pattern opacity-[0.04] pointer-events-none"></div>
 
-      {/* Icon hoa đào chìm trang trí */}
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        className="absolute -top-10 -left-10 opacity-[0.08] pointer-events-none"
-      >
-        <span className="text-[200px]">🌸</span>
-      </motion.div>
-
-      <div className="absolute bottom-10 right-10 opacity-[0.08] pointer-events-none scale-150">
-        <span className="text-[150px]">🏮</span>
-      </div>
+      
 
       <div className="container mx-auto max-w-7xl px-6 relative z-10 text-center">
         {/* 2. Tiêu đề & Lời Description đầy thành ý */}
