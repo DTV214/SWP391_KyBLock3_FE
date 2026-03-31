@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import BlogHero from "../components/BlogHero";
 import BlogGrid from "../components/BlogGrid";
-import Newsletter from "../components/Newsletter";
 import { blogService, type BlogDto} from "../services/blogService";
 
 export default function BlogPage() {
@@ -64,7 +63,6 @@ export default function BlogPage() {
     >
       <BlogHero blog={featuredBlog} />
       <BlogGrid blogs={gridBlogs} />
-      <Newsletter />
     </motion.div>
   );
 }

@@ -25,10 +25,7 @@ export default function StorySection() {
               />
             </div>
 
-            {/* Icon trang trí nhỏ đè lên ảnh */}
-            <div className="absolute -bottom-6 -right-6 bg-tet-secondary p-4 rounded-2xl shadow-xl hidden md:block">
-              <span className="text-4xl">💝</span>
-            </div>
+            
           </motion.div>
 
           {/* 2. Phần bên phải: Title và Description */}

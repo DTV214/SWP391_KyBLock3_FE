@@ -51,6 +51,31 @@ const originPinIcon = new L.DivIcon({
   iconAnchor: [8, 8],
 });
 
+const sovereigntyLabelIcon = (text: string) =>
+  new L.DivIcon({
+    html: `<div style="width:280px;height:34px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,0.94);border:1px solid rgba(185,28,28,0.35);box-shadow:0 8px 20px rgba(127,29,29,0.2);color:#b91c1c;font-family:'Playfair Display',serif;font-size:13px;font-weight:700;font-style:italic;white-space:nowrap;line-height:34px;text-align:center;">${text}</div>`,
+    className: "",
+    iconSize: [280, 34],
+    iconAnchor: [140, 17],
+  });
+
+const sovereigntyLabels: Array<{
+  key: string;
+  position: [number, number];
+  text: string;
+}> = [
+  {
+    key: "hoang-sa",
+    position: [16.6, 112.4],
+    text: "Hoàng Sa là của Việt Nam",
+  },
+  {
+    key: "truong-sa",
+    position: [10.1, 114.2],
+    text: "Trường Sa là của Việt Nam",
+  },
+];
+
 function MapViewportController({
   selectedStore,
 }: {
@@ -314,55 +339,72 @@ export default function ContactInfoMap() {
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="contact-store-map relative z-0 h-[450px] w-full overflow-hidden rounded-[2.5rem] border-8 border-[#FBF5E8] shadow-2xl md:h-[600px] lg:w-1/2"
+            className="w-full lg:w-1/2"
           >
-            {loading ? (
-              <div className="flex h-full items-center justify-center bg-[#fffaf5] text-[#7a160e]">
-                <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                  <p className="text-sm font-medium">Dang tai vi tri cua hang...</p>
+            <div className="contact-store-map relative z-0 h-[450px] overflow-hidden rounded-[2.5rem] border-8 border-[#FBF5E8] shadow-2xl md:h-[600px]">
+              {loading ? (
+                <div className="flex h-full items-center justify-center bg-[#fffaf5] text-[#7a160e]">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                    <p className="text-sm font-medium">Dang tai vi tri cua hang...</p>
+                  </div>
                 </div>
-              </div>
-            ) : error ? (
-              <div className="flex h-full items-center justify-center bg-[#fffaf5] p-8 text-center text-sm text-red-600">
-                {error}
-              </div>
-            ) : (
-              <MapContainer
-                center={HCMC_CENTER}
-                zoom={DEFAULT_ZOOM}
-                scrollWheelZoom
-                className="h-full w-full"
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+              ) : error ? (
+                <div className="flex h-full items-center justify-center bg-[#fffaf5] p-8 text-center text-sm text-red-600">
+                  {error}
+                </div>
+              ) : (
+                <MapContainer
+                  center={HCMC_CENTER}
+                  zoom={DEFAULT_ZOOM}
+                  scrollWheelZoom
+                  className="h-full w-full"
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
 
-                <MapViewportController selectedStore={selectedStore} />
+                  <MapViewportController selectedStore={selectedStore} />
 
-                {locations.map((location) => (
-                  <Marker
-                    key={location.storeLocationId}
-                    position={[location.latitude, location.longitude]}
-                    icon={activeStoreIcon}
-                    eventHandlers={{
-                      click: () => {
-                        void handleSelectStore(location);
-                      },
-                    }}
-                  >
-                    <Popup>
-                      <div className="space-y-1">
-                        <p className="font-semibold text-[#7a160e]">{location.name}</p>
-                        <p className="text-xs text-gray-600">{location.addressLine}</p>
-                        <p className="text-xs text-gray-500">{location.openHoursText}</p>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
-              </MapContainer>
-            )}
+                  {locations.map((location) => (
+                    <Marker
+                      key={location.storeLocationId}
+                      position={[location.latitude, location.longitude]}
+                      icon={activeStoreIcon}
+                      eventHandlers={{
+                        click: () => {
+                          void handleSelectStore(location);
+                        },
+                      }}
+                    >
+                      <Popup>
+                        <div className="space-y-1">
+                          <p className="font-semibold text-[#7a160e]">{location.name}</p>
+                          <p className="text-xs text-gray-600">{location.addressLine}</p>
+                          <p className="text-xs text-gray-500">{location.openHoursText}</p>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  ))}
+
+                  {sovereigntyLabels.map((label) => (
+                    <Marker
+                      key={label.key}
+                      position={label.position}
+                      icon={sovereigntyLabelIcon(label.text)}
+                      zIndexOffset={10000}
+                    />
+                  ))}
+                </MapContainer>
+              )}
+            </div>
+
+            <div className="mt-4 px-4 py-1 text-center">
+              <p className="font-serif text-xl font-bold italic tracking-tight text-red-700 md:text-2xl">
+                Hoàng Sa, Trường Sa là của Việt Nam
+              </p>
+            </div>
           </motion.div>
 
           <div className="w-full lg:w-1/2">
@@ -627,6 +669,15 @@ export default function ContactInfoMap() {
                         <Popup>Vi tri cua ban</Popup>
                       </Marker>
                     )}
+
+                    {sovereigntyLabels.map((label) => (
+                      <Marker
+                        key={`modal-${label.key}`}
+                        position={label.position}
+                        icon={sovereigntyLabelIcon(label.text)}
+                        zIndexOffset={10000}
+                      />
+                    ))}
                   </MapContainer>
                 </div>
               </div>

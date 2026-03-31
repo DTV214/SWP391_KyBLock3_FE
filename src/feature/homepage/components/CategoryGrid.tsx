@@ -29,11 +29,7 @@ export default function CategoryGrid() {
 
   return (
     <section className="relative py-10 md:py-16 bg-tet-bg/50 overflow-hidden border-t border-tet-secondary/20">
-      {/* Họa tiết mây toàn nền và icon trang trí sống động */}
-      <div className="absolute inset-0 bg-cloud-pattern pointer-events-none opacity-40"></div>
-      <div className="absolute top-10 left-10 opacity-10 pointer-events-none animate-pulse hidden md:block">
-        <span className="text-6xl">🏮</span>
-      </div>
+      
 
       <div className="container mx-auto max-w-7xl px-6 relative z-10">
         <div className="text-center mb-8 md:mb-10">

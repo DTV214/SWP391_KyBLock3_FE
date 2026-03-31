@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { Facebook, Instagram, Youtube, Send, Music2 } from "lucide-react";
+﻿import { motion } from "framer-motion";
+import { Facebook, Instagram, Youtube, Music2 } from "lucide-react";
 
 export default function ContactSocialForm() {
   const socialLinks = [
@@ -10,18 +10,17 @@ export default function ContactSocialForm() {
   ];
 
   return (
-    <section className="bg-tet-primary py-16 md:py-24 relative overflow-hidden">
-      {/* Họa tiết mây chìm trang trí xuyên suốt */}
-      <div className="absolute inset-0 bg-cloud-pattern opacity-[0.03] pointer-events-none"></div>
+    <section className="relative overflow-hidden bg-tet-primary py-16 md:py-24">
+      <div className="absolute inset-0 bg-cloud-pattern opacity-[0.03] pointer-events-none" />
 
       <div className="container mx-auto max-w-7xl px-6 relative z-10">
-        <div className="flex flex-col lg:flex-row gap-16 lg:gap-24 items-start">
-          {/* 1. KHỐI KẾT NỐI MẠNG XÃ HỘI */}
-          <div className="w-full lg:w-1/2 space-y-10">
+        <div className="flex justify-center">
+          <div className="w-full max-w-3xl space-y-10 text-center">
             <div className="space-y-4">
-              <h3 className="flex items-center gap-3 text-tet-secondary text-2xl md:text-3xl font-serif font-bold">
-                <span className="w-8 h-[1px] bg-tet-secondary opacity-50"></span>
+              <h3 className="flex items-center justify-center gap-3 text-tet-secondary text-2xl md:text-3xl font-serif font-bold">
+                <span className="h-[1px] w-10 bg-tet-secondary/70" />
                 Kết Nối Với Chúng Tôi
+                <span className="h-[1px] w-10 bg-tet-secondary/70" />
               </h3>
               <p className="text-[#FBF5E8] opacity-70 italic text-sm md:text-base">
                 Theo dõi Happybox trên các nền tảng mạng xã hội để cập nhật
@@ -29,7 +28,6 @@ export default function ContactSocialForm() {
               </p>
             </div>
 
-            {/* Grid 4 ô vuông mạng xã hội */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6">
               {socialLinks.map((social, index) => (
                 <motion.a
@@ -50,57 +48,6 @@ export default function ContactSocialForm() {
                 </motion.a>
               ))}
             </div>
-          </div>
-
-          {/* 2. KHỐI ĐĂNG KÝ NHẬN TIN */}
-          <div className="w-full lg:w-1/2">
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              className="bg-white/5 border border-white/10 p-8 md:p-12 rounded-[2.5rem] backdrop-blur-sm shadow-2xl relative overflow-hidden group"
-            >
-              {/* Decor icon hoa đào chìm ở góc card */}
-              <div className="absolute -top-6 -right-6 text-white opacity-5 text-8xl rotate-12 group-hover:rotate-45 transition-transform duration-1000">
-                🌸
-              </div>
-
-              <div className="relative z-10 space-y-8">
-                <div className="text-center lg:text-left">
-                  <h3 className="text-tet-secondary text-2xl md:text-3xl font-serif font-bold mb-4">
-                    Đăng Ký Nhận Tin
-                  </h3>
-                  <p className="text-[#FBF5E8] opacity-70 italic text-sm md:text-base">
-                    Nhận ngay thông tin về bộ sưu tập quà Tết 2026 và các mã
-                    giảm giá sớm nhất dành riêng cho bạn.
-                  </p>
-                </div>
-
-                {/* Input Form */}
-                <form
-                  className="relative group/form"
-                  onSubmit={(e) => e.preventDefault()}
-                >
-                  <input
-                    type="email"
-                    placeholder="Email của bạn..."
-                    className="w-full bg-[#FBF5E8] text-tet-primary px-8 py-4 md:py-5 rounded-full outline-none focus:ring-4 focus:ring-tet-secondary/30 transition-all font-medium placeholder:text-gray-400 pr-16"
-                  />
-                  <button
-                    type="submit"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-tet-primary text-white p-3 md:p-4 rounded-full hover:bg-tet-accent transition-all hover:scale-105 active:scale-95 shadow-md"
-                  >
-                    <Send
-                      size={20}
-                      className="group-hover/form:translate-x-1 group-hover/form:-translate-y-1 transition-transform"
-                    />
-                  </button>
-                </form>
-
-                <p className="text-[10px] text-center lg:text-left text-[#FBF5E8] opacity-40 uppercase tracking-widest font-bold">
-                  * Chúng tôi cam kết bảo mật thông tin khách hàng tuyệt đối
-                </p>
-              </div>
-            </motion.div>
           </div>
         </div>
       </div>
