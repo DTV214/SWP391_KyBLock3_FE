@@ -17,6 +17,7 @@ export default function AdminLayout() {
     if (path.includes("blogs")) return "Quản lý bài viết";
     if (path.includes("quotations")) return "Quotations";
     if (path.includes("orders")) return "Quản lý đơn hàng";
+    if (path.includes("contacts")) return "Yêu cầu liên hệ"; // <-- ĐÃ THÊM DÒNG NÀY
     if (path.includes("chats")) return "Chat khách hàng";
     return "Quản trị";
   };
@@ -31,7 +32,9 @@ export default function AdminLayout() {
           <ChevronRight size={14} />
           <span className="text-gray-400">Admin</span>
           <ChevronRight size={14} />
-          <span className="text-tet-primary font-bold">{getBreadcrumbName(location.pathname)}</span>
+          <span className="text-tet-primary font-bold">
+            {getBreadcrumbName(location.pathname)}
+          </span>
         </nav>
 
         <div className="flex flex-col lg:flex-row gap-8 items-start">

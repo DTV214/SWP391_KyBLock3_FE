@@ -8,6 +8,7 @@ import {
   Home,
   UserCircle,
   MessageSquare,
+  Mail, // <-- ĐÃ THÊM ICON NÀY
 } from "lucide-react";
 import { chatService } from "@/feature/chat/services/chatService";
 import { chatRealtimeService } from "@/feature/chat/services/chatRealtime";
@@ -63,6 +64,12 @@ export default function StaffSidebar() {
       label: "Đơn hàng của tôi",
       icon: <Package size={18} />,
     },
+    // --- ĐÃ THÊM MENU LIÊN HỆ TẠI ĐÂY ---
+    {
+      path: "/staff/contacts",
+      label: "Yêu cầu liên hệ",
+      icon: <Mail size={18} />,
+    },
     {
       path: "/staff/chats",
       label: "Chat khách hàng",
@@ -73,8 +80,8 @@ export default function StaffSidebar() {
   return (
     <>
       <BackofficeChatRealtimeBridge />
-      <aside className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="bg-gradient-to-br from-[#d77a45] to-[#b85b29] p-6 text-white">
+      <aside className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
+        <div className="bg-gradient-to-br from-[#d77a45] to-[#b85b29] p-6 text-white shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
               <UserCircle size={28} />
@@ -90,7 +97,7 @@ export default function StaffSidebar() {
           </div>
         </div>
 
-        <nav className="p-3">
+        <nav className="p-3 flex-1 overflow-y-auto custom-scrollbar">
           {menuItems.map((item) => (
             <NavLink
               key={item.path}

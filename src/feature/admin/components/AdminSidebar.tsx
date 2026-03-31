@@ -16,6 +16,7 @@ import {
   PackageOpen,
   MapPin,
   Ticket,
+  Mail, // <-- Bổ sung icon Mail
 } from "lucide-react";
 import { chatService } from "@/feature/chat/services/chatService";
 import { chatRealtimeService } from "@/feature/chat/services/chatRealtime";
@@ -116,6 +117,12 @@ export default function AdminSidebar() {
       label: "Đơn hàng",
       icon: <ShoppingCart size={18} />,
     },
+    // --- BỔ SUNG MENU LIÊN HỆ TẠI ĐÂY ---
+    {
+      path: "/admin/contacts",
+      label: "Yêu cầu liên hệ",
+      icon: <Mail size={18} />,
+    },
     {
       path: "/admin/chats",
       label: "Chat khách hàng",
@@ -126,8 +133,8 @@ export default function AdminSidebar() {
   return (
     <>
       <BackofficeChatRealtimeBridge />
-      <aside className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="bg-gradient-to-br from-tet-primary to-tet-accent p-6 text-white">
+      <aside className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
+        <div className="bg-gradient-to-br from-tet-primary to-tet-accent p-6 text-white shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
               <LayoutDashboard size={24} />
@@ -139,15 +146,16 @@ export default function AdminSidebar() {
           </div>
         </div>
 
-        <nav className="p-3">
+        <nav className="p-3 flex-1 overflow-y-auto custom-scrollbar">
           {menuItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mb-1 ${isActive
-                  ? "bg-tet-secondary text-tet-primary font-bold shadow-sm"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-tet-primary"
+                `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mb-1 ${
+                  isActive
+                    ? "bg-tet-secondary text-tet-primary font-bold shadow-sm"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-tet-primary"
                 }`
               }
             >

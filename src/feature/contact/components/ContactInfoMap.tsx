@@ -20,6 +20,7 @@ import {
   geocodingService,
   type AddressSuggestion,
 } from "@/feature/contact/services/geocodingService";
+import ContactForm from "./ContactForm";
 
 const HCMC_CENTER: [number, number] = [10.7769, 106.7009];
 const DEFAULT_ZOOM = 11;
@@ -85,9 +86,13 @@ function MapViewportController({
 
   useEffect(() => {
     if (selectedStore) {
-      map.flyTo([selectedStore.latitude, selectedStore.longitude], FOCUSED_ZOOM, {
-        duration: 0.8,
-      });
+      map.flyTo(
+        [selectedStore.latitude, selectedStore.longitude],
+        FOCUSED_ZOOM,
+        {
+          duration: 0.8,
+        },
+      );
       return;
     }
 
@@ -134,7 +139,9 @@ type OriginPoint = {
 
 export default function ContactInfoMap() {
   const [locations, setLocations] = useState<StoreLocation[]>([]);
-  const [selectedStore, setSelectedStore] = useState<StoreLocation | null>(null);
+  const [selectedStore, setSelectedStore] = useState<StoreLocation | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,13 +152,16 @@ export default function ContactInfoMap() {
 
   const [showDirectionsModal, setShowDirectionsModal] = useState(false);
   const [originSearch, setOriginSearch] = useState("");
-  const [originSuggestions, setOriginSuggestions] = useState<AddressSuggestion[]>(
-    [],
-  );
+  const [originSuggestions, setOriginSuggestions] = useState<
+    AddressSuggestion[]
+  >([]);
   const [searchingOrigin, setSearchingOrigin] = useState(false);
   const [isOriginSearchFocused, setIsOriginSearchFocused] = useState(false);
   const [originPoint, setOriginPoint] = useState<OriginPoint | null>(null);
   const [reverseLoading, setReverseLoading] = useState(false);
+
+  // Thêm state hiển thị Pop-up Form Liên Hệ
+  const [showContactFormModal, setShowContactFormModal] = useState(false);
 
   const modalMapCenter: [number, number] = useMemo(() => {
     if (originPoint) {
@@ -276,7 +286,10 @@ export default function ContactInfoMap() {
     setIsOriginSearchFocused(false);
 
     setReverseLoading(true);
-    const resolvedAddress = await geocodingService.reverseGeocode(latitude, longitude);
+    const resolvedAddress = await geocodingService.reverseGeocode(
+      latitude,
+      longitude,
+    );
     if (resolvedAddress) {
       setOriginSearch(resolvedAddress);
     }
@@ -290,7 +303,9 @@ export default function ContactInfoMap() {
     }
 
     if (!originPoint) {
-      setDirectionsError("Vui long chon vi tri cua ban tren map hoac tu goi y.");
+      setDirectionsError(
+        "Vui long chon vi tri cua ban tren map hoac tu goi y.",
+      );
       return;
     }
 
@@ -332,7 +347,7 @@ export default function ContactInfoMap() {
   };
 
   return (
-    <section className="bg-white py-20">
+    <section className="bg-white py-20 relative">
       <div className="container mx-auto max-w-7xl px-6">
         <div className="flex flex-col gap-16 lg:flex-row">
           <motion.div
@@ -346,7 +361,9 @@ export default function ContactInfoMap() {
                 <div className="flex h-full items-center justify-center bg-[#fffaf5] text-[#7a160e]">
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="h-8 w-8 animate-spin" />
-                    <p className="text-sm font-medium">Dang tai vi tri cua hang...</p>
+                    <p className="text-sm font-medium">
+                      Dang tai vi tri cua hang...
+                    </p>
                   </div>
                 </div>
               ) : error ? (
@@ -380,9 +397,15 @@ export default function ContactInfoMap() {
                     >
                       <Popup>
                         <div className="space-y-1">
-                          <p className="font-semibold text-[#7a160e]">{location.name}</p>
-                          <p className="text-xs text-gray-600">{location.addressLine}</p>
-                          <p className="text-xs text-gray-500">{location.openHoursText}</p>
+                          <p className="font-semibold text-[#7a160e]">
+                            {location.name}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {location.addressLine}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {location.openHoursText}
+                          </p>
                         </div>
                       </Popup>
                     </Marker>
@@ -400,10 +423,17 @@ export default function ContactInfoMap() {
               )}
             </div>
 
-            <div className="mt-4 px-4 py-1 text-center">
-              <p className="font-serif text-xl font-bold italic tracking-tight text-red-700 md:text-2xl">
+            {/* Nút Liên Hệ Đặt Dưới Thông Điệp */}
+            <div className="mt-8 flex flex-col items-center text-center">
+              <p className="font-serif text-xl font-bold italic tracking-tight text-red-700 md:text-2xl mb-4">
                 Hoàng Sa, Trường Sa là của Việt Nam
               </p>
+              <button
+                onClick={() => setShowContactFormModal(true)}
+                className="px-8 py-3 bg-tet-primary text-white rounded-full font-bold shadow-lg hover:bg-tet-accent hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              >
+                Gửi yêu cầu liên hệ ngay
+              </button>
             </div>
           </motion.div>
 
@@ -414,13 +444,14 @@ export default function ContactInfoMap() {
               viewport={{ once: true }}
               className="relative overflow-hidden rounded-[2.5rem] bg-tet-primary p-8 text-white shadow-xl md:p-10"
             >
-              
               <div className="flex items-center justify-between gap-3">
                 <h4 className="flex items-center gap-3 text-2xl font-bold text-tet-secondary">
                   <Clock size={24} /> Giờ mở cửa
                 </h4>
                 {detailLoading && (
-                  <span className="text-xs text-white/70">Dang cap nhat...</span>
+                  <span className="text-xs text-white/70">
+                    Dang cap nhat...
+                  </span>
                 )}
               </div>
 
@@ -429,7 +460,9 @@ export default function ContactInfoMap() {
                   <div className="space-y-3 text-sm md:text-base">
                     <div className="flex justify-between border-b border-white/10 pb-2">
                       <span className="opacity-80">Chi nhánh</span>
-                      <span className="font-bold text-right">{selectedStore.name}</span>
+                      <span className="font-bold text-right">
+                        {selectedStore.name}
+                      </span>
                     </div>
                     <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-2">
                       <span className="opacity-80">Địa chỉ</span>
@@ -439,7 +472,9 @@ export default function ContactInfoMap() {
                     </div>
                     <div className="flex justify-between border-b border-white/10 pb-2">
                       <span className="opacity-80">Mở cửa</span>
-                      <span className="font-bold italic">{selectedStore.openHoursText}</span>
+                      <span className="font-bold italic">
+                        {selectedStore.openHoursText}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="opacity-80">Điện thoại</span>
@@ -473,7 +508,8 @@ export default function ContactInfoMap() {
                 <div className="space-y-3">
                   {locations.map((location) => {
                     const isActive =
-                      selectedStore?.storeLocationId === location.storeLocationId;
+                      selectedStore?.storeLocationId ===
+                      location.storeLocationId;
 
                     return (
                       <button
@@ -517,6 +553,7 @@ export default function ContactInfoMap() {
         </div>
       </div>
 
+      {/* --- POP-UP MODAL BẢN ĐỒ TÌM ĐƯỜNG --- */}
       {showDirectionsModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div
@@ -527,7 +564,9 @@ export default function ContactInfoMap() {
           <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
               <div>
-                <h3 className="text-xl font-bold text-tet-primary">Tìm đường</h3>
+                <h3 className="text-xl font-bold text-tet-primary">
+                  Tìm đường
+                </h3>
                 <p className="text-sm text-gray-500">
                   Đến: {selectedStore?.name || "Chưa chọn cửa hàng"}
                 </p>
@@ -597,7 +636,9 @@ export default function ContactInfoMap() {
                   </label>
                   <select
                     value={travelMode}
-                    onChange={(event) => setTravelMode(event.target.value as TravelMode)}
+                    onChange={(event) =>
+                      setTravelMode(event.target.value as TravelMode)
+                    }
                     className="h-11 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition-all focus:border-tet-accent"
                   >
                     <option value="driving">Lái xe</option>
@@ -611,17 +652,16 @@ export default function ContactInfoMap() {
                   {originPoint ? (
                     <>
                       <p>
-                        Origin: {originPoint.latitude.toFixed(6)}, {" "}
+                        Origin: {originPoint.latitude.toFixed(6)},{" "}
                         {originPoint.longitude.toFixed(6)}
                       </p>
                       <p className="mt-1">
-                        Ban co the click truc tiep len map neu goi y khong dung dia chi.
+                        Ban co the click truc tiep len map neu goi y khong dung
+                        dia chi.
                       </p>
                     </>
                   ) : (
-                    <p>
-                      Chọn ví trí xuất phát của bạn.
-                    </p>
+                    <p>Chọn ví trí xuất phát của bạn.</p>
                   )}
 
                   {reverseLoading && (
@@ -654,7 +694,10 @@ export default function ContactInfoMap() {
 
                     {selectedStore && (
                       <Marker
-                        position={[selectedStore.latitude, selectedStore.longitude]}
+                        position={[
+                          selectedStore.latitude,
+                          selectedStore.longitude,
+                        ]}
                         icon={activeStoreIcon}
                       >
                         <Popup>{selectedStore.name}</Popup>
@@ -703,9 +746,38 @@ export default function ContactInfoMap() {
                 disabled={directionsLoading || !selectedStore || !originPoint}
                 className="inline-flex items-center gap-2 rounded-full bg-tet-primary px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-tet-accent disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {directionsLoading && <Loader2 size={14} className="animate-spin" />}
+                {directionsLoading && (
+                  <Loader2 size={14} className="animate-spin" />
+                )}
                 {directionsLoading ? "Đang xử lý..." : "Mở Google Maps"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- POP-UP MODAL GỬI YÊU CẦU LIÊN HỆ --- */}
+      {showContactFormModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Nền mờ */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowContactFormModal(false)}
+          ></div>
+
+          <div className="relative w-full max-w-2xl max-h-[95vh] overflow-y-auto custom-scrollbar animate-in fade-in zoom-in duration-300 rounded-[2rem] bg-white shadow-2xl">
+            {/* Nút Đóng */}
+            <button
+              onClick={() => setShowContactFormModal(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+              title="Đóng"
+            >
+              <X size={20} className="text-gray-700" />
+            </button>
+
+            {/* Component Contact Form (với padding nhẹ để tránh che nút đóng) */}
+            <div className="pt-8">
+              <ContactForm />
             </div>
           </div>
         </div>

@@ -15,8 +15,8 @@ import "./App.css";
 // Auth & Home
 import LoginPage from "./feature/auth/pages/LoginPage";
 import RegisterPage from "./feature/auth/pages/RegisterPage";
- // --- THÊM DÒNG NÀY ---
 import HomePage from "./feature/homepage/pages/HomePage";
+import ForgotPasswordPage from "./feature/auth/pages/ForgotPasswordPage";
 
 // News & Intro
 import IntroducePage from "@/feature/introduce/pages/IntroducePage";
@@ -50,6 +50,11 @@ import AdminApprovalQuotationsPage from "@/feature/admin/pages/AdminApprovalQuot
 import AdminApprovalQuotationDetailPage from "@/feature/admin/pages/AdminApprovalQuotationDetailPage";
 import AdminOrderHistory from "@/feature/admin/pages/AdminOrderHistory";
 import AdminChatPage from "@/feature/chat/pages/AdminChatPage";
+import AdminBlogs from "@/feature/admin/pages/AdminBlogs";
+import AdminInventory from "@/feature/admin/pages/AdminInventory";
+import AdminAccounts from "@/feature/admin/pages/AdminAccounts";
+import AdminStoreLocations from "@/feature/admin/pages/AdminStoreLocations";
+import AdminContactManagement from "@/feature/admin/pages/AdminContactManagement"; // <-- THÊM DÒNG NÀY
 
 // Staff Module
 import StaffLayout from "@/feature/staff/layout/StaffLayout";
@@ -67,11 +72,6 @@ import PaymentSuccess from "@/feature/checkout/pages/PaymentSuccess";
 import PaymentFailure from "@/feature/checkout/pages/PaymentFailure";
 import VNPayReturn from "@/feature/checkout/pages/VNPayReturn";
 import CustomerChatWidget from "@/feature/chat/components/CustomerChatWidget";
-import AdminBlogs from "@/feature/admin/pages/AdminBlogs";
-import AdminInventory from "@/feature/admin/pages/AdminInventory";
-import AdminAccounts from "@/feature/admin/pages/AdminAccounts";
-import ForgotPasswordPage from "@/feature/auth/pages/ForgotPasswordPage";
-import AdminStoreLocations from "@/feature/admin/pages/AdminStoreLocations";
 
 // --- MIDDLEWARES ---
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
@@ -122,6 +122,7 @@ function App() {
               <Route path="/blog/:id" element={<BlogDetailPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/quotation" element={<QuotationIntroPage />} />
+
               <Route
                 path="/quotation/create"
                 element={<QuotationCreatePage />}
@@ -154,8 +155,6 @@ function App() {
                   </PublicRoute>
                 }
               />
-
-              {/* --- NEW ROUTE: FORGOT PASSWORD --- */}
               <Route
                 path="/forgot-password"
                 element={
@@ -205,6 +204,8 @@ function App() {
                 />
                 <Route path="chats" element={<AdminChatPage />} />
                 <Route path="orders" element={<StaffOrdersPage />} />
+                {/* Cho phép Staff xử lý Contact */}
+                <Route path="contacts" element={<AdminContactManagement />} />
               </Route>
 
               {/* --- ADMIN ROUTES --- */}
@@ -228,7 +229,12 @@ function App() {
                 <Route path="blogs" element={<AdminBlogs />} />
                 <Route path="inventory" element={<AdminInventory />} />
                 <Route path="accounts" element={<AdminAccounts />} />
-                <Route path="store-locations" element={<AdminStoreLocations />} />
+                <Route
+                  path="store-locations"
+                  element={<AdminStoreLocations />}
+                />
+                <Route path="contacts" element={<AdminContactManagement />} />{" "}
+                {/* <-- ROUTE LIÊN HỆ */}
                 <Route
                   path="quotations"
                   element={<AdminApprovalQuotationsPage />}

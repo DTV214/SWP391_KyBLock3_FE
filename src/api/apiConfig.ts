@@ -26,6 +26,12 @@ export const API_ENDPOINTS = {
     FORGOT_PASSWORD_REQUEST_OTP: `${BASE_URL}/auth/forgot-password/request-otp`,
     FORGOT_PASSWORD_RESET: `${BASE_URL}/auth/forgot-password/reset`,
   },
+  CONTACTS: {
+    PUBLIC_CREATE: `${BASE_URL}/contacts`,
+    ADMIN_LIST: `${BASE_URL}/contacts/admin`,
+    ADMIN_UPDATE: (id: string | number) => `${BASE_URL}/contacts/admin/${id}`,
+    ADMIN_DELETE: (id: string | number) => `${BASE_URL}/contacts/admin/${id}`,
+  },
   // Thêm vào bên trong const API_ENDPOINTS = { ... }
   // Inventory & Stocks endpoints
   INVENTORY: {
@@ -83,8 +89,7 @@ export const API_ENDPOINTS = {
       `${BASE_URL}/products/${id}/set-as-template`,
     REMOVE_TEMPLATE: (id: string | number) =>
       `${BASE_URL}/products/${id}/remove-template`,
-    HARD_DELETE: (id: string | number) =>
-      `${BASE_URL}/products/${id}/hard`,
+    HARD_DELETE: (id: string | number) => `${BASE_URL}/products/${id}/hard`,
   },
 
   // Product Categories endpoints
@@ -234,7 +239,8 @@ export const API_ENDPOINTS = {
     DELETE: `${BASE_URL}/media/delete`,
   },
   DASHBOARD: {
-    SUMMARY: (period: string = "month") => `${BASE_URL}/dashboards/summary?period=${period}`,
+    SUMMARY: (period: string = "month") =>
+      `${BASE_URL}/dashboards/summary?period=${period}`,
     REVENUE: (period: string = "day", startDate?: string, endDate?: string) => {
       let url = `${BASE_URL}/dashboards/revenue?period=${period}`;
       if (startDate) url += `&startDate=${encodeURIComponent(startDate)}`;
@@ -244,10 +250,14 @@ export const API_ENDPOINTS = {
   },
   // Feedbacks endpoints
   FEEDBACKS: {
-    ADD_ORDER_FEEDBACK: (orderId: string | number) => `${BASE_URL}/orders/${orderId}/feedback`,
-    UPDATE_FEEDBACK: (feedbackId: string | number) => `${BASE_URL}/feedbacks/${feedbackId}`,
-    DELETE_FEEDBACK: (feedbackId: string | number) => `${BASE_URL}/feedbacks/${feedbackId}`,
-    GET_PRODUCT_FEEDBACKS: (productId: string | number) => `${BASE_URL}/products/${productId}/feedbacks`,
+    ADD_ORDER_FEEDBACK: (orderId: string | number) =>
+      `${BASE_URL}/orders/${orderId}/feedback`,
+    UPDATE_FEEDBACK: (feedbackId: string | number) =>
+      `${BASE_URL}/feedbacks/${feedbackId}`,
+    DELETE_FEEDBACK: (feedbackId: string | number) =>
+      `${BASE_URL}/feedbacks/${feedbackId}`,
+    GET_PRODUCT_FEEDBACKS: (productId: string | number) =>
+      `${BASE_URL}/products/${productId}/feedbacks`,
   },
 };
 
