@@ -239,8 +239,15 @@ export const downloadInvoice = async (
         }
     );
 
-    // Create a blob from the response
-    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const fileBlob = response as unknown as Blob;
+    
+    // Kểm tra an toàn: Nếu API chưa deploy, server có thể trả về 200 OK kèm theo trang HTML fallback 
+    // của React Router (thay vì PDF). Tránh tải file PDF bị lỗi (không mở được).
+    if (fileBlob.type && fileBlob.type.includes('text/html')) {
+        throw new Error('Tính năng In hóa đơn chưa được deploy lên máy chủ, hoặc đơn hàng không tồn tại.');
+    }
+
+    const blob = new Blob([fileBlob], { type: 'application/pdf' });
     const url = window.URL.createObjectURL(blob);
     
     // Create a temporary link element to trigger the download
