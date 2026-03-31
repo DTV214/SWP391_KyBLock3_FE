@@ -19,14 +19,14 @@ export default function ProductHero() {
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
           <Button className="bg-tet-primary hover:bg-tet-accent text-white px-8 py-6 rounded-full font-bold shadow-lg">
-            Shop Best Sellers
+            Sản phẩm
           </Button>
           <Link to="/custom-basket">
             <Button
               variant="outline"
               className="border-2 border-tet-primary text-tet-primary px-8 py-6 rounded-full font-bold hover:bg-tet-primary hover:text-white transition-all"
             >
-              🎁 Build Your Gift Box
+              🎁 Tùy chỉnh giỏ quà
             </Button>
           </Link>
         </div>

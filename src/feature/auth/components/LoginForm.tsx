@@ -176,26 +176,7 @@ export function LoginForm() {
           </Link>
         </div>
 
-        <div className="relative my-8 text-center">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200"></div>
-          </div>
-          <span className="relative bg-white px-3 text-xs text-gray-400 uppercase tracking-wider">
-            Hoặc đăng nhập bằng
-          </span>
-        </div>
 
-        <button
-          type="button"
-          className="w-full border border-gray-200 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 transition-all text-sm font-medium"
-        >
-          <img
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-            alt="Google"
-            className="w-5 h-5"
-          />{" "}
-          Google
-        </button>
 
         <p className="text-center text-sm text-gray-600 mt-6 font-medium">
           Chưa có tài khoản?{" "}

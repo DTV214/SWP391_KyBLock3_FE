@@ -341,7 +341,7 @@ export default function CustomBasketPage() {
       {/* ── Hero Banner ── */}
       <section className="relative bg-gradient-to-r from-[#3D0B05] via-[#5A1107] to-[#9F3025] text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/oriental.png')]" />
-        <div className="container mx-auto px-6 py-14 relative z-10 text-center">
+        <div className="w-full px-8 py-8 relative z-10 text-center">
           <div className="flex justify-center gap-3 mb-4 text-3xl">🎁 🧧 ✨</div>
           <h1 className="text-4xl md:text-5xl font-black mb-3 drop-shadow">
             Tùy Chỉnh Giỏ Quà Tết
@@ -366,7 +366,7 @@ export default function CustomBasketPage() {
 
       {/* ── How it works ── */}
       <div className="bg-white border-b border-gray-100">
-        <div className="container mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 text-sm font-medium text-gray-600">
+        <div className="w-full px-8 py-5 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 text-sm font-medium text-gray-600">
           <StepBadge num={1} text="Chọn cấu hình giỏ" active />
           <ChevronRight className="hidden sm:block text-gray-300" size={18} />
           <StepBadge num={2} text="Chọn sản phẩm theo quy tắc" active={!!selectedConfig} />
@@ -376,11 +376,11 @@ export default function CustomBasketPage() {
       </div>
 
       {/* ── Main Content ── */}
-      <div className="container mx-auto px-4 py-10">
+      <div className="w-full px-8 py-6">
 
         {/* Loading */}
         {loading ? (
-          <div className="flex items-center justify-center py-32">
+          <div className="flex items-center justify-center py-16">
             <div className="text-center">
               <div className="w-16 h-16 border-4 border-red-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
               <p className="text-gray-500">Đang tải mẫu giỏ quà...</p>
@@ -389,14 +389,14 @@ export default function CustomBasketPage() {
 
         /* Error */
         ) : error ? (
-          <div className="flex items-center justify-center py-32">
+          <div className="flex items-center justify-center py-16">
             <div className="text-center">
               <div className="text-5xl mb-4">⚠️</div>
               <p className="text-red-600 font-bold text-lg mb-2">Không thể tải dữ liệu</p>
               <p className="text-gray-500 text-sm mb-6">{error}</p>
               <button
                 onClick={() => window.location.reload()}
-                className="px-6 py-2 bg-red-600 text-white rounded-full text-sm font-bold hover:bg-red-700 transition"
+                className="px-6 py-2 bg-tet-primary text-white rounded-full text-sm font-bold hover:bg-tet-accent transition"
               >
                 Thử lại
               </button>
@@ -405,10 +405,10 @@ export default function CustomBasketPage() {
 
         /* Content */
         ) : (
-          <div className="flex gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
             {/* ── Left: Template catalog ── */}
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0">
 
               {/* Section heading */}
               <div className="flex items-center justify-between mb-5">
@@ -420,7 +420,7 @@ export default function CustomBasketPage() {
               </div>
 
               {/* Search */}
-              <div className="relative mb-6">
+              <div className="relative mb-6 max-w-md">
                 <Search
                   size={16}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -444,12 +444,12 @@ export default function CustomBasketPage() {
 
               {/* Grid */}
               {filteredConfigs.length === 0 ? (
-                <div className="text-center py-20">
+                <div className="text-center py-12">
                   <Gift size={48} className="mx-auto text-gray-300 mb-3" />
                   <p className="text-gray-500">Không tìm thấy cấu hình giỏ quà</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {filteredConfigs.map((c) => (
                     <ConfigCard
                       key={c.configid}
@@ -463,7 +463,7 @@ export default function CustomBasketPage() {
             </div>
 
             {/* ── Right: Customization panel (desktop) ── */}
-            <div className="hidden lg:block w-[420px] shrink-0 sticky top-24">
+            <div className="hidden lg:block sticky top-24">
               {selectedConfig ? (
                 <CustomizationPanel {...panelProps} />
               ) : (
@@ -480,10 +480,10 @@ export default function CustomBasketPage() {
           <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 px-4 py-3 safe-area-pb">
             <button
               onClick={() => setPanelOpen(true)}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-red-700 to-amber-600 text-white font-bold flex items-center justify-center gap-2 shadow-lg"
+              className="w-full py-3 rounded-full bg-tet-primary hover:bg-tet-accent text-white font-bold flex items-center justify-center gap-2 shadow-lg transition-colors"
             >
               <Pencil size={16} />
-              Chọn sản phẩm: {selectedConfig.configname}
+              Chọn sản phẩm: {selectedConfig?.configname}
             </button>
           </div>
 
@@ -626,8 +626,8 @@ function ConfigCard({ config, isSelected, onSelect }: ConfigCardProps) {
             onClick={(e) => { e.stopPropagation(); onSelect(); }}
             className={`text-[11px] font-bold px-2.5 py-1 rounded-full transition-all ${
               isSelected
-                ? "bg-red-100 text-red-800"
-                : "bg-gradient-to-r from-red-700 to-amber-600 text-white hover:shadow-md"
+                ? "bg-red-100 text-tet-primary"
+                : "bg-tet-primary hover:bg-tet-accent text-white shadow-sm"
             }`}
           >
             {isSelected ? "Đang chọn ✓" : "Chọn →"}
@@ -921,7 +921,7 @@ function CustomizationPanel({
             </div>
             <a
               href="/login"
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-gradient-to-r from-red-700 to-amber-500 text-white font-bold text-sm hover:shadow-lg transition"
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-full bg-tet-primary hover:bg-tet-accent text-white font-bold text-sm shadow-md transition-colors"
             >
               <LogIn size={16} />
               Đăng nhập ngay
@@ -931,7 +931,7 @@ function CustomizationPanel({
           <button
             onClick={onAddToCart}
             disabled={saving || !allSlotsFilled}
-            className="w-full py-3 rounded-2xl bg-gradient-to-r from-red-600 to-amber-500 text-white font-bold text-sm flex items-center justify-center gap-2 hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 rounded-full bg-tet-primary hover:bg-tet-accent text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
               <>
