@@ -1,5 +1,5 @@
-﻿import { motion } from 'framer-motion';
-import { AlertTriangle, Calendar, CreditCard, RefreshCcw, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { AlertTriangle, Calendar, CreditCard, RefreshCcw, X, Star, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { OrderResponse } from '@/feature/checkout/services/orderService';
 import { allocateOrderStock, getOrderById, updateOrderStatus } from '@/feature/checkout/services/orderService';
@@ -19,6 +19,8 @@ interface OrderCardProps {
     onReorder: (orderId: number) => void;
     onCancel: (orderId: number) => void;
     onStatusUpdate?: (updatedOrder: OrderResponse) => void;
+    onFeedbackClick?: (orderId: number, isEdit: boolean) => void;
+    onDeleteFeedbackClick?: (feedbackId: number) => void;
     isAdmin?: boolean;
 }
 
@@ -28,6 +30,8 @@ export default function OrderCard({
     onReorder,
     onCancel,
     onStatusUpdate,
+    onFeedbackClick,
+    onDeleteFeedbackClick,
     isAdmin = false,
 }: OrderCardProps) {
     const [order, setOrder] = useState(initialOrder);
@@ -261,6 +265,33 @@ export default function OrderCard({
                                     Hủy đơn
                                 </button>
                             ) : null}
+
+                            {/* Feedback buttons for DELIVERED orders */}
+                            {!isAdmin && order.status === 'DELIVERED' && (
+                                <>
+                                    <button
+                                        onClick={() => onFeedbackClick && onFeedbackClick(order.orderId, !!order.feedback)}
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-1.5 ${
+                                            order.feedback 
+                                                ? 'bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100'
+                                                : 'bg-[#690000] text-white hover:bg-[#800000]'
+                                        }`}
+                                    >
+                                        <Star size={14} className={order.feedback ? "fill-amber-600 outline-none border-none" : ""} />
+                                        {order.feedback ? 'Sửa đánh giá' : 'Đánh giá'}
+                                    </button>
+                                    
+                                    {order.feedback && onDeleteFeedbackClick && (
+                                        <button
+                                            onClick={() => onDeleteFeedbackClick(order.feedback!.feedbackId)}
+                                            className="px-3 py-2 rounded-xl bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-all ml-1 flex items-center"
+                                            title="Xóa đánh giá"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

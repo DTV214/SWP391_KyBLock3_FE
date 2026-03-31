@@ -12,10 +12,10 @@ import {
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import ProductCard from "../components/ProductCard";
 import { productService, type Product } from "@/api/productService";
 import { useCart } from "@/feature/cart/context/CartContext";
+import { feedbackService, type FeedbackResponse } from "@/feature/account/services/feedbackService";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +23,7 @@ export default function ProductDetailPage() {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [recommended, setRecommended] = useState<Product[]>([]);
+  const [feedbacks, setFeedbacks] = useState<FeedbackResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [addSuccess, setAddSuccess] = useState(false);
 
@@ -32,24 +33,31 @@ export default function ProductDetailPage() {
 
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    productService
-      .getById(id)
-      .then((res) => setProduct(res.data))
-      .catch((err) => console.error("Error fetching product:", err));
-
-    productService.getAvailableProductsForCustomer()
-      .then(res => {
+    Promise.all([
+      productService.getById(id).then((res) => setProduct(res.data)).catch((err) => console.error("Error fetching product:", err)),
+      productService.getAvailableProductsForCustomer().then(res => {
         const products = res || [];
         const filtered = products.filter((p: Product) => p.productid !== Number(id)).slice(0, 4);
         setRecommended(filtered);
-      })
-      .catch(err => console.error("Error fetching recommended products:", err))
-      .finally(() => setLoading(false));
+      }).catch(err => console.error("Error fetching recommended products:", err)),
+      feedbackService.getProductFeedbacks(Number(id)).then(res => setFeedbacks(res)).catch(err => console.error("Error fetching feedbacks:", err))
+    ]).finally(() => setLoading(false));
   }, [id]);
 
   const formattedPrice = product?.price
     ? product.price.toLocaleString("vi-VN") + "đ"
     : "—";
+
+  const safeFeedbacks = feedbacks || [];
+  const totalRating = safeFeedbacks.reduce((acc, curr) => acc + (curr.rating || 0), 0);
+  const averageRating = safeFeedbacks.length > 0 ? (totalRating / safeFeedbacks.length).toFixed(1) : "0.0";
+  
+  const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  safeFeedbacks.forEach(f => {
+      if (f.rating >= 1 && f.rating <= 5) {
+          ratingCounts[f.rating as keyof typeof ratingCounts]++;
+      }
+  });
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -151,10 +159,11 @@ export default function ProductDetailPage() {
                   <Star size={18} fill="currentColor" />
                   <Star size={18} fill="currentColor" />
                   <Star size={18} fill="currentColor" />
-                  <Star size={18} />
+                  <Star size={18} fill="currentColor" />
+                  <Star size={18} fill={Number(averageRating) >= 4.5 ? "currentColor" : "none"} />
                 </div>
                 <span className="text-xs text-gray-400 font-bold uppercase tracking-widest border-l pl-4 border-gray-200">
-                  4.5/5 (128 nhận xét)
+                  {averageRating}/5 ({feedbacks.length} nhận xét)
                 </span>
               </div>
             </div>
@@ -167,13 +176,13 @@ export default function ProductDetailPage() {
 
             <div className="space-y-8 pt-8 border-t border-gray-100">
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button
+                <button
                   onClick={handleAddToCart}
                   disabled={cartLoading}
-                  className="flex-1 bg-[#4a0d06] hover:bg-tet-accent text-white py-8 rounded-[1.5rem] text-lg font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex-1 bg-[#4a0d06] hover:bg-tet-accent text-white py-4 rounded-[1.5rem] text-lg font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <ShoppingCart size={24} /> {cartLoading ? "Đang thêm..." : "THÊM VÀO GIỎ HÀNG"}
-                </Button>
+                </button>
               </div>
               {cartError && (
                 <p className="text-sm font-bold text-red-500 bg-red-50 px-4 py-3 rounded-xl border border-red-100">
@@ -230,7 +239,7 @@ export default function ProductDetailPage() {
               </h3>
               <div className="flex items-baseline gap-4">
                 <span className="text-9xl font-black text-tet-primary leading-none tracking-tighter">
-                  4.5
+                  {averageRating}
                 </span>
                 <div className="space-y-2">
                   <div className="flex text-yellow-500">
@@ -238,30 +247,32 @@ export default function ProductDetailPage() {
                     <Star fill="currentColor" />
                     <Star fill="currentColor" />
                     <Star fill="currentColor" />
-                    <Star fill="currentColor" />
+                    <Star fill={Number(averageRating) >= 4.5 ? "currentColor" : "none"} />
                   </div>
                   <p className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em]">
-                    128 Khách hàng
+                    {feedbacks.length} Khách hàng
                   </p>
                 </div>
               </div>
               <div className="space-y-4">
-                {[5, 4, 3, 2].map((s) => (
-                  <div
-                    key={s}
-                    className="flex items-center gap-4 text-xs font-bold text-gray-400"
-                  >
-                    <span className="w-4">{s}★</span>
-                    <div className="flex-1 h-2 bg-gray-50 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-tet-primary"
-                        style={{
-                          width: s === 5 ? "75%" : s === 4 ? "15%" : "5%",
-                        }}
-                      ></div>
+                {[5, 4, 3, 2, 1].map((s) => {
+                  const count = ratingCounts[s as keyof typeof ratingCounts];
+                  const percentage = feedbacks.length > 0 ? (count / feedbacks.length) * 100 : 0;
+                  return (
+                    <div
+                      key={s}
+                      className="flex items-center gap-4 text-xs font-bold text-gray-400"
+                    >
+                      <span className="w-4">{s}★</span>
+                      <div className="flex-1 h-2 bg-gray-50 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-tet-primary transition-all duration-1000"
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -270,42 +281,45 @@ export default function ProductDetailPage() {
                 Bình luận từ người dùng
               </h3>
               <div className="grid gap-8">
-                {[1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ x: 10 }}
-                    className="flex gap-6 p-8 bg-[#FBF5E8]/50 rounded-[2.5rem] transition-all border border-transparent hover:border-tet-secondary"
-                  >
-                    <div className="w-16 h-16 rounded-full bg-white overflow-hidden shrink-0 shadow-lg border-2 border-white">
-                      <img
-                        src={`https://i.pravatar.cc/150?u=${i + 10}`}
-                        alt="avatar"
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <p className="font-black text-tet-primary uppercase text-xs tracking-widest">
-                          Khách hàng ẩn danh
+                {feedbacks.length > 0 ? (
+                  feedbacks.map((fb) => (
+                    <motion.div
+                      key={fb.feedbackId}
+                      whileHover={{ x: 10 }}
+                      className="flex gap-6 p-8 bg-[#FBF5E8]/50 rounded-[2.5rem] transition-all border border-transparent hover:border-tet-secondary"
+                    >
+                      <div className="w-16 h-16 rounded-full bg-white overflow-hidden shrink-0 shadow-lg border-2 border-white flex items-center justify-center bg-tet-primary text-white font-serif text-2xl">
+                        {fb.customerName ? fb.customerName.charAt(0) : "K"}
+                      </div>
+                      <div className="space-y-3 w-full">
+                        <div className="flex items-center justify-between">
+                          <p className="font-black text-tet-primary uppercase text-xs tracking-widest">
+                            {fb.customerName || "Khách hàng ẩn danh"}
+                          </p>
+                          <span className="text-[10px] text-gray-400 font-bold italic">
+                            Đã mua tết {new Date().getFullYear()}
+                          </span>
+                        </div>
+                        <p className="text-gray-600 italic text-sm leading-relaxed">
+                          "{fb.comment || "Không có nhận xét nào"}"
                         </p>
-                        <span className="text-[10px] text-gray-400 font-bold italic">
-                          15/01/2026
-                        </span>
+                        <div className="flex text-yellow-500 scale-75 origin-left">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star 
+                              key={s} 
+                              size={14} 
+                              fill={s <= fb.rating ? "currentColor" : "none"} 
+                            />
+                          ))}
+                        </div>
                       </div>
-                      <p className="text-gray-600 italic text-sm leading-relaxed">
-                        "Chất lượng sản phẩm vượt xa mong đợi. Đóng gói cực kỳ
-                        tinh tế, phù hợp làm quà biếu đối tác. Sẽ còn ủng hộ
-                        shop nhiều lần nữa!"
-                      </p>
-                      <div className="flex text-yellow-500 scale-75 origin-left">
-                        <Star size={14} fill="currentColor" />
-                        <Star size={14} fill="currentColor" />
-                        <Star size={14} fill="currentColor" />
-                        <Star size={14} fill="currentColor" />
-                        <Star size={14} fill="currentColor" />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="text-center py-10 text-gray-400 italic border border-dashed border-gray-200 rounded-2xl">
+                    Chưa có đánh giá nào cho sản phẩm này. Hãy là người đầu tiên trải nghiệm!
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -8,7 +8,9 @@ import OrderCard from '../components/OrderCard';
 import OrderDetailModal from '../components/OrderDetailModal';
 import CancelOrderConfirmModal from '../components/CancelOrderConfirmModal';
 import CancelOrderSuccessModal from '../components/CancelOrderSuccessModal';
+import { FeedbackModal } from '../components/FeedbackModal';
 import { orderService, type OrderResponse } from '@/feature/checkout/services/orderService';
+import { feedbackService } from '../services/feedbackService';
 import type { SortBy } from '../utils/orderFilterUtils';
 
 export default function OrderHistory() {
@@ -20,6 +22,12 @@ export default function OrderHistory() {
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [cancelledOrder, setCancelledOrder] = useState<OrderResponse | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
+
+  // Feedback UI state
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [feedbackOrder, setFeedbackOrder] = useState<OrderResponse | null>(null);
+  const [isEditFeedback, setIsEditFeedback] = useState(false);
+
   const {
     allOrders,
     paginatedOrders,
@@ -129,6 +137,45 @@ export default function OrderHistory() {
     navigate('/account/orders');
   };
 
+  const handleFeedbackClick = (orderId: number, isEdit: boolean) => {
+    const order = paginatedOrders.find((o) => o.orderId === orderId);
+    if (order) {
+      setFeedbackOrder(order);
+      setIsEditFeedback(isEdit);
+      setFeedbackModalOpen(true);
+    }
+  };
+
+  const handleFeedbackSubmit = async (data: any) => {
+    if (!feedbackOrder) return;
+    try {
+      if (isEditFeedback && feedbackOrder.feedback) {
+        const result = await feedbackService.updateFeedback(feedbackOrder.feedback.feedbackId, data);
+        updateOrderInList({ ...feedbackOrder, feedback: result });
+      } else {
+        const result = await feedbackService.addFeedback(feedbackOrder.orderId, data);
+        updateOrderInList({ ...feedbackOrder, feedback: result });
+      }
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
+  const handleDeleteFeedbackClick = async (feedbackId: number) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa đánh giá này không?')) return;
+    try {
+      await feedbackService.deleteFeedback(feedbackId);
+      // Find the order that holds this feedback and update it in list
+      const order = paginatedOrders.find(o => o.feedback?.feedbackId === feedbackId);
+      if (order) {
+        updateOrderInList({ ...order, feedback: null });
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('Không thể xóa đánh giá: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -203,6 +250,8 @@ export default function OrderHistory() {
               onReorder={handleReorder}
               onCancel={handleCancel}
               onStatusUpdate={handleStatusUpdate}
+              onFeedbackClick={handleFeedbackClick}
+              onDeleteFeedbackClick={handleDeleteFeedbackClick}
               isAdmin={false}
             />
           ))}
@@ -303,6 +352,19 @@ export default function OrderHistory() {
         order={cancelledOrder}
         isOpen={successModalOpen}
         onClose={() => setSuccessModalOpen(false)}
+      />
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={feedbackModalOpen}
+        onClose={() => {
+          setFeedbackModalOpen(false);
+          setFeedbackOrder(null);
+        }}
+        onSubmit={handleFeedbackSubmit}
+        isEditMode={isEditFeedback}
+        initialRating={feedbackOrder?.feedback?.rating || 5}
+        initialComment={feedbackOrder?.feedback?.comment || ''}
       />
     </motion.div>
   );

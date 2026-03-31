@@ -242,6 +242,13 @@ export const API_ENDPOINTS = {
       return url;
     },
   },
+  // Feedbacks endpoints
+  FEEDBACKS: {
+    ADD_ORDER_FEEDBACK: (orderId: string | number) => `${BASE_URL}/orders/${orderId}/feedback`,
+    UPDATE_FEEDBACK: (feedbackId: string | number) => `${BASE_URL}/feedbacks/${feedbackId}`,
+    DELETE_FEEDBACK: (feedbackId: string | number) => `${BASE_URL}/feedbacks/${feedbackId}`,
+    GET_PRODUCT_FEEDBACKS: (productId: string | number) => `${BASE_URL}/products/${productId}/feedbacks`,
+  },
 };
 
 export default BASE_URL;

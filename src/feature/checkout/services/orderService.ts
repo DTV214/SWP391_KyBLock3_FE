@@ -35,6 +35,14 @@ export interface ProductDetail {
     quantity?: number;
 }
 
+export interface FeedbackResponse {
+    feedbackId: number;
+    orderId: number;
+    rating: number;
+    comment: string | null;
+    customerName: string | null;
+}
+
 export interface OrderResponse {
     orderId: number;
     accountId: number;
@@ -51,6 +59,7 @@ export interface OrderResponse {
     promotionCode: string;
     shippedDate?: string | null;
     isQuotation?: number | null;
+    feedback?: FeedbackResponse | null;
     items: OrderItem[];
 }
 
