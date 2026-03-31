@@ -31,7 +31,7 @@ export const useOrderHistory = () => {
     const [totalItems, setTotalItems] = useState(0);
 
     // Filter and sort state
-    const [filters, setFilters] = useState<OrderFilters>({});
+    const [filters, setFilters] = useState<OrderFilters>({ quotationType: 'normal' });
     const [sortBy, setSortBy] = useState<SortBy>('date-desc');
 
     // Load all orders from API
@@ -101,6 +101,13 @@ export const useOrderHistory = () => {
         }));
     };
 
+    const handleQuotationTypeChange = (quotationType: 'all' | 'normal' | 'quotation') => {
+        setFilters((prev) => ({
+            ...prev,
+            quotationType,
+        }));
+    };
+
     const handleDateRangeChange = (dateRangeLabel: string) => {
         const dateRangeOptions = getDateRangeOptions();
         const selected = dateRangeOptions.find((opt) => opt.label === dateRangeLabel);
@@ -156,10 +163,12 @@ export const useOrderHistory = () => {
         isLoading,
         error,
         filters,
+        quotationType: filters.quotationType ?? 'all',
         sortBy,
         currentPage,
         totalPages,
         totalItems,
+        handleQuotationTypeChange,
         handleStatusFilterChange,
         handleDateRangeChange,
         handlePriceRangeChange,

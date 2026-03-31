@@ -8,6 +8,7 @@ export interface OrderFilters {
     minPrice?: number;
     maxPrice?: number;
     searchQuery?: string;
+    quotationType?: 'all' | 'normal' | 'quotation';
 }
 
 export type SortBy = 'date-desc' | 'date-asc' | 'price-desc' | 'price-asc' | 'none';
@@ -46,6 +47,15 @@ export const filterOrders = (
     filters: OrderFilters
 ): OrderResponse[] => {
     return orders.filter((order) => {
+        const isQuotationOrder = order.isQuotation === 1;
+
+        if (filters.quotationType === 'quotation' && !isQuotationOrder) {
+            return false;
+        }
+        if (filters.quotationType === 'normal' && isQuotationOrder) {
+            return false;
+        }
+
         // Filter by status
         if (filters.status && order.status !== filters.status) {
             return false;

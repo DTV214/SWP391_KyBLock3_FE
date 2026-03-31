@@ -1,19 +1,11 @@
 import { useState, useEffect } from 'react';
 import type { OrderResponse } from '@/feature/checkout/services/orderService';
 import { orderService } from '@/feature/checkout/services/orderService';
-import { ORDER_STATUS } from '@/feature/account/utils/orderStatusUtils';
 import type { OrderFilters, SortBy } from '@/feature/account/utils/orderFilterUtils';
 import { processOrders, getDateRangeOptions } from '@/feature/account/utils/orderFilterUtils';
 
 const normalizeOrderForOrdersPage = (order: OrderResponse): OrderResponse => {
-    if (order.status !== ORDER_STATUS.PAID_WAITING_STOCK) {
-        return order;
-    }
-
-    return {
-        ...order,
-        status: ORDER_STATUS.CONFIRMED,
-    };
+    return order;
 };
 
 const PAGE_SIZE = 10;
@@ -31,7 +23,7 @@ export const useAdminOrderHistory = () => {
     const [totalItems, setTotalItems] = useState(0);
 
     // Filter and sort state
-    const [filters, setFilters] = useState<OrderFilters>({});
+    const [filters, setFilters] = useState<OrderFilters>({ quotationType: 'normal' });
     const [sortBy, setSortBy] = useState<SortBy>('date-desc');
 
     // Load all orders from API
@@ -101,6 +93,13 @@ export const useAdminOrderHistory = () => {
         }));
     };
 
+    const handleQuotationTypeChange = (quotationType: 'all' | 'normal' | 'quotation') => {
+        setFilters((prev) => ({
+            ...prev,
+            quotationType,
+        }));
+    };
+
     const handleDateRangeChange = (dateRangeLabel: string) => {
         const dateRangeOptions = getDateRangeOptions();
         const selected = dateRangeOptions.find((opt) => opt.label === dateRangeLabel);
@@ -156,10 +155,12 @@ export const useAdminOrderHistory = () => {
         isLoading,
         error,
         filters,
+        quotationType: filters.quotationType ?? 'all',
         sortBy,
         currentPage,
         totalPages,
         totalItems,
+        handleQuotationTypeChange,
         handleStatusFilterChange,
         handleDateRangeChange,
         handlePriceRangeChange,

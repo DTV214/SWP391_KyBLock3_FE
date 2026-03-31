@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal } from 'lucide-react';
+﻿import { Search, SlidersHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import type { SortBy } from '../utils/orderFilterUtils';
 import { getDateRangeOptions } from '../utils/orderFilterUtils';
@@ -80,7 +80,7 @@ export default function OrderFilters({
                             className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm font-bold text-tet-primary outline-none focus:ring-2 focus:ring-tet-secondary cursor-pointer"
                         >
                             <option value="all">Tất cả trạng thái</option>
-                            <option value={ORDER_STATUS.PENDING}>Chờ xác nhận</option>
+                            <option value={ORDER_STATUS.PENDING}>Chờ thanh toán</option>
                             <option value={ORDER_STATUS.CONFIRMED}>Đã xác nhận</option>
                             <option value={ORDER_STATUS.PROCESSING}>Đang xử lý</option>
                             <option value={ORDER_STATUS.SHIPPED}>Đã gửi</option>

@@ -1,8 +1,8 @@
-import { motion } from 'framer-motion';
-import { Calendar, CreditCard, RefreshCcw } from 'lucide-react';
-import { useState, useEffect } from 'react';
+﻿import { motion } from 'framer-motion';
+import { AlertTriangle, Calendar, CreditCard, RefreshCcw, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { OrderResponse } from '@/feature/checkout/services/orderService';
-import { updateOrderStatus } from '@/feature/checkout/services/orderService';
+import { allocateOrderStock, getOrderById, updateOrderStatus } from '@/feature/checkout/services/orderService';
 import UpdateOrderStatusSuccessModal from './UpdateOrderStatusSuccessModal';
 import UpdateOrderStatusConfirmModal from './UpdateOrderStatusConfirmModal';
 import {
@@ -36,43 +36,56 @@ export default function OrderCard({
     const [pendingStatusChange, setPendingStatusChange] = useState<string | null>(null);
     const [successModalOpen, setSuccessModalOpen] = useState(false);
     const [updatedOrder, setUpdatedOrder] = useState<OrderResponse | null>(null);
+    const [statusUpdateError, setStatusUpdateError] = useState<string | null>(null);
+    const [showFloatingError, setShowFloatingError] = useState(false);
     const firstItem = order.items[0];
     const placeholder = 'https://via.placeholder.com/80?text=No+Image';
 
-    // Update order when initialOrder changes
     useEffect(() => {
         setOrder(initialOrder);
     }, [initialOrder]);
 
-    // Determine button visibility and action based on status
+    const getDisplayStatusLabel = (status: string) => {
+        if (isAdmin && status === 'PAID_WAITING_STOCK') {
+            return 'Chưa xử lý do thiếu hàng';
+        }
+        return translateOrderStatus(status);
+    };
+
+    const getDisplayStatusColorClass = (status: string) => {
+        if (isAdmin && status === 'PAID_WAITING_STOCK') {
+            return 'text-amber-700 bg-amber-50 border-amber-200';
+        }
+        return getStatusColorClass(status);
+    };
+
     const getStatusActionButton = () => {
         if (isAdmin) {
-            // Admin logic: PENDING (disabled) -> CONFIRMED/PAID_WAITING_STOCK (PROCESSING) -> PROCESSING (SHIPPED)
-            if (order.status === 'PENDING') {
-                return null; // Button disabled for PENDING status
-            } else if (order.status === 'CONFIRMED' || order.status === 'PAID_WAITING_STOCK') {
+            if (order.status === 'PENDING') return null;
+
+            if (order.status === 'CONFIRMED' || order.status === 'PAID_WAITING_STOCK') {
                 return {
-                    label: 'Đang xử lí',
+                    label: 'Đang xử lý',
                     nextStatus: 'PROCESSING',
                     color: 'bg-blue-600 hover:bg-blue-700',
                 };
-            } else if (order.status === 'PROCESSING') {
+            }
+
+            if (order.status === 'PROCESSING') {
                 return {
                     label: 'Đã giao hàng',
                     nextStatus: 'SHIPPED',
                     color: 'bg-green-600 hover:bg-green-700',
                 };
             }
-        } else {
-            // Customer logic: Only SHIPPED can be updated to DELIVERED
-            if (order.status === 'SHIPPED') {
-                return {
-                    label: 'Đã nhận được hàng',
-                    nextStatus: 'DELIVERED',
-                    color: 'bg-green-600 hover:bg-green-700',
-                };
-            }
+        } else if (order.status === 'SHIPPED') {
+            return {
+                label: 'Đã nhận được hàng',
+                nextStatus: 'DELIVERED',
+                color: 'bg-green-600 hover:bg-green-700',
+            };
         }
+
         return null;
     };
 
@@ -80,7 +93,8 @@ export default function OrderCard({
         const actionButton = getStatusActionButton();
         if (!actionButton) return;
 
-        // Show confirmation modal with pending status
+        setStatusUpdateError(null);
+        setShowFloatingError(false);
         setPendingStatusChange(actionButton.nextStatus);
         setConfirmModalOpen(true);
     };
@@ -89,23 +103,54 @@ export default function OrderCard({
         if (!pendingStatusChange) return;
 
         setIsUpdatingStatus(true);
+        setStatusUpdateError(null);
+        setShowFloatingError(false);
+        const token = localStorage.getItem('token');
+        const shouldAllocateQuotationStock =
+            isAdmin &&
+            pendingStatusChange === 'PROCESSING' &&
+            order.isQuotation === 1;
         try {
-            const token = localStorage.getItem('token');
-            const response = await updateOrderStatus(
-                order.orderId,
-                pendingStatusChange,
-                token || undefined
-            );
-            // Update order in component state
+            let response: OrderResponse;
+            if (shouldAllocateQuotationStock) {
+                await allocateOrderStock(order.orderId, token || undefined);
+                response = await getOrderById(order.orderId, token || undefined);
+            } else {
+                response = await updateOrderStatus(
+                    order.orderId,
+                    pendingStatusChange,
+                    token || undefined
+                );
+            }
+
             setOrder(response);
             setUpdatedOrder(response);
             setSuccessModalOpen(true);
-            // Notify parent component
             onStatusUpdate?.(response);
-            // Reset pending status
             setPendingStatusChange(null);
         } catch (error) {
             console.error('Failed to update order status:', error);
+            const apiMessage =
+                (error as any)?.response?.data?.msg ||
+                (error as any)?.response?.data?.message ||
+                (error as any)?.message ||
+                'Không thể cập nhật trạng thái đơn hàng';
+            setStatusUpdateError(apiMessage);
+            setShowFloatingError(true);
+
+            if (shouldAllocateQuotationStock) {
+                try {
+                    const latestOrder = await getOrderById(order.orderId, token || undefined);
+                    setOrder(latestOrder);
+                    onStatusUpdate?.(latestOrder);
+                } catch {
+                    if (apiMessage.toLowerCase().includes('thiếu hàng')) {
+                        const fallbackOrder = { ...order, status: 'PAID_WAITING_STOCK' } as OrderResponse;
+                        setOrder(fallbackOrder);
+                        onStatusUpdate?.(fallbackOrder);
+                    }
+                }
+            }
         } finally {
             setIsUpdatingStatus(false);
         }
@@ -119,7 +164,6 @@ export default function OrderCard({
                 whileHover={{ y: -4 }}
                 className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 group transition-all"
             >
-                {/* Header của Card: Mã đơn & Ngày */}
                 <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-50 pb-4 mb-6">
                     <div className="flex items-center gap-4">
                         <span className="text-sm font-black text-tet-primary uppercase tracking-wider">
@@ -131,13 +175,19 @@ export default function OrderCard({
                         </span>
                     </div>
                     <span
-                        className={`text-[10px] px-3 py-1 rounded-full border font-bold uppercase tracking-widest ${getStatusColorClass(order.status)}`}
+                        className={`text-[10px] px-3 py-1 rounded-full border font-bold uppercase tracking-widest ${getDisplayStatusColorClass(order.status)}`}
                     >
-                        {translateOrderStatus(order.status)}
+                        {getDisplayStatusLabel(order.status)}
                     </span>
                 </div>
 
-                {/* Nội dung sản phẩm & Giá */}
+                {statusUpdateError && (
+                    <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        <p className="font-semibold">Không thể cập nhật đơn hàng</p>
+                        <p className="mt-1">{statusUpdateError}</p>
+                    </div>
+                )}
+
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div className="flex gap-4">
                         <div className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 shrink-0">
@@ -216,11 +266,36 @@ export default function OrderCard({
                 </div>
             </motion.div>
 
-            {/* Update Order Status Confirm Modal */}
+            {showFloatingError && statusUpdateError && (
+                <motion.div
+                    initial={{ opacity: 0, y: -16, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    className="fixed top-24 right-6 z-[200] max-w-md rounded-2xl border border-red-200 bg-white p-4 shadow-2xl"
+                >
+                    <div className="flex items-start gap-3">
+                        <div className="mt-0.5 rounded-full bg-red-50 p-2 text-red-600">
+                            <AlertTriangle size={16} />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-bold text-red-700">Không thể cập nhật đơn hàng</p>
+                            <p className="mt-1 text-sm text-gray-700">{statusUpdateError}</p>
+                        </div>
+                        <button
+                            onClick={() => setShowFloatingError(false)}
+                            className="rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+                            aria-label="Đóng thông báo lỗi"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                </motion.div>
+            )}
+
             <UpdateOrderStatusConfirmModal
                 order={order}
                 isOpen={confirmModalOpen}
                 newStatus={pendingStatusChange}
+                resolveStatusLabel={getDisplayStatusLabel}
                 onClose={() => {
                     setConfirmModalOpen(false);
                     setPendingStatusChange(null);
@@ -228,10 +303,10 @@ export default function OrderCard({
                 onConfirm={handleConfirmStatusUpdate}
             />
 
-            {/* Update Order Status Success Modal */}
             <UpdateOrderStatusSuccessModal
                 order={updatedOrder}
                 isOpen={successModalOpen}
+                resolveStatusLabel={getDisplayStatusLabel}
                 onClose={() => setSuccessModalOpen(false)}
             />
         </>
