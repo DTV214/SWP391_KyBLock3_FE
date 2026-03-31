@@ -7,6 +7,7 @@ import { paymentService } from "../services/paymentService";
 export default function VNPayReturn() {
     const [searchParams] = useSearchParams();
     const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'failure'>('pending');
+    const [confirmedOrderId, setConfirmedOrderId] = useState<number | null>(null);
 
     useEffect(() => {
         const verifyPayment = async () => {
@@ -36,6 +37,9 @@ export default function VNPayReturn() {
 
                 if (result.success) {
                     setPaymentStatus('success');
+                    if (result.data?.orderId) {
+                        setConfirmedOrderId(result.data.orderId);
+                    }
                 } else {
                     setPaymentStatus('failure');
                     console.error("Payment verification failed:", result.error);
@@ -56,7 +60,7 @@ export default function VNPayReturn() {
 
     // If payment verification success, show success page
     if (paymentStatus === 'success') {
-        return <PaymentSuccess />;
+        return <PaymentSuccess orderId={confirmedOrderId} />;
     }
 
     // Otherwise, show failure page

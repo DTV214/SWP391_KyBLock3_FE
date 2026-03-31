@@ -5,12 +5,26 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { orderService } from "../services/orderService";
 
-export default function PaymentSuccess() {
+interface PaymentSuccessProps {
+  orderId?: number | string | null;
+}
+
+export default function PaymentSuccess({ orderId: propOrderId }: PaymentSuccessProps = {}) {
   const [searchParams] = useSearchParams();
   const [isDownloading, setIsDownloading] = useState(false);
   
-  // Lấy orderId từ VNPay callback URL (vnp_TxnRef)
-  const orderId = searchParams.get("vnp_TxnRef");
+  // Ưu tiên lấy orderId từ prop (được truyền từ trang VNPayReturn đã verify backend)
+  // Nếu không có, dự phòng trích xuất từ vnp_OrderInfo (ví dụ: "Thanh toan don hang #109")
+  let orderId = propOrderId?.toString();
+  if (!orderId) {
+    const orderInfo = searchParams.get("vnp_OrderInfo");
+    if (orderInfo) {
+      const match = orderInfo.match(/#(\d+)/);
+      if (match && match[1]) {
+        orderId = match[1];
+      }
+    }
+  }
 
   const handleDownloadInvoice = async () => {
     if (!orderId) return;
