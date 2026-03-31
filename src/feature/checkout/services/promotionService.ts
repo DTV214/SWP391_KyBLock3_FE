@@ -7,7 +7,7 @@ export interface PromotionResponse {
     code: string;
     minPriceToApply: number | null;
     discountValue: number;
-    maxDiscountPrice: number | null;
+    maxDiscountPrice: number | 0;
     isPercentage: boolean;
     startTime: string | null;
     expiryDate: string;

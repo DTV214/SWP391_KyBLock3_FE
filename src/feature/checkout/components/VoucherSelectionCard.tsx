@@ -66,7 +66,7 @@ export default function VoucherSelectionCard({
 
     const minPrice = promotion.minPriceToApply
         ? formatCurrency(promotion.minPriceToApply)
-        : "Không có yêu cầu tối thiểu";
+        : "0đ";
 
     return (
         <motion.button
@@ -105,8 +105,8 @@ export default function VoucherSelectionCard({
                         </div>
                         <span
                             className={`text-[9px] font-bold px-2 py-1 rounded-lg whitespace-nowrap shrink-0 ${isActive
-                                    ? "bg-green-50 text-green-600"
-                                    : "bg-yellow-50 text-yellow-600"
+                                ? "bg-green-50 text-green-600"
+                                : "bg-yellow-50 text-yellow-600"
                                 }`}
                         >
                             {isActive ? "Có thể dùng" : "Sắp áp dụng"}
@@ -117,7 +117,7 @@ export default function VoucherSelectionCard({
                         <Info size={10} /> Đơn tối thiểu: {minPrice}
                     </p>
 
-                    {promotion.maxDiscountPrice && (
+                    {promotion.maxDiscountPrice > 0 && (
                         <p className="text-[10px] text-gray-500 flex items-center gap-1">
                             <Info size={10} /> Giảm tối đa: {formatCurrency(promotion.maxDiscountPrice)}
                         </p>
