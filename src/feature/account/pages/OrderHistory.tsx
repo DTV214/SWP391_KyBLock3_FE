@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useOrderHistory } from '../hooks/useOrderHistory';
 import OrderFilters from '../components/OrderFilters';
 import OrderCard from '../components/OrderCard';
@@ -11,12 +12,16 @@ import { orderService, type OrderResponse } from '@/feature/checkout/services/or
 import type { SortBy } from '../utils/orderFilterUtils';
 
 export default function OrderHistory() {
+  const { orderId: orderIdParam } = useParams<{ orderId?: string }>();
+  const navigate = useNavigate();
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<OrderResponse | null>(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [cancelledOrder, setCancelledOrder] = useState<OrderResponse | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const {
+    allOrders,
     paginatedOrders,
     isLoading,
     error,
@@ -33,11 +38,59 @@ export default function OrderHistory() {
     updateOrderInList,
   } = useOrderHistory();
 
+  useEffect(() => {
+    if (!orderIdParam) {
+      setSelectedOrder(null);
+      setDetailError(null);
+      return;
+    }
+
+    const parsedOrderId = Number(orderIdParam);
+    if (!Number.isInteger(parsedOrderId) || parsedOrderId <= 0) {
+      navigate('/account/orders', { replace: true });
+      return;
+    }
+
+    let isMounted = true;
+    const loadOrderForDeepLink = async () => {
+      setDetailError(null);
+      const orderInList = allOrders.find((order) => order.orderId === parsedOrderId);
+
+      if (orderInList) {
+        if (isMounted) {
+          setSelectedOrder(orderInList);
+        }
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        const order = await orderService.getOrderById(parsedOrderId, token || undefined);
+        if (isMounted) {
+          setSelectedOrder(order);
+        }
+      } catch {
+        if (isMounted) {
+          setSelectedOrder(null);
+          setDetailError(`Khong the tai chi tiet don hang #${parsedOrderId}.`);
+        }
+      }
+    };
+
+    loadOrderForDeepLink();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [orderIdParam, allOrders, navigate]);
+
   const handleViewDetails = (orderId: number) => {
-    const order = paginatedOrders.find((o) => o.orderId === orderId);
+    const order = allOrders.find((o) => o.orderId === orderId);
     if (order) {
       setSelectedOrder(order);
+      setDetailError(null);
     }
+    navigate(`/account/orders/${orderId}`);
   };
 
   const handleReorder = (orderId: number) => {
@@ -69,6 +122,11 @@ export default function OrderHistory() {
 
   const handleStatusUpdate = (updatedOrder: OrderResponse) => {
     updateOrderInList(updatedOrder);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedOrder(null);
+    navigate('/account/orders');
   };
 
   if (isLoading) {
@@ -129,6 +187,12 @@ export default function OrderHistory() {
       </div>
 
       {/* DANH SÁCH ĐƠN HÀNG */}
+      {detailError && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-700">
+          {detailError}
+        </div>
+      )}
+
       {paginatedOrders.length > 0 ? (
         <div className="space-y-4">
           {paginatedOrders.map((order) => (
@@ -217,7 +281,7 @@ export default function OrderHistory() {
         <OrderDetailModal
           order={selectedOrder}
           isOpen={!!selectedOrder}
-          onClose={() => setSelectedOrder(null)}
+          onClose={handleCloseDetails}
           onUpdate={updateOrderInList}
           isAdmin={false}
         />

@@ -182,6 +182,7 @@ function App() {
                 <Route path="baskets/:id/edit" element={<EditBasket />} />
                 <Route path="profile" element={<AccountProfile />} />
                 <Route path="orders" element={<OrderHistory />} />
+                <Route path="orders/:orderId" element={<OrderHistory />} />
                 <Route path="addresses" element={<AccountAddresses />} />
                 <Route path="vouchers" element={<AccountVouchers />} />
               </Route>
