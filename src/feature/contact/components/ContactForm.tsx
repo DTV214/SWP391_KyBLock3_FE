@@ -55,7 +55,7 @@ export default function ContactForm() {
       setSuccess(true);
       setFormData({ customerName: "", email: "", phone: "", note: "" }); // Reset form
     } catch (err) {
-     console.log(err)
+      console.log(err);
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,8 @@ export default function ContactForm() {
         </h3>
         <p className="text-gray-600 mb-6">
           Cảm ơn bạn đã liên hệ. Đội ngũ Happybox sẽ phản hồi lại bạn qua Email
-          trong thời gian sớm nhất.
+          trong thời gian sớm nhất.Hãy kiểm tra hộp thư đến và hộp thư rác của
+          bạn nhé!
         </p>
         <button
           onClick={() => setSuccess(false)}
