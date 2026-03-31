@@ -1,9 +1,32 @@
 import { motion } from "framer-motion";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { orderService } from "../services/orderService";
 
 export default function PaymentSuccess() {
+  const [searchParams] = useSearchParams();
+  const [isDownloading, setIsDownloading] = useState(false);
+  
+  // Lấy orderId từ VNPay callback URL (vnp_TxnRef)
+  const orderId = searchParams.get("vnp_TxnRef");
+
+  const handleDownloadInvoice = async () => {
+    if (!orderId) return;
+    
+    try {
+      setIsDownloading(true);
+      const token = localStorage.getItem('token') || undefined;
+      await orderService.downloadInvoice(Number(orderId), token);
+    } catch (error) {
+      console.error("Lỗi khi tải hóa đơn:", error);
+      // Hiển thị fallback thông báo lỗi, thay vì import thêm Toast (để đơn giản và an toàn)
+      alert("Đã xảy ra lỗi khi tải hóa đơn. Vui lòng thử lại sau.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
   return (
     <div className="min-h-screen bg-[#FBF5E8]/30 flex items-center justify-center p-6">
       <motion.div
@@ -29,18 +52,33 @@ export default function PaymentSuccess() {
 
         {/* Nút điều hướng */}
         <div className="flex flex-col gap-4 pt-6">
+          {orderId && (
+            <Button
+              onClick={handleDownloadInvoice}
+              disabled={isDownloading}
+              className="bg-tet-primary hover:bg-[#A30D25] text-white py-6 rounded-2xl text-lg font-bold shadow-md transition-transform hover:scale-[1.02] flex items-center justify-center gap-2"
+            >
+              {isDownloading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <FileDown className="w-5 h-5" />
+              )}
+              {isDownloading ? "Đang xử lý..." : "In hóa đơn"}
+            </Button>
+          )}
+
           <Button
             asChild
             className="bg-[#4CAF50] hover:bg-[#43A047] text-white py-8 rounded-2xl text-lg font-bold shadow-lg transition-transform hover:scale-[1.02]"
           >
-            <Link to="/products" className="flex items-center gap-2">
+            <Link to="/products" className="flex items-center justify-center gap-2 w-full h-full">
               Tiếp tục mua sắm
             </Link>
           </Button>
 
           <Link
             to="/home"
-            className="text-tet-primary font-bold hover:underline transition-all"
+            className="text-tet-primary font-bold hover:underline transition-all mt-2"
           >
             Quay về trang chủ
           </Link>

@@ -203,6 +203,40 @@ export const cancelOrder = async (
     return response.data;
 };
 
+/**
+ * Tải xuống hóa đơn PDF của đơn hàng
+ * GET /api/orders/{orderId}/invoice
+ */
+export const downloadInvoice = async (
+    orderId: number,
+    token?: string
+): Promise<void> => {
+    const response = await axiosClient.get(
+        `${API_ENDPOINTS.ORDERS.DETAIL(orderId)}/invoice`,
+        {
+            responseType: 'blob', // Important for file download
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        }
+    );
+
+    // Create a blob from the response
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    
+    // Create a temporary link element to trigger the download
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `HoaDon_${orderId.toString().padStart(6, '0')}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    if (link.parentNode) {
+        link.parentNode.removeChild(link);
+    }
+    window.URL.revokeObjectURL(url);
+};
+
 // Export all as object for easier importing
 export const orderService = {
     createOrder,
@@ -211,5 +245,6 @@ export const orderService = {
     getAllOrders,
     updateOrderShippingInfo,
     updateOrderStatus,
-    cancelOrder
+    cancelOrder,
+    downloadInvoice
 };

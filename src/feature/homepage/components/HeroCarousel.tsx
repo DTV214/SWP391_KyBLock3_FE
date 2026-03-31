@@ -1,5 +1,6 @@
 // src/feature/homepage/components/HeroCarousel.tsx
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import {
   Carousel,
   CarouselContent,
@@ -59,13 +60,15 @@ export default function HeroCarousel() {
                   >
                     {banner.desc}
                   </motion.p>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="mt-8 bg-tet-secondary text-tet-primary px-10 py-4 rounded-full font-bold text-lg hover:bg-white transition-all shadow-xl"
-                  >
-                    Khám Phá Ngay
-                  </motion.button>
+                  <Link to="/products">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="mt-8 bg-tet-secondary text-tet-primary px-10 py-4 rounded-full font-bold text-lg hover:bg-white transition-all shadow-xl"
+                    >
+                      Khám Phá Ngay
+                    </motion.button>
+                  </Link>
                 </div>
               </div>
             </CarouselItem>
