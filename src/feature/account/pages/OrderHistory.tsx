@@ -20,15 +20,17 @@ export default function OrderHistory() {
     paginatedOrders,
     isLoading,
     error,
+    quotationType,
     sortBy,
     currentPage,
     totalPages,
+    handleQuotationTypeChange,
     handleStatusFilterChange,
     handleDateRangeChange,
     handleSearch,
     handleSort,
     goToPage,
-    updateOrderInList
+    updateOrderInList,
   } = useOrderHistory();
 
   const handleViewDetails = (orderId: number) => {
@@ -103,6 +105,29 @@ export default function OrderHistory() {
         sortBy={sortBy}
       />
 
+      <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 inline-flex gap-2">
+        <button
+          onClick={() => handleQuotationTypeChange('normal')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+            quotationType === 'normal'
+              ? 'bg-tet-primary text-white shadow-md'
+              : 'text-gray-600 hover:bg-gray-50'
+          }`}
+        >
+          Đơn hàng thường
+        </button>
+        <button
+          onClick={() => handleQuotationTypeChange('quotation')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+            quotationType === 'quotation'
+              ? 'bg-tet-primary text-white shadow-md'
+              : 'text-gray-600 hover:bg-gray-50'
+          }`}
+        >
+          Đơn từ quotation
+        </button>
+      </div>
+
       {/* DANH SÁCH ĐƠN HÀNG */}
       {paginatedOrders.length > 0 ? (
         <div className="space-y-4">
@@ -123,7 +148,9 @@ export default function OrderHistory() {
           <div className="text-5xl mb-4">📭</div>
           <p className="text-lg font-bold text-gray-600 mb-2">Không có đơn hàng</p>
           <p className="text-sm text-gray-400">
-            Bạn chưa có đơn hàng nào hoặc không có đơn hàng phù hợp với bộ lọc.
+            {quotationType === 'quotation'
+              ? 'Không có đơn quotation phù hợp với bộ lọc.'
+              : 'Bạn chưa có đơn hàng thường nào hoặc không có đơn hàng phù hợp với bộ lọc.'}
           </p>
         </div>
       )}
@@ -159,10 +186,11 @@ export default function OrderHistory() {
             <button
               key={page}
               onClick={() => goToPage(page)}
-              className={`w-10 h-10 rounded-xl font-bold transition-all ${page === currentPage
+              className={`w-10 h-10 rounded-xl font-bold transition-all ${
+                page === currentPage
                   ? 'bg-tet-primary text-white shadow-lg'
                   : 'border border-gray-100 text-sm text-gray-400 hover:bg-[#FBF5E8]'
-                }`}
+              }`}
             >
               {page}
             </button>

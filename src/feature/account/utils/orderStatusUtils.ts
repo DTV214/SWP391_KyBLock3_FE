@@ -1,4 +1,4 @@
-// Order Status Constants and Utilities
+﻿// Order Status Constants and Utilities
 export const ORDER_STATUS = {
     PENDING: 'PENDING',
     CONFIRMED: 'CONFIRMED',
@@ -15,13 +15,13 @@ export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
 // Translate English status to Vietnamese
 export const translateOrderStatus = (status: string): string => {
     const statusMap: Record<string, string> = {
-        PENDING: 'Chờ xác nhận',
+        PENDING: 'Chờ thanh toán',
         CONFIRMED: 'Đã xác nhận',
         PROCESSING: 'Đang xử lý',
         SHIPPED: 'Đã giao hàng',
         DELIVERED: 'Đã nhận hàng',
         COMPLETED: 'Hoàn thành',
-        CANCELLED: 'Đã hủy',
+        CANCELLED: 'Hủy đơn',
     };
     return statusMap[status] || status;
 };
@@ -47,5 +47,10 @@ export const canReorder = (status: string): boolean => {
 
 // Check if order can be cancelled
 export const canCancel = (status: string): boolean => {
-    return status === ORDER_STATUS.PENDING || status === ORDER_STATUS.CONFIRMED || status === ORDER_STATUS.PROCESSING;
+    return (
+        status === ORDER_STATUS.PENDING ||
+        status === ORDER_STATUS.CONFIRMED ||
+        status === ORDER_STATUS.PROCESSING ||
+        status === ORDER_STATUS.PAID_WAITING_STOCK
+    );
 };
