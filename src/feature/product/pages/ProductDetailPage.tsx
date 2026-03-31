@@ -22,17 +22,28 @@ export default function ProductDetailPage() {
   const { addToCart, isLoading: cartLoading, error: cartError } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [recommended, setRecommended] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSize, setSelectedSize] = useState("Vừa");
   const [addSuccess, setAddSuccess] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
     productService
       .getById(id)
       .then((res) => setProduct(res.data))
-      .catch((err) => console.error("Error fetching product:", err))
+      .catch((err) => console.error("Error fetching product:", err));
+
+    productService.getAvailableProductsForCustomer()
+      .then(res => {
+        const products = res || [];
+        const filtered = products.filter((p: Product) => p.productid !== Number(id)).slice(0, 4);
+        setRecommended(filtered);
+      })
+      .catch(err => console.error("Error fetching recommended products:", err))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -155,23 +166,6 @@ export default function ProductDetailPage() {
             </div>
 
             <div className="space-y-8 pt-8 border-t border-gray-100">
-              <div className="space-y-4">
-                <label className="text-xs font-black text-tet-primary uppercase tracking-[0.2em]">
-                  Chọn kích cỡ:
-                </label>
-                <div className="flex flex-wrap gap-4">
-                  {["To", "Vừa", "Nhỏ"].map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`px-12 py-4 rounded-2xl font-black transition-all border-2 text-sm ${selectedSize === size ? "bg-tet-primary text-white border-tet-primary shadow-xl -translate-y-1" : "bg-white text-gray-400 border-gray-50 hover:border-tet-primary hover:text-tet-primary shadow-sm"}`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button
                   onClick={handleAddToCart}
@@ -179,12 +173,6 @@ export default function ProductDetailPage() {
                   className="flex-1 bg-[#4a0d06] hover:bg-tet-accent text-white py-8 rounded-[1.5rem] text-lg font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <ShoppingCart size={24} /> {cartLoading ? "Đang thêm..." : "THÊM VÀO GIỎ HÀNG"}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="sm:w-20 py-8 rounded-[1.5rem] border-2 border-tet-primary text-tet-primary hover:bg-tet-primary hover:text-white transition-all shadow-lg"
-                >
-                  <RefreshCcw size={24} />
                 </Button>
               </div>
               {cartError && (
@@ -329,21 +317,15 @@ export default function ProductDetailPage() {
             Gợi ý khác cho bạn
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
-            <ProductCard
-              title="Hộp quà Xuân Đoàn Viên"
-              price="1,250,000đ"
-              img="https://res.cloudinary.com/dratbz8bh/image/upload/v1769521491/Gia-Dinh-Doan-Vien-T_v0n9to.png"
-            />
-            <ProductCard
-              title="Set Trà Thượng Hạng"
-              price="1,250,000đ"
-              img="https://res.cloudinary.com/dratbz8bh/image/upload/v1769521637/IN-VO-HOP-QUA-TET_z1cmai.jpg"
-            />
-            <ProductCard
-              title="Giỏ Quà Tết Phú Quý"
-              price="1,250,000đ"
-              img="https://res.cloudinary.com/dratbz8bh/image/upload/v1769313271/1714504461883_xqmhva.png"
-            />
+            {recommended.map((prod) => (
+              <ProductCard
+                key={prod.productid}
+                id={prod.productid}
+                title={prod.productname || "Sản phẩm"}
+                price={(prod.price ?? 0).toLocaleString("vi-VN") + "đ"}
+                img={prod.imageUrl || "https://res.cloudinary.com/dratbz8bh/image/upload/v1769313271/1714504461883_xqmhva.png"}
+              />
+            ))}
           </div>
         </section>
       </div>

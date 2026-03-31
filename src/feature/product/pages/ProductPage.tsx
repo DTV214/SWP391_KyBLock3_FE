@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams, Link } from "react-router-dom";
-import { Gift, X, Eye, Copy, Save, Trash2, Package, ShoppingCart, Search, CheckCircle, AlertCircle, ChevronRight, Sparkles, Filter, ArrowUpDown } from "lucide-react";
+import { Gift, X, Eye, Copy, Save, Trash2, Package, ShoppingCart, Search, CheckCircle, AlertCircle, ChevronRight, Sparkles, Filter } from "lucide-react";
 import ProductHero from "../components/ProductHero";
 import ProductCard from "@/components/common/ProductCard";
 import { useCart } from "@/feature/cart/context/CartContext";
@@ -385,102 +385,106 @@ export default function ProductPage() {
         {/* 
             SECTION 1  Sản phẩm đơn lẻ
          */}
-        <section>
-          <SectionHeader
-            icon=""
-            title="Sản phẩm đơn lẻ"
-            count={filteredSingleProducts.length}
-            sub="Chọn từng món quà yêu thích cho mùa Tết"
-          />
-
-          {/* Controls */}
-          <div className="flex flex-col gap-4 mb-7">
-            {/* Category chips */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              <span className="shrink-0 flex items-center gap-1.5 text-xs font-semibold text-gray-400 pr-1">
-                <Filter size={12} /> Danh mục:
-              </span>
-              {[{ categoryid: 0, categoryname: "Tất cả" }, ...categories].map(c => (
-                <button
-                  key={c.categoryid}
-                  onClick={() => setSelectedCategory(c.categoryid ?? 0)}
-                  className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold border transition-all duration-200
-                    ${selectedCategory === (c.categoryid ?? 0)
-                      ? "bg-tet-primary text-white border-tet-primary shadow-sm shadow-tet-primary/30"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-tet-primary/50 hover:text-tet-primary"}`}
-                >
-                  {c.categoryname}
-                </button>
-              ))}
-            </div>
-            {/* Price range */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="shrink-0 text-xs font-semibold text-gray-400">₫ Khoảng giá:</span>
-              {SINGLE_PRICE_PRESETS.map(p => {
-                const active = singlePriceRange.min === p.range.min && singlePriceRange.max === p.range.max;
-                return (
+        <section className="flex flex-col lg:flex-row gap-8 items-start relative">
+          {/* SIDEBAR FOR SECTION 1 */}
+          <div className="w-full lg:w-[260px] shrink-0 space-y-6 lg:sticky lg:top-24 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+            {/* Category Filter */}
+            <div>
+              <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2"><Filter size={16} className="text-tet-primary"/> Danh mục</h3>
+              <div className="flex flex-col gap-1.5">
+                {[{ categoryid: 0, categoryname: "Tất cả" }, ...categories].map(c => (
                   <button
-                    key={p.label}
-                    onClick={() => setSinglePriceRange(p.range)}
-                    className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200
-                      ${active
-                        ? "bg-tet-accent text-white border-tet-accent"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-tet-accent/50 hover:text-tet-accent"}`}
+                    key={c.categoryid}
+                    onClick={() => setSelectedCategory(c.categoryid ?? 0)}
+                    className={`text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2.5
+                      ${selectedCategory === (c.categoryid ?? 0)
+                        ? "bg-tet-primary/5 text-tet-primary"
+                        : "bg-transparent text-gray-600 hover:bg-gray-50"}`}
                   >
-                    {p.label}
+                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${selectedCategory === (c.categoryid ?? 0) ? "bg-tet-primary" : "bg-gray-300"}`} />
+                    {c.categoryname}
                   </button>
-                );
-              })}
-              <div className="flex items-center gap-1.5 ml-1">
+                ))}
+              </div>
+            </div>
+
+            {/* Price Filter */}
+            <div className="pt-5 border-t border-gray-100">
+              <h3 className="text-base font-bold text-gray-800 mb-3">Khoảng giá</h3>
+              <div className="flex flex-col gap-1.5 mb-4">
+                {SINGLE_PRICE_PRESETS.map(p => {
+                  const active = singlePriceRange.min === p.range.min && singlePriceRange.max === p.range.max;
+                  return (
+                    <button
+                      key={p.label}
+                      onClick={() => setSinglePriceRange(p.range)}
+                      className={`text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2.5
+                        ${active
+                          ? "bg-tet-accent/5 text-tet-accent"
+                          : "bg-transparent text-gray-600 hover:bg-gray-50"}`}
+                    >
+                      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${active ? "bg-tet-accent" : "bg-gray-300"}`} />
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-2">
                 <input
                   type="number" min={0}
                   value={singlePriceRange.min ?? ""}
                   onChange={e => setSinglePriceRange(prev => ({ ...prev, min: e.target.value ? Number(e.target.value) : undefined }))}
                   placeholder="Từ"
-                  className="w-24 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg text-center focus:outline-none focus:border-tet-accent transition-all"
+                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-tet-accent transition-all"
                 />
-                <span className="text-gray-300 font-bold">—</span>
+                <span className="text-gray-300">-</span>
                 <input
                   type="number" min={0}
                   value={singlePriceRange.max ?? ""}
                   onChange={e => setSinglePriceRange(prev => ({ ...prev, max: e.target.value ? Number(e.target.value) : undefined }))}
                   placeholder="Đến"
-                  className="w-24 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg text-center focus:outline-none focus:border-tet-accent transition-all"
+                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-tet-accent transition-all"
                 />
-                <span className="text-xs text-gray-400 font-semibold">đ</span>
-                {(singlePriceRange.min !== undefined || singlePriceRange.max !== undefined) && (
-                  <button onClick={() => setSinglePriceRange({})} className="text-gray-300 hover:text-red-400 transition-colors">
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-            </div>
-            {/* Sort */}
-            <div className="flex items-center gap-2 self-end">
-              <ArrowUpDown size={14} className="text-gray-400" />
-              <div className="flex gap-1.5">
-                {[
-                  { value: "name", label: "Tên A→Z" },
-                  { value: "price-asc", label: "Giá tăng" },
-                  { value: "price-desc", label: "Giá giảm" },
-                ].map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setSingleSortBy(opt.value)}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all
-                      ${singleSortBy === opt.value
-                        ? "bg-tet-accent text-white"
-                        : "bg-white border border-gray-200 text-gray-500 hover:border-tet-accent/50"}`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
               </div>
             </div>
           </div>
 
+          {/* MAIN CONTENT */}
+          <div className="flex-1 w-full min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-2">
+              <div className="flex-1">
+                <SectionHeader
+                  icon=""
+                  title="Sản phẩm đơn lẻ"
+                  count={filteredSingleProducts.length}
+                  sub="Chọn từng món quà yêu thích cho mùa Tết"
+                />
+              </div>
+              <div className="flex items-center gap-2 shrink-0 sm:mt-1">
+                <span className="text-sm font-semibold text-gray-500">Sắp xếp:</span>
+                <div className="flex gap-1 border border-gray-200 rounded-lg p-1 bg-white shadow-sm">
+                  {[
+                    { value: "name", label: "Tên A→Z" },
+                    { value: "price-asc", label: "Giá tăng" },
+                    { value: "price-desc", label: "Giá giảm" },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setSingleSortBy(opt.value)}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all
+                        ${singleSortBy === opt.value
+                          ? "bg-gray-100 text-gray-800"
+                          : "text-gray-500 hover:text-gray-700"}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
           {singleLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
               {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : filteredSingleProducts.length === 0 ? (
@@ -491,7 +495,7 @@ export default function ProductPage() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
                 {filteredSingleProducts.slice((singlePage - 1) * ITEMS_PER_PAGE, singlePage * ITEMS_PER_PAGE).map(product => (
                   <motion.div
                     key={product.productid}
@@ -543,31 +547,26 @@ export default function ProductPage() {
               )}
             </>
           )}
+          </div>
         </section>
 
         {/* 
             SECTION 2  Giỏ quà Tết
          */}
-        <section>
-          <SectionHeader
-            icon=""
-            title="Giỏ quà Tết"
-            count={filteredBaskets.length}
-            sub="Bộ sưu tập giỏ quà sang trọng, tặng người thân yêu"
-          />
-
-          {/* Controls */}
-          <div className="flex flex-col gap-3 mb-7">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              {/* Search */}
-              <div className="relative w-full sm:w-72">
+        <section className="flex flex-col lg:flex-row gap-8 items-start relative">
+          {/* SIDEBAR FOR SECTION 2 */}
+          <div className="w-full lg:w-[260px] shrink-0 space-y-6 lg:sticky lg:top-24 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+            {/* Search Filter */}
+            <div>
+              <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2"><Filter size={16} className="text-tet-primary"/> Tìm kiếm</h3>
+              <div className="relative w-full">
                 <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   value={basketSearch}
                   onChange={e => setBasketSearch(e.target.value)}
-                  placeholder="Tìm kiếm giỏ quà..."
-                  className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-tet-accent/40 focus:border-tet-accent transition-all shadow-sm"
+                  placeholder="Tìm giỏ quà..."
+                  className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-tet-accent transition-all shadow-sm"
                 />
                 {basketSearch && (
                   <button onClick={() => setBasketSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
@@ -575,10 +574,63 @@ export default function ProductPage() {
                   </button>
                 )}
               </div>
-              {/* Sort */}
+            </div>
+
+            {/* Price Filter */}
+            <div className="pt-5 border-t border-gray-100">
+              <h3 className="text-base font-bold text-gray-800 mb-3">Khoảng giá</h3>
+              <div className="flex flex-col gap-1.5 mb-4">
+                {BASKET_PRICE_PRESETS.map(p => {
+                  const active = basketPriceRange.min === p.range.min && basketPriceRange.max === p.range.max;
+                  return (
+                    <button
+                      key={p.label}
+                      onClick={() => setBasketPriceRange(p.range)}
+                      className={`text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2.5
+                        ${active
+                          ? "bg-tet-accent/5 text-tet-accent"
+                          : "bg-transparent text-gray-600 hover:bg-gray-50"}`}
+                    >
+                      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${active ? "bg-tet-accent" : "bg-gray-300"}`} />
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
               <div className="flex items-center gap-2">
-                <ArrowUpDown size={14} className="text-gray-400" />
-                <div className="flex gap-1.5">
+                <input
+                  type="number" min={0}
+                  value={basketPriceRange.min ?? ""}
+                  onChange={e => setBasketPriceRange(prev => ({ ...prev, min: e.target.value ? Number(e.target.value) : undefined }))}
+                  placeholder="Từ"
+                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-tet-accent transition-all"
+                />
+                <span className="text-gray-300">-</span>
+                <input
+                  type="number" min={0}
+                  value={basketPriceRange.max ?? ""}
+                  onChange={e => setBasketPriceRange(prev => ({ ...prev, max: e.target.value ? Number(e.target.value) : undefined }))}
+                  placeholder="Đến"
+                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-tet-accent transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* MAIN CONTENT FOR SECTION 2 */}
+          <div className="flex-1 w-full min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-2">
+              <div className="flex-1">
+                <SectionHeader
+                  icon=""
+                  title="Giỏ quà Tết"
+                  count={filteredBaskets.length}
+                  sub="Bộ sưu tập giỏ quà sang trọng, tặng người thân yêu"
+                />
+              </div>
+              <div className="flex items-center gap-2 shrink-0 sm:mt-1">
+                <span className="text-sm font-semibold text-gray-500">Sắp xếp:</span>
+                <div className="flex gap-1 border border-gray-200 rounded-lg p-1 bg-white shadow-sm">
                   {[
                     { value: "price-asc", label: "Giá tăng" },
                     { value: "price-desc", label: "Giá giảm" },
@@ -586,10 +638,10 @@ export default function ProductPage() {
                     <button
                       key={opt.value}
                       onClick={() => setBasketSortBy(opt.value)}
-                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all
+                      className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all
                         ${basketSortBy === opt.value
-                          ? "bg-tet-accent text-white"
-                          : "bg-white border border-gray-200 text-gray-500 hover:border-tet-accent/50"}`}
+                          ? "bg-gray-100 text-gray-800"
+                          : "text-gray-500 hover:text-gray-700"}`}
                     >
                       {opt.label}
                     </button>
@@ -597,52 +649,9 @@ export default function ProductPage() {
                 </div>
               </div>
             </div>
-            {/* Price range */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="shrink-0 text-xs font-semibold text-gray-400">₫ Khoảng giá:</span>
-              {BASKET_PRICE_PRESETS.map(p => {
-                const active = basketPriceRange.min === p.range.min && basketPriceRange.max === p.range.max;
-                return (
-                  <button
-                    key={p.label}
-                    onClick={() => setBasketPriceRange(p.range)}
-                    className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200
-                      ${active
-                        ? "bg-tet-accent text-white border-tet-accent"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-tet-accent/50 hover:text-tet-accent"}`}
-                  >
-                    {p.label}
-                  </button>
-                );
-              })}
-              <div className="flex items-center gap-1.5 ml-1">
-                <input
-                  type="number" min={0}
-                  value={basketPriceRange.min ?? ""}
-                  onChange={e => setBasketPriceRange(prev => ({ ...prev, min: e.target.value ? Number(e.target.value) : undefined }))}
-                  placeholder="Từ"
-                  className="w-24 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg text-center focus:outline-none focus:border-tet-accent transition-all"
-                />
-                <span className="text-gray-300 font-bold">—</span>
-                <input
-                  type="number" min={0}
-                  value={basketPriceRange.max ?? ""}
-                  onChange={e => setBasketPriceRange(prev => ({ ...prev, max: e.target.value ? Number(e.target.value) : undefined }))}
-                  placeholder="Đến"
-                  className="w-24 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg text-center focus:outline-none focus:border-tet-accent transition-all"
-                />
-                <span className="text-xs text-gray-400 font-semibold">đ</span>
-                {(basketPriceRange.min !== undefined || basketPriceRange.max !== undefined) && (
-                  <button onClick={() => setBasketPriceRange({})} className="text-gray-300 hover:text-red-400 transition-colors">
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
 
           {basketLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
               {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => <SkeletonCard key={i} tall />)}
             </div>
           ) : filteredBaskets.length === 0 ? (
@@ -655,7 +664,7 @@ export default function ProductPage() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
                 {filteredBaskets.slice((basketPage - 1) * ITEMS_PER_PAGE, basketPage * ITEMS_PER_PAGE).map(basket => (
                   <motion.div
                     key={basket.productid}
@@ -725,6 +734,7 @@ export default function ProductPage() {
               )}
             </>
           )}
+          </div>
         </section>
       </div>
 
