@@ -15,6 +15,7 @@ import {
   BookOpen,
   PackageOpen,
   MapPin,
+  Ticket,
 } from "lucide-react";
 import { chatService } from "@/feature/chat/services/chatService";
 import { chatRealtimeService } from "@/feature/chat/services/chatRealtime";
@@ -98,7 +99,7 @@ export default function AdminSidebar() {
     {
       path: "/admin/promotions",
       label: "Promotion",
-      icon: <Gift size={18} />,
+      icon: <Ticket size={18} />,
     },
     {
       path: "/admin/blogs",

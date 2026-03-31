@@ -10,6 +10,7 @@ interface PromotionSelectionModalProps {
     onClose: () => void;
     onSelect: (promotion: PromotionResponse) => void;
     selectedPromotionId?: number;
+    totalPrice: number;
 }
 
 const COLORS = [
@@ -26,6 +27,7 @@ export default function PromotionSelectionModal({
     onClose,
     onSelect,
     selectedPromotionId,
+    totalPrice,
 }: PromotionSelectionModalProps) {
     const [promotions, setPromotions] = useState<PromotionResponse[]>([]);
     const [filteredPromotions, setFilteredPromotions] = useState<PromotionResponse[]>([]);
@@ -41,7 +43,7 @@ export default function PromotionSelectionModal({
 
     useEffect(() => {
         filterAndSortPromotions();
-    }, [promotions, searchCode]);
+    }, [promotions, searchCode, totalPrice]);
 
     const fetchPromotions = async () => {
         try {
@@ -60,9 +62,9 @@ export default function PromotionSelectionModal({
     };
 
     const filterAndSortPromotions = () => {
-        // 1. Filter by status (only ACTIVE and WAIT_FOR_ACTIVE)
+        // 1. Filter by status (only ACTIVE)
         let filtered = promotions.filter(
-            (p) => p.status === "ACTIVE" || p.status === "WAIT_FOR_ACTIVE"
+            (p) => p.status === "ACTIVE"
         );
 
         // 2. Filter by search code
@@ -72,7 +74,15 @@ export default function PromotionSelectionModal({
             );
         }
 
-        // 3. Sort by expiry date (ascending)
+        // 3. Filter by minPriceToApply - chỉ hiển thị những mã có thể sử dụng
+        filtered = filtered.filter((p) => {
+            if (p.minPriceToApply && p.minPriceToApply > totalPrice) {
+                return false; // Ẩn promotion nếu đơn hàng nhỏ hơn minPrice
+            }
+            return true; // Hiển thị
+        });
+
+        // 4. Sort by expiry date (ascending)
         filtered.sort(
             (a, b) =>
                 new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()

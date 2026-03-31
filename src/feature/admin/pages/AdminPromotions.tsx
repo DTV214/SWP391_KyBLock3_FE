@@ -1,16 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { PromotionResponse, CreatePromotionRequest } from '../../checkout/services/promotionService';
 import promotionService from '../../checkout/services/promotionService';
 import PromotionModal from './PromotionModal';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '../../../components/ui/select';
 import { Badge } from '../../../components/ui/badge';
 import {
     AlertDialog,
@@ -21,7 +14,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '../../../components/ui/alert-dialog';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, ChevronDown } from 'lucide-react';
 
 interface FormData extends CreatePromotionRequest { }
 
@@ -61,6 +54,12 @@ export default function AdminPromotions() {
     const [searchCode, setSearchCode] = useState('');
     const [filterStatus, setFilterStatus] = useState('ALL');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+    // Dropdown open states
+    const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+    const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+    const statusDropdownRef = useRef<HTMLDivElement>(null);
+    const sortDropdownRef = useRef<HTMLDivElement>(null);
 
     // Modal states
     const [showModal, setShowModal] = useState(false);
@@ -123,6 +122,23 @@ export default function AdminPromotions() {
 
     useEffect(() => {
         fetchPromotions();
+    }, []);
+
+    // Handle click outside to close dropdowns
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+                setStatusDropdownOpen(false);
+            }
+            if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
+                setSortDropdownOpen(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
     }, []);
 
     // Reset form
@@ -229,39 +245,111 @@ export default function AdminPromotions() {
                                 placeholder="Tìm theo mã code..."
                                 value={searchCode}
                                 onChange={(e) => setSearchCode(e.target.value)}
-                                className="pl-10"
+                                className="pl-10 bg-white border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:border-gray-400"
                             />
                             <Search size={18} className="absolute left-3 top-3 text-gray-400" />
                         </div>
 
                         {/* Filter by Status */}
-                        <div className="w-full md:w-48">
-                            <Select value={filterStatus} onValueChange={setFilterStatus}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Tất cả trạng thái" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                                    <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
-                                    <SelectItem value="WAIT_FOR_ACTIVE">Chờ kích hoạt</SelectItem>
-                                    <SelectItem value="LIMITED_REACHED">Hết lượt</SelectItem>
-                                    <SelectItem value="OUT_OF_DATE">Đã hết hạn</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        <div className="w-full md:w-48 relative" ref={statusDropdownRef}>
+                            <button
+                                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-md text-left flex justify-between items-center hover:border-gray-400 hover:shadow-sm transition-all"
+                            >
+                                <span className="text-gray-700">
+                                    {filterStatus === 'ALL' ? 'Tất cả trạng thái' :
+                                        filterStatus === 'ACTIVE' ? 'Đang hoạt động' :
+                                            filterStatus === 'WAIT_FOR_ACTIVE' ? 'Chờ kích hoạt' :
+                                                filterStatus === 'LIMITED_REACHED' ? 'Hết lượt' :
+                                                    filterStatus === 'OUT_OF_DATE' ? 'Đã hết hạn' : filterStatus}
+                                </span>
+                                <ChevronDown size={16} className={`transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {statusDropdownOpen && (
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-md shadow-lg z-50">
+                                    <div
+                                        onClick={() => {
+                                            setFilterStatus('ALL');
+                                            setStatusDropdownOpen(false);
+                                        }}
+                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+                                    >
+                                        Tất cả trạng thái
+                                    </div>
+                                    <div
+                                        onClick={() => {
+                                            setFilterStatus('ACTIVE');
+                                            setStatusDropdownOpen(false);
+                                        }}
+                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+                                    >
+                                        Đang hoạt động
+                                    </div>
+                                    <div
+                                        onClick={() => {
+                                            setFilterStatus('WAIT_FOR_ACTIVE');
+                                            setStatusDropdownOpen(false);
+                                        }}
+                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+                                    >
+                                        Chờ kích hoạt
+                                    </div>
+                                    <div
+                                        onClick={() => {
+                                            setFilterStatus('LIMITED_REACHED');
+                                            setStatusDropdownOpen(false);
+                                        }}
+                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+                                    >
+                                        Hết lượt
+                                    </div>
+                                    <div
+                                        onClick={() => {
+                                            setFilterStatus('OUT_OF_DATE');
+                                            setStatusDropdownOpen(false);
+                                        }}
+                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+                                    >
+                                        Đã hết hạn
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     {/* Sort by Expiry Date - Đẩy sang phải cùng */}
-                    <div className="w-full md:w-48">
-                        <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as 'asc' | 'desc')}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Sắp xếp theo hạn" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="asc">Hạn sớm nhất trước</SelectItem>
-                                <SelectItem value="desc">Hạn muộn nhất trước</SelectItem>
-                            </SelectContent>
-                        </Select>
+                    <div className="w-full md:w-48 relative " ref={sortDropdownRef}>
+                        <button
+                            onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-md text-left flex justify-between items-center hover:border-gray-400 hover:shadow-sm transition-all"
+                        >
+                            <span className="text-gray-700 whitespace-nowrap">
+                                {sortOrder === 'asc' ? 'Hạn sớm nhất trước' : 'Hạn muộn nhất trước'}
+                            </span>
+                            <ChevronDown size={16} className={`transition-transform ${sortDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {sortDropdownOpen && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-md shadow-lg z-50">
+                                <div
+                                    onClick={() => {
+                                        setSortOrder('asc');
+                                        setSortDropdownOpen(false);
+                                    }}
+                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+                                >
+                                    Hạn sớm nhất trước
+                                </div>
+                                <div
+                                    onClick={() => {
+                                        setSortOrder('desc');
+                                        setSortDropdownOpen(false);
+                                    }}
+                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+                                >
+                                    Hạn muộn nhất trước
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

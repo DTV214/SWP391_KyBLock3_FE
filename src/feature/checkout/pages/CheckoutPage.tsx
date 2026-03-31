@@ -633,6 +633,7 @@ export default function CheckoutPage() {
         onClose={() => setPromotionModalOpen(false)}
         onSelect={handleSelectPromotionFromModal}
         selectedPromotionId={promotion?.promotionId}
+        totalPrice={totalPrice}
       />
 
       {/* Payment Success Modal */}
