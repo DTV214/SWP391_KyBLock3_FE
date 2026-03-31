@@ -49,6 +49,8 @@ export interface OrderResponse {
     customerAddress: string;
     note: string;
     promotionCode: string;
+    shippedDate?: string | null;
+    isQuotation?: number | null;
     items: OrderItem[];
 }
 
@@ -64,6 +66,10 @@ export interface UpdateOrderStatusRequest {
     status: string;
 }
 
+export interface AllocateStockResponse {
+    message: string;
+}
+
 // Paginated Response
 export interface PaginatedOrderResponse {
     data: OrderResponse[];
@@ -74,7 +80,7 @@ export interface PaginatedOrderResponse {
 }
 
 /**
- * Tạo đơn hàng mới
+ * T?o don h�ng m?i
  * POST /api/orders
  */
 export const createOrder = async (
@@ -92,7 +98,7 @@ export const createOrder = async (
 };
 
 /**
- * Lấy danh sách đơn hàng của người dùng (có phân trang)
+ * L?y danh s�ch don h�ng c?a ngu?i d�ng (c� ph�n trang)
  * GET /api/orders/my-orders?pageNumber=1&pageSize=10
  */
 export const getMyOrders = async (
@@ -113,7 +119,7 @@ export const getMyOrders = async (
 };
 
 /**
- * Lấy danh sách tất cả đơn hàng (Admin) (có phân trang)
+ * L?y danh s�ch t?t c? don h�ng (Admin) (c� ph�n trang)
  * GET /api/orders?pageNumber=1&pageSize=10
  */
 export const getAllOrders = async (
@@ -134,7 +140,7 @@ export const getAllOrders = async (
 };
 
 /**
- * Láº¥y chi tiáº¿t má»™t Ä‘Æ¡n hÃ ng
+ * Lấy chi tiết một đơn hàng
  * GET /api/orders/{orderId}
  */
 export const getOrderById = async (
@@ -150,7 +156,7 @@ export const getOrderById = async (
     return response.data;
 };
 
-// Cập nhật thông tin giao hàng của order
+// C?p nh?t th�ng tin giao h�ng c?a order
 export const updateOrderShippingInfo = async (
     orderId: number,
     payload: UpdateOrderRequest,
@@ -168,7 +174,7 @@ export const updateOrderShippingInfo = async (
 };
 
 /**
- * Cập nhật trạng thái đơn hàng
+ * C?p nh?t tr?ng th�i don h�ng
  * PUT /api/orders/{orderId}/status
  */
 export const updateOrderStatus = async (
@@ -186,8 +192,22 @@ export const updateOrderStatus = async (
     return response.data;
 };
 
+export const allocateOrderStock = async (
+    orderId: number,
+    token?: string
+): Promise<AllocateStockResponse> => {
+    const response = await axiosClient.post<AllocateStockResponse>(
+        API_ENDPOINTS.ORDERS.ALLOCATE_STOCK(orderId),
+        {},
+        {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        }
+    );
+    return response.data;
+};
+
 /**
- * Hủy đơn hàng
+ * H?y don h�ng
  * DELETE /api/orders/{orderId}/cancel
  */
 export const cancelOrder = async (
@@ -245,6 +265,7 @@ export const orderService = {
     getAllOrders,
     updateOrderShippingInfo,
     updateOrderStatus,
+    allocateOrderStock,
     cancelOrder,
     downloadInvoice
 };
