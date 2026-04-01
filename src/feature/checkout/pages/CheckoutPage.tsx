@@ -14,6 +14,7 @@ import { walletService, type WalletResponse } from '@/feature/checkout/services/
 import type { PromotionResponse } from '@/feature/checkout/services/promotionService';
 import PaymentSuccessModal from '../components/PaymentSuccessModal';
 import PromotionSelectionModal from '../components/PromotionSelectionModal';
+import CustomProductDetailModal from '../components/CustomProductDetailModal';
 import { Ticket } from 'lucide-react';
 
 interface FormData {
@@ -41,6 +42,8 @@ export default function CheckoutPage() {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [successOrderId, setSuccessOrderId] = useState<number | undefined>();
   const [promotionModalOpen, setPromotionModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedDetailItem, setSelectedDetailItem] = useState<CartItemResponse | null>(null);
 
   const [formData, setFormData] = useState<FormData>({
     customerName: '',
@@ -496,7 +499,17 @@ export default function CheckoutPage() {
                 <div className="space-y-4 max-h-96 overflow-y-auto">
                   {cartItems.length > 0 ? (
                     cartItems.map((item) => (
-                      <div key={item.cartDetailId} className="flex gap-3 pb-4 border-b last:border-b-0">
+                      <div
+                        key={item.cartDetailId}
+                        className={`flex gap-3 pb-4 border-b last:border-b-0 ${item.isCustomItem ? 'cursor-pointer hover:bg-gray-50 -mx-4 px-4 py-2 rounded-lg transition-colors' : ''
+                          }`}
+                        onClick={() => {
+                          if (item.isCustomItem) {
+                            setSelectedDetailItem(item);
+                            setIsDetailModalOpen(true);
+                          }
+                        }}
+                      >
                         <div className="relative w-16 h-16 bg-gray-50 rounded-xl overflow-hidden shrink-0">
                           {item.imageUrl ? (
                             <img
@@ -516,6 +529,11 @@ export default function CheckoutPage() {
                         <div className="flex-1">
                           <h4 className="text-sm font-bold text-tet-primary line-clamp-2">
                             {item.productName}
+                            {item.isCustomItem && (
+                              <span className="ml-2 text-[10px] bg-tet-primary/20 text-tet-primary px-2 py-1 rounded-full font-medium">
+                                Xem chi tiết
+                              </span>
+                            )}
                           </h4>
                           <p className="text-[10px] text-gray-400 uppercase font-bold">
                             SKU: {item.sku}
@@ -635,6 +653,19 @@ export default function CheckoutPage() {
         selectedPromotionId={promotion?.promotionId}
         totalPrice={totalPrice}
       />
+
+      {/* Custom Product Detail Modal */}
+      {selectedDetailItem && (
+        <CustomProductDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={() => {
+            setIsDetailModalOpen(false);
+            setSelectedDetailItem(null);
+          }}
+          productId={selectedDetailItem.productId}
+          productName={selectedDetailItem.productName}
+        />
+      )}
 
       {/* Payment Success Modal */}
       <PaymentSuccessModal

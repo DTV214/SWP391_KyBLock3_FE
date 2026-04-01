@@ -16,6 +16,7 @@ export interface CartItemResponse {
     quantity: number;
     subTotal: number;
     imageUrl?: string;
+    isCustomItem?: boolean;
 }
 
 export interface CartResponse {

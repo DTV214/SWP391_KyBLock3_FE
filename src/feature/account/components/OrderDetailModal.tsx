@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Loader2, Edit2, Save, X as XIcon } from 'lucide-react';
+import { X, Loader2, Edit2, Save, X as XIcon, Package } from 'lucide-react';
 import { type OrderResponse, type OrderItem, orderService } from '@/feature/checkout/services/orderService';
 import { formatOrderDate } from '../utils/orderFilterUtils';
 import {
@@ -8,6 +8,7 @@ import {
     getStatusColorClass,
 } from '../utils/orderStatusUtils';
 import { paymentService, type PaymentTransaction } from '@/feature/checkout/services/paymentService';
+import { stockMovementService, type StockMovement } from '@/feature/admin/services/stockMovementService';
 import OrderPaymentHistory from './OrderPaymentHistory';
 
 interface OrderDetailModalProps {
@@ -37,6 +38,9 @@ export default function OrderDetailModal({
         customerAddress: order.customerAddress,
         note: order.note,
     });
+    const [stockMovementModal, setStockMovementModal] = useState({ isOpen: false, productId: 0, productName: '' });
+    const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
+    const [stockMovementsLoading, setStockMovementsLoading] = useState(false);
 
     // Sync displayOrder with order prop when it changes
     useEffect(() => {
@@ -67,6 +71,25 @@ export default function OrderDetailModal({
             console.error('Error loading payments:', error);
         } finally {
             setPaymentsLoading(false);
+        }
+    };
+
+    const loadStockMovements = async (productId: number, productName: string) => {
+        try {
+            setStockMovementsLoading(true);
+            const token = localStorage.getItem('token') || undefined;
+            const data = await stockMovementService.getStockMovementsByOrderAndProduct(
+                order.orderId,
+                productId,
+                token
+            );
+            setStockMovements(data);
+            setStockMovementModal({ isOpen: true, productId, productName });
+        } catch (error) {
+            console.error('Error loading stock movements:', error);
+            alert('Không thể tải lịch sử di chuyển kho. Vui lòng thử lại!');
+        } finally {
+            setStockMovementsLoading(false);
         }
     };
 
@@ -359,17 +382,34 @@ export default function OrderDetailModal({
                                             )}
                                         </div>
                                         <div className="flex-1">
-                                            <h4 className="font-bold text-tet-primary">
-                                                {item.productName}
-                                            </h4>
+                                            <div className="flex items-start justify-between mb-2">
+                                                <h4 className="font-bold text-tet-primary">
+                                                    {item.productName}
+                                                </h4>
+
+                                                {isAdmin && (!item.productDetails || item.productDetails.length === 0) && (
+                                                    <button
+                                                        onClick={() => loadStockMovements(item.productId, item.productName)}
+                                                        disabled={stockMovementsLoading}
+                                                        className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg font-bold text-sm transition-all disabled:opacity-50 whitespace-nowrap flex items-center gap-2"
+                                                        title="Xem lịch sử di chuyển kho"
+                                                    >
+                                                        <Package className="w-4 h-4" />
+                                                        Kho
+                                                    </button>
+                                                )}
+                                            </div>
                                             <p className="text-xs text-gray-400 uppercase font-bold">
                                                 SKU: {item.sku}
                                             </p>
-                                            <div className="flex items-center justify-between mt-2">
+                                            <div className="flex items-center gap-3 mt-2">
                                                 <span className="text-sm text-gray-600">
-                                                    x{item.quantity}
+                                                    {(item.amount / item.quantity).toLocaleString()}đ x{item.quantity}
                                                 </span>
-                                                <span className="font-bold text-tet-primary">
+                                                <span className="text-sm text-gray-600">
+
+                                                </span>
+                                                <span className="font-bold text-tet-primary ml-auto">
                                                     {item.amount.toLocaleString()}đ
                                                 </span>
                                             </div>
@@ -408,6 +448,17 @@ export default function OrderDetailModal({
                                                             <span className="text-sm font-bold text-blue-600">
                                                                 x{detail.quantity}
                                                             </span>
+                                                            {isAdmin && (
+                                                                <button
+                                                                    onClick={() => loadStockMovements(detail.productId || 0, detail.productname || '')}
+                                                                    disabled={stockMovementsLoading}
+                                                                    className="px-2 py-1 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg font-bold text-xs transition-all disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
+                                                                    title="Xem lịch sử di chuyển kho"
+                                                                >
+                                                                    <Package className="w-3 h-3" />
+                                                                    Kho
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -469,6 +520,109 @@ export default function OrderDetailModal({
                     </button>
                 </div>
             </motion.div>
+
+            {/* Stock Movement Modal */}
+            {stockMovementModal.isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/50 z-110 flex items-center justify-center p-4"
+                    onClick={() => setStockMovementModal({ ...stockMovementModal, isOpen: false })}
+                >
+                    <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white rounded-[2rem] shadow-2xl max-h-[80vh] w-full max-w-2xl overflow-y-auto"
+                    >
+                        {/* Modal Header */}
+                        <div className="sticky top-0 bg-white border-b border-gray-100 p-6 flex items-center justify-between z-10">
+                            <div className="flex items-center gap-3">
+                                <Package className="w-6 h-6 text-blue-600" />
+                                <div>
+                                    <h2 className="text-2xl font-serif font-bold text-tet-primary">
+                                        Lịch sử di chuyển kho
+                                    </h2>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        {stockMovementModal.productName}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setStockMovementModal({ ...stockMovementModal, isOpen: false })}
+                                className="p-2 hover:bg-gray-100 rounded-xl transition-all"
+                            >
+                                <X className="w-6 h-6 text-gray-500" />
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="p-6">
+                            {stockMovementsLoading ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="w-6 h-6 text-tet-primary animate-spin" />
+                                </div>
+                            ) : stockMovements.length > 0 ? (
+                                <div className="space-y-3">
+                                    {stockMovements.map((movement) => (
+                                        <div
+                                            key={movement.stockmovementid}
+                                            className={`p-4 rounded-xl border-l-4 ${movement.quantity > 0
+                                                ? 'bg-green-50 border-l-green-500'
+                                                : 'bg-red-50 border-l-red-500'
+                                                }`}
+                                        >
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-2xl">
+                                                        {movement.quantity > 0 ? '📥' : '📤'}
+                                                    </span>
+                                                    <div>
+                                                        <p className="font-bold text-sm text-gray-700">
+                                                            {movement.note}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            {new Date(movement.movementdate).toLocaleString('vi-VN')}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <span
+                                                    className={`font-bold text-lg ${movement.quantity > 0
+                                                        ? 'text-green-600'
+                                                        : 'text-red-600'
+                                                        }`}
+                                                >
+                                                    {movement.quantity > 0 ? '+' : ''}{movement.quantity}
+                                                </span>
+                                            </div>
+                                            <div className="text-xs text-gray-600 pl-8 space-y-1">
+                                                <p>ID Kho: {movement.stockid}</p>
+                                                <p>ID di chuyển: {movement.stockmovementid}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    <Package className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                                    <p>Không có lịch sử di chuyển kho cho sản phẩm này</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="sticky bottom-0 bg-white border-t border-gray-100 p-6 flex gap-3 justify-end">
+                            <button
+                                onClick={() => setStockMovementModal({ ...stockMovementModal, isOpen: false })}
+                                className="px-6 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-bold"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
         </motion.div>
     );
 }

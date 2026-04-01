@@ -46,7 +46,11 @@ export default function CartSidebar() {
                         items.map((item) => (
                             <div
                                 key={item.productid}
-                                className="flex gap-3 p-4 border border-gray-200 rounded-xl hover:shadow-md transition-all"
+                                className="flex gap-3 p-4 border border-gray-200 rounded-xl hover:shadow-md transition-all cursor-pointer"
+                                onClick={() => {
+                                    navigate(`/product/${item.productid}`);
+                                    closeCart();
+                                }}
                             >
                                 {/* Product Image */}
                                 <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
@@ -75,12 +79,13 @@ export default function CartSidebar() {
                                     {/* Quantity Controls */}
                                     <div className="flex items-center gap-2 mt-2">
                                         <button
-                                            onClick={() =>
+                                            onClick={(e) => {
+                                                e.stopPropagation();
                                                 updateQuantity(
                                                     item.productid!,
                                                     item.cartQuantity - 1
                                                 )
-                                            }
+                                            }}
                                             className="p-1 hover:bg-gray-200 rounded transition-all"
                                             aria-label="Giảm số lượng"
                                         >
@@ -90,12 +95,13 @@ export default function CartSidebar() {
                                             {item.cartQuantity}
                                         </span>
                                         <button
-                                            onClick={() =>
+                                            onClick={(e) => {
+                                                e.stopPropagation();
                                                 updateQuantity(
                                                     item.productid!,
                                                     item.cartQuantity + 1
                                                 )
-                                            }
+                                            }}
                                             className="p-1 hover:bg-gray-200 rounded transition-all"
                                             aria-label="Tăng số lượng"
                                         >
@@ -104,7 +110,10 @@ export default function CartSidebar() {
 
                                         {/* Delete Button */}
                                         <button
-                                            onClick={() => removeFromCart(item.productid!)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                removeFromCart(item.productid!)
+                                            }}
                                             className="ml-auto p-1 text-red-500 hover:bg-red-50 rounded transition-all"
                                             aria-label="Xóa sản phẩm"
                                         >

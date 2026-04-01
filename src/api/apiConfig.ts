@@ -52,6 +52,8 @@ export const API_ENDPOINTS = {
     // Lấy tồn kho theo Product
     STOCKS_BY_PRODUCT: (productId: string | number) =>
       `${BASE_URL}/inventories/products/${productId}/stocks`,
+    // Lịch sử di chuyển kho
+    STOCK_MOVEMENTS: `${BASE_URL}/inventories/movements`,
   },
   // Products endpoints
   PRODUCTS: {

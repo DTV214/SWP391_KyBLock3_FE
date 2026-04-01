@@ -108,21 +108,19 @@ export default function AdminOrderHistory() {
       <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 inline-flex gap-2">
         <button
           onClick={() => handleQuotationTypeChange('normal')}
-          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-            quotationType === 'normal'
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${quotationType === 'normal'
               ? 'bg-tet-primary text-white shadow-md'
               : 'text-gray-600 hover:bg-gray-50'
-          }`}
+            }`}
         >
           Đơn hàng thường
         </button>
         <button
           onClick={() => handleQuotationTypeChange('quotation')}
-          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-            quotationType === 'quotation'
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${quotationType === 'quotation'
               ? 'bg-tet-primary text-white shadow-md'
               : 'text-gray-600 hover:bg-gray-50'
-          }`}
+            }`}
         >
           Đơn từ quotation
         </button>
@@ -186,11 +184,10 @@ export default function AdminOrderHistory() {
             <button
               key={page}
               onClick={() => goToPage(page)}
-              className={`w-10 h-10 rounded-xl font-bold transition-all ${
-                page === currentPage
+              className={`w-10 h-10 rounded-xl font-bold transition-all ${page === currentPage
                   ? 'bg-tet-primary text-white shadow-lg'
                   : 'border border-gray-100 text-sm text-gray-400 hover:bg-[#FBF5E8]'
-              }`}
+                }`}
             >
               {page}
             </button>
