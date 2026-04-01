@@ -45,7 +45,7 @@ export default function AdminInventoryHistory({ movements, products, loading }: 
       
       const matchesProduct = selectedProductId === "all" || m.productid?.toString() === selectedProductId;
       
-      const matchesDate = !dateFilter || m.movementdate.startsWith(dateFilter);
+      const matchesDate = !dateFilter || (m.movementdate && m.movementdate.includes(dateFilter));
 
       return matchesSearch && matchesProduct && matchesDate;
     }).sort((a, b) => new Date(b.movementdate).getTime() - new Date(a.movementdate).getTime());
