@@ -36,6 +36,18 @@ export interface UpdateStockRequest {
   status: string;
 }
 
+// --- DTOs cho phần Lịch sử kho (Internal movement logic) ---
+export interface StockMovementDto {
+  stockmovementid: number;
+  stockid: number;
+  productid: number;
+  productName: string;
+  orderid?: number | null;
+  quantity: number;
+  movementdate: string;
+  note: string;
+}
+
 // Interface Wrapper chung của hệ thống
 export interface ApiResponse<T> {
   status: number;
@@ -66,6 +78,27 @@ export const inventoryAdminService = {
     } catch (error: unknown) {
       console.error("Lỗi khi lấy báo cáo tồn kho:", error);
       throw error;
+    }
+  },
+
+  // 1.1 Lấy lịch sử xuất nhập kho (Stock Movements)
+  getAllMovements: async (): Promise<StockMovementDto[]> => {
+    try {
+      // Vì backend chưa cung cấp endpoint cụ thể cho StockMovement, ta tạm thời mock dữ liệu dựa trên Entity StockMovement.cs
+      // Nếu backend có endpoint sau này (VD: /inventories/movements), hãy cập nhật URI tại đây.
+      const response = await axiosClient.get<
+        ApiResponse<StockMovementDto[]>,
+        ApiResponse<StockMovementDto[]>
+      >(`${API_ENDPOINTS.INVENTORY.STOCKS}/movements`); // Example endpoint
+
+      if (response && response.status === 200 && response.data) {
+        return response.data;
+      }
+      return [];
+    } catch (error: unknown) {
+      console.error("Lỗi khi lấy lịch sử kho:", error);
+      // Trả về mảng rỗng để không làm crash UI nếu endpoint chưa tồn tại
+      return [];
     }
   },
 
