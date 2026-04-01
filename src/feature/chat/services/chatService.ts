@@ -1,5 +1,6 @@
 import axiosClient from "@/api/axiosClient";
 import { API_ENDPOINTS } from "@/api/apiConfig";
+import type { OrderResponse } from "@/feature/checkout/services/orderService";
 
 export interface ApiResponse<T> {
   status: number;
@@ -121,6 +122,13 @@ const getUnreadConversationCount = async (): Promise<number> => {
   return unreadByConversation.filter(Boolean).length;
 };
 
+const getBackofficeOrderById = async (orderId: number): Promise<OrderResponse> => {
+  const response = (await axiosClient.get(
+    API_ENDPOINTS.CHAT.BACKOFFICE_ORDER_DETAIL(orderId),
+  )) as ApiResponse<OrderResponse>;
+  return response.data;
+};
+
 const decodeJwtPayload = (token: string): Record<string, unknown> | null => {
   try {
     const parts = token.split(".");
@@ -189,5 +197,6 @@ export const chatService = {
   replyToConversation,
   markConversationRead,
   getUnreadConversationCount,
+  getBackofficeOrderById,
 };
 

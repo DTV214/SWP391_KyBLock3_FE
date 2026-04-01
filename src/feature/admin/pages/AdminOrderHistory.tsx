@@ -1,14 +1,18 @@
-import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
-import { useAdminOrderHistory } from '../hooks/useAdminOrderHistory';
-import OrderFilters from '@/feature/account/components/OrderFilters';
-import OrderCard from '@/feature/account/components/OrderCard';
-import OrderDetailModal from '@/feature/account/components/OrderDetailModal';
-import CancelOrderConfirmModal from '@/feature/account/components/CancelOrderConfirmModal';
-import CancelOrderSuccessModal from '@/feature/account/components/CancelOrderSuccessModal';
-import { orderService, type OrderResponse } from '@/feature/checkout/services/orderService';
-import type { SortBy } from '@/feature/account/utils/orderFilterUtils';
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useAdminOrderHistory } from "../hooks/useAdminOrderHistory";
+import OrderFilters from "@/feature/account/components/OrderFilters";
+import OrderCard from "@/feature/account/components/OrderCard";
+import OrderDetailModal from "@/feature/account/components/OrderDetailModal";
+import CancelOrderConfirmModal from "@/feature/account/components/CancelOrderConfirmModal";
+import CancelOrderSuccessModal from "@/feature/account/components/CancelOrderSuccessModal";
+import {
+  orderService,
+  type OrderResponse,
+} from "@/feature/checkout/services/orderService";
+import type { SortBy } from "@/feature/account/utils/orderFilterUtils";
 
 export default function AdminOrderHistory() {
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
@@ -16,7 +20,10 @@ export default function AdminOrderHistory() {
   const [orderToCancel, setOrderToCancel] = useState<OrderResponse | null>(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [cancelledOrder, setCancelledOrder] = useState<OrderResponse | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
+
   const {
+    allOrders,
     paginatedOrders,
     isLoading,
     error,
@@ -33,42 +40,91 @@ export default function AdminOrderHistory() {
     updateOrderInList,
   } = useAdminOrderHistory();
 
-  const handleViewDetails = (orderId: number) => {
-    const order = paginatedOrders.find((o) => o.orderId === orderId);
-    if (order) {
-      setSelectedOrder(order);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { orderId } = useParams<{ orderId?: string }>();
+  const baseOrderPath = location.pathname.startsWith("/staff")
+    ? "/staff/orders"
+    : "/admin/orders";
+  const currentOrderId = orderId ? Number(orderId) : null;
+
+  useEffect(() => {
+    if (currentOrderId === null) {
+      setSelectedOrder(null);
+      setDetailError(null);
+      return;
     }
+
+    if (!Number.isInteger(currentOrderId) || currentOrderId <= 0) {
+      navigate(baseOrderPath, { replace: true });
+      return;
+    }
+
+    if (isLoading) return;
+
+    const orderInAllOrders = allOrders.find(
+      (order) => order.orderId === currentOrderId,
+    );
+
+    if (orderInAllOrders) {
+      setSelectedOrder(orderInAllOrders);
+      setDetailError(null);
+      return;
+    }
+
+    setSelectedOrder(null);
+    setDetailError(
+      `Kh\u00f4ng t\u00ecm th\u1ea5y \u0111\u01a1n h\u00e0ng #${currentOrderId}.`,
+    );
+  }, [allOrders, baseOrderPath, currentOrderId, isLoading, navigate]);
+
+  const handleViewDetails = (targetOrderId: number) => {
+    navigate(`${baseOrderPath}/${targetOrderId}`);
   };
 
-  const handleReorder = (orderId: number) => {
-    console.log('Reorder:', orderId);
-    // TODO: Implement reorder functionality
+  const handleCloseOrderDetails = () => {
+    setSelectedOrder(null);
+    setDetailError(null);
+    navigate(baseOrderPath);
   };
 
-  const handleCancel = (orderId: number) => {
-    const order = paginatedOrders.find((o) => o.orderId === orderId);
+  const handleReorder = (targetOrderId: number) => {
+    console.log("Reorder:", targetOrderId);
+  };
+
+  const handleCancel = (targetOrderId: number) => {
+    const order = paginatedOrders.find((o) => o.orderId === targetOrderId);
     if (order) {
       setOrderToCancel(order);
       setCancelModalOpen(true);
     }
   };
 
-  const handleConfirmCancel = async (orderId: number) => {
+  const handleConfirmCancel = async (targetOrderId: number) => {
     try {
-      const token = localStorage.getItem('token');
-      const updatedOrder = await orderService.cancelOrder(orderId, token || undefined);
+      const token = localStorage.getItem("token");
+      const updatedOrder = await orderService.cancelOrder(
+        targetOrderId,
+        token || undefined,
+      );
       updateOrderInList(updatedOrder);
       setCancelledOrder(updatedOrder);
       setSuccessModalOpen(true);
       setCancelModalOpen(false);
       setOrderToCancel(null);
+      if (selectedOrder?.orderId === updatedOrder.orderId) {
+        setSelectedOrder(updatedOrder);
+      }
     } catch (err: any) {
-      throw new Error(err.message || 'Không thể hủy đơn hàng');
+      throw new Error(err.message || "Kh\u00f4ng th\u1ec3 h\u1ee7y \u0111\u01a1n h\u00e0ng");
     }
   };
 
   const handleStatusUpdate = (updatedOrder: OrderResponse) => {
     updateOrderInList(updatedOrder);
+    if (selectedOrder?.orderId === updatedOrder.orderId) {
+      setSelectedOrder(updatedOrder);
+    }
   };
 
   if (isLoading) {
@@ -76,7 +132,9 @@ export default function AdminOrderHistory() {
       <div className="flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-tet-primary" />
-          <p className="text-gray-600">Đang tải danh sách đơn hàng...</p>
+          <p className="text-gray-600">
+            {"\u0110ang t\u1ea3i danh s\u00e1ch \u0111\u01a1n h\u00e0ng..."}
+          </p>
         </div>
       </div>
     );
@@ -96,7 +154,6 @@ export default function AdminOrderHistory() {
       animate={{ opacity: 1, x: 0 }}
       className="space-y-6"
     >
-      {/* THANH TÌM KIẾM & BỘ LỌC */}
       <OrderFilters
         onSearchChange={handleSearch}
         onStatusChange={handleStatusFilterChange}
@@ -107,26 +164,33 @@ export default function AdminOrderHistory() {
 
       <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 inline-flex gap-2">
         <button
-          onClick={() => handleQuotationTypeChange('normal')}
-          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${quotationType === 'normal'
-              ? 'bg-tet-primary text-white shadow-md'
-              : 'text-gray-600 hover:bg-gray-50'
-            }`}
+          onClick={() => handleQuotationTypeChange("normal")}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+            quotationType === "normal"
+              ? "bg-tet-primary text-white shadow-md"
+              : "text-gray-600 hover:bg-gray-50"
+          }`}
         >
-          Đơn hàng thường
+          {"\u0110\u01a1n h\u00e0ng th\u01b0\u1eddng"}
         </button>
         <button
-          onClick={() => handleQuotationTypeChange('quotation')}
-          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${quotationType === 'quotation'
-              ? 'bg-tet-primary text-white shadow-md'
-              : 'text-gray-600 hover:bg-gray-50'
-            }`}
+          onClick={() => handleQuotationTypeChange("quotation")}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+            quotationType === "quotation"
+              ? "bg-tet-primary text-white shadow-md"
+              : "text-gray-600 hover:bg-gray-50"
+          }`}
         >
-          Đơn từ quotation
+          {"\u0110\u01a1n t\u1eeb quotation"}
         </button>
       </div>
 
-      {/* DANH SÁCH ĐƠN HÀNG */}
+      {detailError && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-700">
+          {detailError}
+        </div>
+      )}
+
       {paginatedOrders.length > 0 ? (
         <div className="space-y-4">
           {paginatedOrders.map((order) => (
@@ -137,68 +201,57 @@ export default function AdminOrderHistory() {
               onReorder={handleReorder}
               onCancel={handleCancel}
               onStatusUpdate={handleStatusUpdate}
-              isAdmin={true}
+              isAdmin
             />
           ))}
         </div>
       ) : (
         <div className="bg-white p-12 rounded-[2.5rem] shadow-sm border border-gray-100 text-center">
           <div className="text-5xl mb-4">📭</div>
-          <p className="text-lg font-bold text-gray-600 mb-2">Không có đơn hàng</p>
+          <p className="text-lg font-bold text-gray-600 mb-2">
+            {"Kh\u00f4ng c\u00f3 \u0111\u01a1n h\u00e0ng"}
+          </p>
           <p className="text-sm text-gray-400">
-            {quotationType === 'quotation'
-              ? 'Không có đơn quotation phù hợp với bộ lọc.'
-              : 'Không có đơn hàng thường nào hoặc không có đơn hàng phù hợp với bộ lọc.'}
+            {quotationType === "quotation"
+              ? "Kh\u00f4ng c\u00f3 \u0111\u01a1n quotation ph\u00f9 h\u1ee3p v\u1edbi b\u1ed9 l\u1ecdc."
+              : "Kh\u00f4ng c\u00f3 \u0111\u01a1n h\u00e0ng th\u01b0\u1eddng n\u00e0o ho\u1eb7c kh\u00f4ng c\u00f3 \u0111\u01a1n h\u00e0ng ph\u00f9 h\u1ee3p v\u1edbi b\u1ed9 l\u1ecdc."}
           </p>
         </div>
       )}
 
-      {/* PAGINATION */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 pt-6">
-          {/* Previous Button */}
           <button
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
             className="px-4 py-2 rounded-xl border border-gray-100 text-sm font-bold text-gray-400 hover:bg-[#FBF5E8] hover:text-tet-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Trước
+            {"Tr\u01b0\u1edbc"}
           </button>
 
-          {/* Page Numbers */}
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            if (totalPages <= 5) {
-              return i + 1;
-            }
-
-            if (currentPage <= 3) {
-              return i + 1;
-            }
-
-            if (currentPage >= totalPages - 2) {
-              return totalPages - 4 + i;
-            }
-
+            if (totalPages <= 5) return i + 1;
+            if (currentPage <= 3) return i + 1;
+            if (currentPage >= totalPages - 2) return totalPages - 4 + i;
             return currentPage - 2 + i;
           }).map((page) => (
             <button
               key={page}
               onClick={() => goToPage(page)}
-              className={`w-10 h-10 rounded-xl font-bold transition-all ${page === currentPage
-                  ? 'bg-tet-primary text-white shadow-lg'
-                  : 'border border-gray-100 text-sm text-gray-400 hover:bg-[#FBF5E8]'
-                }`}
+              className={`w-10 h-10 rounded-xl font-bold transition-all ${
+                page === currentPage
+                  ? "bg-tet-primary text-white shadow-lg"
+                  : "border border-gray-100 text-sm text-gray-400 hover:bg-[#FBF5E8]"
+              }`}
             >
               {page}
             </button>
           ))}
 
-          {/* Show ellipsis if needed */}
           {totalPages > 5 && currentPage < totalPages - 2 && (
             <span className="text-gray-400">...</span>
           )}
 
-          {/* Next Button */}
           <button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
@@ -209,18 +262,16 @@ export default function AdminOrderHistory() {
         </div>
       )}
 
-      {/* Order Detail Modal */}
       {selectedOrder && (
         <OrderDetailModal
           order={selectedOrder}
           isOpen={!!selectedOrder}
-          onClose={() => setSelectedOrder(null)}
+          onClose={handleCloseOrderDetails}
           onUpdate={updateOrderInList}
-          isAdmin={true}
+          isAdmin
         />
       )}
 
-      {/* Cancel Order Confirm Modal */}
       <CancelOrderConfirmModal
         order={orderToCancel}
         isOpen={cancelModalOpen}
@@ -231,7 +282,6 @@ export default function AdminOrderHistory() {
         onConfirm={handleConfirmCancel}
       />
 
-      {/* Cancel Order Success Modal */}
       <CancelOrderSuccessModal
         order={cancelledOrder}
         isOpen={successModalOpen}
