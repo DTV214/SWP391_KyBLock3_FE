@@ -1,10 +1,10 @@
-// URL cơ sở của Backend .NET 8
+// Backend base URL (.NET 8)
 // src/api/apiConfig.ts
 // Prefer configuring via Vite env:
 // - VITE_API_BASE_URL=http://localhost:5280/api
 // - VITE_API_BASE_URL=http://14.225.207.221:5000/api
 
-// 1. Định nghĩa Interface chuẩn cho biến môi trường của Vite
+// 1. Vite env typing
 interface ViteEnv {
   VITE_API_BASE_URL?: string;
 }
@@ -13,13 +13,14 @@ const ENV_BASE_URL = (import.meta as unknown as { env: ViteEnv }).env
   ?.VITE_API_BASE_URL;
 // Fallback to current production server if env is not set
 const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5000/api").replace(/\/+$/, "");
+const ROOT_URL = BASE_URL.replace(/\/api$/i, "");
 
 // const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(/\/+$/, "");
 // const BASE_URL = (ENV_BASE_URL?.trim() || "http://localhost:5280/api").replace(/\/+$/, "");
-// Điều này giúp bạn chỉ cần đổi file .env khi chạy local / deploy.
+// Change .env for local/deploy without touching this file.
 export const API_ENDPOINTS = {
   AUTH: {
-    // Khớp chính xác với Swagger trong ảnh bạn cung cấp
+    // Match the Swagger endpoint format exactly
     LOGIN: `${BASE_URL}/auth/login`,
     REGISTER_REQUEST_OTP: `${BASE_URL}/auth/register/request-otp`,
     REGISTER_VERIFY_OTP: `${BASE_URL}/auth/register/verify-otp`,
@@ -32,14 +33,14 @@ export const API_ENDPOINTS = {
     ADMIN_UPDATE: (id: string | number) => `${BASE_URL}/contacts/admin/${id}`,
     ADMIN_DELETE: (id: string | number) => `${BASE_URL}/contacts/admin/${id}`,
   },
-  // Thêm vào bên trong const API_ENDPOINTS = { ... }
+  // ThÃƒÂªm vÃƒÂ o bÃƒÂªn trong const API_ENDPOINTS = { ... }
   // Inventory & Stocks endpoints
   INVENTORY: {
-    // Sửa lại thành inventories (số nhiều)
+    // SÃ¡Â»Â­a lÃ¡ÂºÂ¡i thÃƒÂ nh inventories (sÃ¡Â»â€˜ nhiÃ¡Â»Âu)
     LOW_STOCK: (threshold: number = 10) =>
       `${BASE_URL}/inventories/low-stock?threshold=${threshold}`,
 
-    // Các endpoint CRUD cho lô hàng
+    // CÃƒÂ¡c endpoint CRUD cho lÃƒÂ´ hÃƒÂ ng
     STOCKS: `${BASE_URL}/inventories/stocks`,
     STOCK_DETAIL: (id: string | number) =>
       `${BASE_URL}/inventories/stocks/${id}`,
@@ -49,10 +50,10 @@ export const API_ENDPOINTS = {
     DELETE_STOCK: (id: string | number) =>
       `${BASE_URL}/inventories/stocks/${id}`,
 
-    // Lấy tồn kho theo Product
+    // LÃ¡ÂºÂ¥y tÃ¡Â»â€œn kho theo Product
     STOCKS_BY_PRODUCT: (productId: string | number) =>
       `${BASE_URL}/inventories/products/${productId}/stocks`,
-    // Lịch sử di chuyển kho
+    // LÃ¡Â»â€¹ch sÃ¡Â»Â­ di chuyÃ¡Â»Æ’n kho
     STOCK_MOVEMENTS: `${BASE_URL}/inventories/movements`,
   },
   // Products endpoints
@@ -189,7 +190,7 @@ export const API_ENDPOINTS = {
     LIMITED_PUBLIC: `${BASE_URL}/promotions/limited/public`,
     SAVE_TO_ACCOUNT: `${BASE_URL}/promotions/accounts`,
   },
-  // Thêm vào bên trong const API_ENDPOINTS = { ... }
+  // ThÃƒÂªm vÃƒÂ o bÃƒÂªn trong const API_ENDPOINTS = { ... }
   BLOGS: {
     LIST: `${BASE_URL}/blogs`,
     DETAIL: (id: string | number) => `${BASE_URL}/blogs/${id}`,
@@ -209,6 +210,8 @@ export const API_ENDPOINTS = {
       `${BASE_URL}/chat/reply/${conversationId}`,
     READ: (conversationId: string | number) =>
       `${BASE_URL}/chat/read/${conversationId}`,
+    BACKOFFICE_ORDER_DETAIL: (orderId: string | number) =>
+      `${ROOT_URL}/${orderId}`,
   },
   STORE_LOCATIONS: {
     LIST: `${BASE_URL}/store-locations`,

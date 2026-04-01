@@ -1,5 +1,6 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, CheckCheck, Loader2, MessageSquare, Send } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   chatService,
   type ChatConversation,
@@ -56,6 +57,8 @@ type LoadOptions = {
 };
 
 export default function AdminChatPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [unreadMap, setUnreadMap] = useState<Record<number, number>>({});
   const [userNameMap, setUserNameMap] = useState<Record<number, string>>({});
@@ -304,11 +307,10 @@ export default function AdminChatPage() {
     const uniqueOrderIds = [...new Set(missingOrderIds)];
 
     const loadMissingOrders = async () => {
-      const token = localStorage.getItem("token") || undefined;
       const entries = await Promise.all(
         uniqueOrderIds.map(async (orderId) => {
           try {
-            const order = await orderService.getOrderById(orderId, token);
+            const order = await chatService.getBackofficeOrderById(orderId);
             return [orderId, order] as const;
           } catch {
             return null;
@@ -354,6 +356,13 @@ export default function AdminChatPage() {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleOpenOrderPage = (orderId: number) => {
+    const isStaffPath = location.pathname.startsWith("/staff");
+    const basePath = isStaffPath ? "/staff/orders" : "/admin/orders";
+    setPreviewOrderId(null);
+    navigate(`${basePath}/${orderId}`);
   };
 
   return (
@@ -549,8 +558,12 @@ export default function AdminChatPage() {
         isOpen={previewOrderId !== null}
         orderId={previewOrderId}
         order={previewOrder}
+        onOpenOrderPage={handleOpenOrderPage}
         onClose={() => setPreviewOrderId(null)}
       />
     </div>
   );
 }
+
+
+

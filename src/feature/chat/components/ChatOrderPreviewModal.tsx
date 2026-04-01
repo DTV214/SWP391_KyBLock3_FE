@@ -7,6 +7,7 @@ interface ChatOrderPreviewModalProps {
   order: OrderResponse | null;
   orderId: number | null;
   onClose: () => void;
+  onOpenOrderPage?: (orderId: number) => void;
 }
 
 export default function ChatOrderPreviewModal({
@@ -14,6 +15,7 @@ export default function ChatOrderPreviewModal({
   order,
   orderId,
   onClose,
+  onOpenOrderPage,
 }: ChatOrderPreviewModalProps) {
   if (!isOpen || !orderId) return null;
 
@@ -29,10 +31,11 @@ export default function ChatOrderPreviewModal({
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#a06b56]">
-              Chi tiết đơn hàng
+              {"Chi ti\u1ebft \u0111\u01a1n h\u00e0ng"}
             </p>
             <h3 className="mt-1 text-lg font-bold text-tet-primary">
-              Đơn hàng #{orderId}
+              {"\u0110\u01a1n h\u00e0ng #"}
+              {orderId}
             </h3>
           </div>
           <button
@@ -51,28 +54,38 @@ export default function ChatOrderPreviewModal({
             <>
               <div className="rounded-2xl bg-[#fffaf5] p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#a06b56]">
-                  Giao hàng
+                  {"Giao h\u00e0ng"}
                 </p>
                 <div className="mt-3 space-y-2 text-sm text-gray-700">
                   <p>
-                    <span className="font-semibold text-tet-primary">Tên:</span>{" "}
+                    <span className="font-semibold text-tet-primary">
+                      {"T\u00ean:"}
+                    </span>{" "}
                     {order.customerName}
                   </p>
                   <p>
-                    <span className="font-semibold text-tet-primary">Sdt:</span>{" "}
+                    <span className="font-semibold text-tet-primary">
+                      {"S\u0110T:"}
+                    </span>{" "}
                     {order.customerPhone}
                   </p>
                   <p>
-                    <span className="font-semibold text-tet-primary">Email:</span>{" "}
+                    <span className="font-semibold text-tet-primary">
+                      {"Email:"}
+                    </span>{" "}
                     {order.customerEmail}
                   </p>
                   <p>
-                    <span className="font-semibold text-tet-primary">Địa chỉ:</span>{" "}
+                    <span className="font-semibold text-tet-primary">
+                      {"\u0110\u1ecba ch\u1ec9:"}
+                    </span>{" "}
                     {order.customerAddress}
                   </p>
                   {order.note && (
                     <p>
-                      <span className="font-semibold text-tet-primary">Ghi chú:</span>{" "}
+                      <span className="font-semibold text-tet-primary">
+                        {"Ghi ch\u00fa:"}
+                      </span>{" "}
                       {order.note}
                     </p>
                   )}
@@ -81,7 +94,7 @@ export default function ChatOrderPreviewModal({
 
               <div className="rounded-2xl border border-[#f1e1d6] p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#a06b56]">
-                  Sản phẩm
+                  {"S\u1ea3n ph\u1ea9m"}
                 </p>
                 <div className="mt-3 max-h-56 space-y-3 overflow-y-auto">
                   {order.items.map((item) => (
@@ -107,7 +120,10 @@ export default function ChatOrderPreviewModal({
                           {item.productName}
                         </p>
                         <p className="text-xs text-gray-500">
-                          SKU: {item.sku} · x{item.quantity}
+                          {"SKU: "}
+                          {item.sku}
+                          {" - x"}
+                          {item.quantity}
                         </p>
                       </div>
                       <p className="text-sm font-bold text-tet-primary">
@@ -120,7 +136,19 @@ export default function ChatOrderPreviewModal({
             </>
           ) : (
             <div className="rounded-2xl bg-[#fffaf5] p-4 text-sm text-gray-500">
-              Đang tải chi tiết...
+              {"\u0110ang t\u1ea3i chi ti\u1ebft..."}
+            </div>
+          )}
+
+          {onOpenOrderPage && (
+            <div className="flex justify-end border-t border-gray-100 pt-3">
+              <button
+                type="button"
+                onClick={() => onOpenOrderPage(orderId)}
+                className="rounded-lg bg-tet-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90"
+              >
+                {"M\u1edf trong tab \u0110\u01a1n h\u00e0ng"}
+              </button>
             </div>
           )}
         </div>

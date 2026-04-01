@@ -1,4 +1,4 @@
-﻿import {
+import {
   BrowserRouter as Router,
   Routes,
   Route,
@@ -204,6 +204,7 @@ function App() {
                 />
                 <Route path="chats" element={<AdminChatPage />} />
                 <Route path="orders" element={<StaffOrdersPage />} />
+                <Route path="orders/:orderId" element={<StaffOrdersPage />} />
                 {/* Cho phép Staff xử lý Contact */}
                 <Route path="contacts" element={<AdminContactManagement />} />
               </Route>
@@ -225,6 +226,7 @@ function App() {
                 <Route path="templates" element={<AdminTemplates />} />
                 <Route path="promotions" element={<AdminPromotions />} />
                 <Route path="orders" element={<AdminOrderHistory />} />
+                <Route path="orders/:orderId" element={<AdminOrderHistory />} />
                 <Route path="chats" element={<AdminChatPage />} />
                 <Route path="blogs" element={<AdminBlogs />} />
                 <Route path="inventory" element={<AdminInventory />} />
