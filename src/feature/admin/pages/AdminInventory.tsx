@@ -15,6 +15,8 @@ import {
   Archive,
   Info,
   History,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import {
   inventoryAdminService,
@@ -24,7 +26,9 @@ import {
   type UpdateStockRequest,
   type StockMovementDto,
 } from "@/api/inventoryAdminService";
-import { productService, type Product } from "@/api/productService";
+import { type Product } from "@/api/productService";
+import axiosClient from "@/api/axiosClient"; // <-- Import axiosClient để gọi API trực tiếp
+import { API_ENDPOINTS } from "@/api/apiConfig"; // <-- Import URL
 import AdminPagination from "../components/AdminPagination";
 import AdminInventoryHistory from "../components/AdminInventoryHistory";
 
@@ -60,6 +64,7 @@ export default function AdminInventory() {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingStock, setEditingStock] = useState<StockDto | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
+
   const [formData, setFormData] = useState({
     productId: 0,
     quantity: 0,
@@ -67,24 +72,53 @@ export default function AdminInventory() {
     expiryDate: "",
   });
 
+  // --- Custom Dropdown States ---
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [productSearchTerm, setProductSearchTerm] = useState("");
+
   // --- Fetching Logic ---
   const fetchProductsList = useCallback(async () => {
     try {
-      const res = await productService.getAll();
-      const responseData = res as unknown as {
-        data?: { data?: Product[] } | Product[];
-      };
+      console.log("[fetchProducts] Bắt đầu gọi API lấy toàn bộ sản phẩm...");
+      // SỬA LỖI Ở ĐÂY: Gọi trực tiếp và gắn cứng pageSize=1000 vào thẳng chuỗi URL
+      // Điều này đảm bảo BE bắt buộc phải trả về 1000 sản phẩm, không bị kẹt ở phân trang mặc định
+      const res: any = await axiosClient.get(
+        `${API_ENDPOINTS.PRODUCTS.LIST}?pageNumber=1&pageSize=1000`,
+      );
+
+      console.log("[fetchProducts] Phản hồi thô từ Backend:", res);
+
+      const responseData = res?.data;
       let productList: Product[] = [];
 
-      if (Array.isArray(responseData.data)) {
+      // Bóc tách dữ liệu an toàn tùy theo cấu trúc BE trả về
+      if (Array.isArray(responseData?.data)) {
         productList = responseData.data;
-      } else if (responseData.data && Array.isArray(responseData.data.data)) {
-        productList = responseData.data.data;
+      } else if (Array.isArray(responseData)) {
+        productList = responseData;
+      }
+
+      console.log(
+        "[fetchProducts] Danh sách sản phẩm sau bóc tách:",
+        productList,
+      );
+      console.log(
+        "[fetchProducts] TỔNG SỐ SẢN PHẨM LẤY ĐƯỢC:",
+        productList.length,
+      );
+
+      if (productList.length === 0) {
+        console.warn(
+          "[fetchProducts] Cảnh báo: Không lấy được sản phẩm nào hoặc mảng rỗng!",
+        );
       }
 
       setProducts(productList);
     } catch (err: unknown) {
-      console.error("Lỗi khi tải danh sách sản phẩm lookup:", err);
+      console.error(
+        "[fetchProducts] Lỗi khi tải danh sách sản phẩm lookup:",
+        err,
+      );
     }
   }, []);
 
@@ -168,12 +202,15 @@ export default function AdminInventory() {
         expiryDate: "",
       });
     }
+    setIsDropdownOpen(false);
+    setProductSearchTerm("");
     setShowModal(true);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingStock(null);
+    setIsDropdownOpen(false);
     setError(null);
   };
 
@@ -192,7 +229,6 @@ export default function AdminInventory() {
     const prodDate = new Date(formData.productionDate);
     const expDate = new Date(formData.expiryDate);
 
-    // Validate logic thời gian cơ bản (NSX không được sau HSD)
     prodDate.setHours(0, 0, 0, 0);
     expDate.setHours(0, 0, 0, 0);
     if (prodDate > expDate) {
@@ -204,13 +240,12 @@ export default function AdminInventory() {
       setSubmitting(true);
       setError(null);
 
-      // Gửi Payload gọn gàng, BE sẽ tự xử lý Status
       if (editingStock) {
         const updatePayload: UpdateStockRequest = {
           quantity: formData.quantity,
-          productionDate: new Date(formData.productionDate).toISOString(),
-          expiryDate: new Date(formData.expiryDate).toISOString(),
-          status: "ACTIVE", // Truyền chuỗi mặc định, BE tự động ghi đè
+          productionDate: formData.productionDate,
+          expiryDate: formData.expiryDate,
+          status: "ACTIVE",
         };
         await inventoryAdminService.updateStock(
           editingStock.stockId,
@@ -220,8 +255,8 @@ export default function AdminInventory() {
         const createPayload: CreateStockRequest = {
           productId: formData.productId,
           quantity: formData.quantity,
-          productionDate: new Date(formData.productionDate).toISOString(),
-          expiryDate: new Date(formData.expiryDate).toISOString(),
+          productionDate: formData.productionDate,
+          expiryDate: formData.expiryDate,
         };
         await inventoryAdminService.createStock(createPayload);
       }
@@ -260,7 +295,6 @@ export default function AdminInventory() {
 
   // --- Derived Data & Pagination Logic ---
 
-  // 1. Alerts Logic (Đã fix logic BE trả về "Low")
   const filteredAlerts = lowStockData.filter(
     (item) =>
       item.productName?.toLowerCase().includes(alertSearch.toLowerCase()) ||
@@ -275,7 +309,6 @@ export default function AdminInventory() {
     alertsPage * itemsPerPage,
   );
 
-  // 2. Stocks Logic
   const filteredStocks = stocksData.filter(
     (item) =>
       item.productName?.toLowerCase().includes(stockSearch.toLowerCase()) ||
@@ -290,7 +323,13 @@ export default function AdminInventory() {
     stocksPage * itemsPerPage,
   );
 
-  // Stats (Đã fix logic đọc biến "Low" thay vì "Low Stock")
+  // Dropdown Search Logic
+  const filteredDropdownProducts = products.filter(
+    (p) =>
+      p.productname?.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+      (p.productid ?? 0).toString().includes(productSearchTerm),
+  );
+
   const criticalCount = lowStockData.filter(
     (i) => i.status === "Critical",
   ).length;
@@ -363,7 +402,6 @@ export default function AdminInventory() {
       {/* ================= TAB 1: ALERTS ================= */}
       {activeTab === "ALERTS" && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          {/* Stats & Controls */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-red-50 border border-red-100 rounded-2xl p-5 flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
@@ -417,7 +455,6 @@ export default function AdminInventory() {
             </div>
           </div>
 
-          {/* Alerts Table */}
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden pb-6">
             <div className="p-4 border-b border-gray-100">
               <div className="relative max-w-md">
@@ -507,7 +544,6 @@ export default function AdminInventory() {
                     </tbody>
                   </table>
                 </div>
-
                 <AdminPagination
                   currentPage={alertsPage}
                   totalPages={totalAlertsPages}
@@ -523,7 +559,6 @@ export default function AdminInventory() {
       {activeTab === "STOCKS" && (
         <div className="space-y-6 animate-in fade-in duration-300">
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden pb-6">
-            {/* Toolbar */}
             <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between gap-4">
               <div className="relative max-w-md w-full">
                 <Search
@@ -546,7 +581,6 @@ export default function AdminInventory() {
               </button>
             </div>
 
-            {/* Table */}
             {loading ? (
               <div className="p-16 flex justify-center">
                 <div className="w-8 h-8 border-4 border-tet-primary border-t-transparent rounded-full animate-spin"></div>
@@ -576,7 +610,6 @@ export default function AdminInventory() {
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
                       {paginatedStocks.map((stock) => {
-                        // Badge Status UI logic
                         let badgeClass = "bg-gray-100 text-gray-700";
                         if (stock.status === "ACTIVE")
                           badgeClass = "bg-green-100 text-green-700";
@@ -659,7 +692,6 @@ export default function AdminInventory() {
                     </tbody>
                   </table>
                 </div>
-
                 <AdminPagination
                   currentPage={stocksPage}
                   totalPages={totalStocksPages}
@@ -702,7 +734,6 @@ export default function AdminInventory() {
               onSubmit={handleSubmit}
               className="p-8 space-y-5"
             >
-              {/* Thẻ nhắc nhở Business Logic */}
               <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl flex gap-3 text-blue-800 text-sm">
                 <Info size={20} className="shrink-0 text-blue-600 mt-0.5" />
                 <p>
@@ -720,37 +751,103 @@ export default function AdminInventory() {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
-                {/* --- CHỌN SẢN PHẨM --- */}
+                {/* --- CHỌN SẢN PHẨM (CUSTOM DROPDOWN UI MỚI) --- */}
                 <div
-                  className={
-                    editingStock ? "opacity-60 pointer-events-none" : ""
-                  }
+                  className={`relative ${editingStock ? "opacity-60 pointer-events-none" : ""}`}
                 >
                   <label className="block text-sm font-bold text-gray-700 mb-2">
                     Sản phẩm (Product ID){" "}
                     <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    value={formData.productId || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        productId: Number(e.target.value),
-                      })
-                    }
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent outline-none bg-white"
-                    required
-                    disabled={!!editingStock}
+
+                  <div
+                    className={`w-full px-4 py-3 border rounded-xl flex justify-between items-center transition-colors ${
+                      editingStock
+                        ? "bg-gray-100 border-gray-200 cursor-not-allowed text-gray-500"
+                        : "bg-white border-gray-200 cursor-pointer focus:ring-2 focus:ring-tet-accent hover:border-tet-accent"
+                    }`}
+                    onClick={() => {
+                      if (!editingStock) setIsDropdownOpen(!isDropdownOpen);
+                    }}
                   >
-                    <option value="" disabled>
-                      -- Chọn sản phẩm --
-                    </option>
-                    {products.map((p) => (
-                      <option key={p.productid} value={p.productid}>
-                        #{p.productid} - {p.productname}
-                      </option>
-                    ))}
-                  </select>
+                    <span className="truncate pr-4 font-medium text-gray-700">
+                      {formData.productId
+                        ? `#${formData.productId} - ${currentProductName}`
+                        : "-- Nhấp để chọn sản phẩm --"}
+                    </span>
+                    <ChevronDown
+                      size={18}
+                      className={`text-gray-400 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
+                    />
+                  </div>
+
+                  {isDropdownOpen && !editingStock && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-[90]"
+                        onClick={() => setIsDropdownOpen(false)}
+                      />
+                      <div className="absolute z-[100] w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                        <div className="p-2 border-b border-gray-50 bg-gray-50/50">
+                          <div className="relative">
+                            <Search
+                              size={14}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                            />
+                            <input
+                              type="text"
+                              autoFocus
+                              placeholder="Tìm theo tên hoặc ID..."
+                              value={productSearchTerm}
+                              onChange={(e) =>
+                                setProductSearchTerm(e.target.value)
+                              }
+                              className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-tet-accent transition-colors"
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
+                          {filteredDropdownProducts.length === 0 ? (
+                            <div className="p-3 text-center text-sm text-gray-500">
+                              Không tìm thấy sản phẩm.
+                            </div>
+                          ) : (
+                            filteredDropdownProducts.map((p) => (
+                              <div
+                                key={p.productid}
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    productId: p.productid ?? 0,
+                                  });
+                                  setIsDropdownOpen(false);
+                                  setProductSearchTerm("");
+                                }}
+                                className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer text-sm transition-colors ${
+                                  formData.productId === p.productid
+                                    ? "bg-[#fffaf5] text-tet-primary font-bold"
+                                    : "hover:bg-gray-50 text-gray-700"
+                                }`}
+                              >
+                                <span className="truncate pr-2">
+                                  <span className="text-gray-400 mr-1">
+                                    #{p.productid}
+                                  </span>{" "}
+                                  {p.productname}
+                                </span>
+                                {formData.productId === p.productid && (
+                                  <Check
+                                    size={16}
+                                    className="text-tet-primary shrink-0"
+                                  />
+                                )}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* --- TÊN SẢN PHẨM HIỂN THỊ (READ-ONLY) --- */}
