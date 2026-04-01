@@ -450,7 +450,7 @@ export default function OrderDetailModal({
                                                             </span>
                                                             {isAdmin && (
                                                                 <button
-                                                                    onClick={() => loadStockMovements(detail.productId || 0, detail.productname || '')}
+                                                                    onClick={() => loadStockMovements(detail.productid || 0, detail.productname || '')}
                                                                     disabled={stockMovementsLoading}
                                                                     className="px-2 py-1 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg font-bold text-xs transition-all disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
                                                                     title="Xem lịch sử di chuyển kho"

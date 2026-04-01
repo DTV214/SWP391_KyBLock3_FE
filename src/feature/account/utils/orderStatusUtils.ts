@@ -16,7 +16,7 @@ export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
 export const translateOrderStatus = (status: string): string => {
     const statusMap: Record<string, string> = {
         PENDING: 'Chờ thanh toán',
-        CONFIRMED: 'Đã xác nhận',
+        CONFIRMED: 'Đã thanh toán',
         PROCESSING: 'Đang xử lý',
         SHIPPED: 'Đã giao hàng',
         DELIVERED: 'Đã nhận hàng',
