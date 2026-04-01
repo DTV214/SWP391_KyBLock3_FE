@@ -24,10 +24,10 @@ export interface OrderItem {
 }
 
 export interface ProductDetail {
-    productDetailId: number;
-    productParentId?: number;
-    productId?: number;
-    categoryId?: number;
+    productDetailid: number;
+    productParentid?: number;
+    productid?: number;
+    categoryid?: number;
     productname?: string;
     unit?: number;
     price?: number;
@@ -145,6 +145,9 @@ export const getAllOrders = async (
             headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         }
     );
+
+    console.log('getAllOrders response:', response); // Debug log to check the response structure
+
     return response.data;
 };
 
@@ -249,7 +252,7 @@ export const downloadInvoice = async (
     );
 
     const fileBlob = response as unknown as Blob;
-    
+
     // Kểm tra an toàn: Nếu API chưa deploy, server có thể trả về 200 OK kèm theo trang HTML fallback 
     // của React Router (thay vì PDF). Tránh tải file PDF bị lỗi (không mở được).
     if (fileBlob.type && fileBlob.type.includes('text/html')) {
@@ -258,14 +261,14 @@ export const downloadInvoice = async (
 
     const blob = new Blob([fileBlob], { type: 'application/pdf' });
     const url = window.URL.createObjectURL(blob);
-    
+
     // Create a temporary link element to trigger the download
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', `HoaDon_${orderId.toString().padStart(6, '0')}.pdf`);
     document.body.appendChild(link);
     link.click();
-    
+
     // Clean up
     if (link.parentNode) {
         link.parentNode.removeChild(link);
