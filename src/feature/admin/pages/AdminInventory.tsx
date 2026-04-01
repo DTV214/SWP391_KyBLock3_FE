@@ -14,6 +14,7 @@ import {
   Save,
   Archive,
   Info,
+  History,
 } from "lucide-react";
 import {
   inventoryAdminService,
@@ -21,11 +22,13 @@ import {
   type StockDto,
   type CreateStockRequest,
   type UpdateStockRequest,
+  type StockMovementDto,
 } from "@/api/inventoryAdminService";
 import { productService, type Product } from "@/api/productService";
 import AdminPagination from "../components/AdminPagination";
+import AdminInventoryHistory from "../components/AdminInventoryHistory";
 
-type TabType = "ALERTS" | "STOCKS";
+type TabType = "ALERTS" | "STOCKS" | "HISTORY";
 
 export default function AdminInventory() {
   // --- General States ---
@@ -44,6 +47,9 @@ export default function AdminInventory() {
   // --- Stocks Tab States ---
   const [stocksData, setStocksData] = useState<StockDto[]>([]);
   const [stockSearch, setStockSearch] = useState<string>("");
+
+  // --- History Tab States ---
+  const [movementsData, setMovementsData] = useState<StockMovementDto[]>([]);
 
   // --- Pagination States ---
   const [alertsPage, setAlertsPage] = useState<number>(1);
@@ -111,6 +117,20 @@ export default function AdminInventory() {
     }
   }, []);
 
+  const fetchMovements = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await inventoryAdminService.getAllMovements();
+      setMovementsData(data);
+    } catch (err: unknown) {
+      setError("Không thể tải lịch sử kho.");
+      console.error("Error fetching movements:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Init Data
   useEffect(() => {
     fetchProductsList();
@@ -120,10 +140,12 @@ export default function AdminInventory() {
   useEffect(() => {
     if (activeTab === "ALERTS") {
       fetchLowStock(threshold);
-    } else {
+    } else if (activeTab === "STOCKS") {
       fetchStocks();
+    } else if (activeTab === "HISTORY") {
+      fetchMovements();
     }
-  }, [activeTab, fetchLowStock, fetchStocks, threshold]);
+  }, [activeTab, fetchLowStock, fetchStocks, fetchMovements, threshold]);
 
   // --- CRUD Handlers for Stocks ---
   const handleOpenModal = (stock?: StockDto) => {
@@ -320,6 +342,19 @@ export default function AdminInventory() {
             <div className="flex items-center gap-2">
               <Package size={18} />
               Danh sách Lô hàng
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab("HISTORY")}
+            className={`pb-4 px-2 text-sm font-bold transition-all border-b-2 ${
+              activeTab === "HISTORY"
+                ? "border-tet-primary text-tet-primary"
+                : "border-transparent text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <History size={18} />
+              Lịch sử Xuất - Nhập
             </div>
           </button>
         </div>
@@ -634,6 +669,15 @@ export default function AdminInventory() {
             )}
           </div>
         </div>
+      )}
+
+      {/* ================= TAB 3: HISTORY ================= */}
+      {activeTab === "HISTORY" && (
+        <AdminInventoryHistory
+          movements={movementsData}
+          products={products}
+          loading={loading}
+        />
       )}
 
       {/* ================= MODAL THÊM / SỬA LÔ HÀNG ================= */}
