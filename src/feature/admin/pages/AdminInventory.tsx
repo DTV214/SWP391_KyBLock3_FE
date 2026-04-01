@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   AlertTriangle,
   AlertOctagon,
@@ -30,9 +30,13 @@ import { type Product } from "@/api/productService";
 import axiosClient from "@/api/axiosClient"; // <-- Import axiosClient để gọi API trực tiếp
 import { API_ENDPOINTS } from "@/api/apiConfig"; // <-- Import URL
 import AdminPagination from "../components/AdminPagination";
-import AdminInventoryHistory from "../components/AdminInventoryHistory";
 
-type TabType = "ALERTS" | "STOCKS" | "HISTORY";
+import {
+  ArrowUpRight,
+  ArrowDownLeft,
+} from "lucide-react";
+
+type TabType = "ALERTS" | "STOCKS";
 
 export default function AdminInventory() {
   // --- General States ---
@@ -52,9 +56,6 @@ export default function AdminInventory() {
   const [stocksData, setStocksData] = useState<StockDto[]>([]);
   const [stockSearch, setStockSearch] = useState<string>("");
 
-  // --- History Tab States ---
-  const [movementsData, setMovementsData] = useState<StockMovementDto[]>([]);
-
   // --- Pagination States ---
   const [alertsPage, setAlertsPage] = useState<number>(1);
   const [stocksPage, setStocksPage] = useState<number>(1);
@@ -71,6 +72,16 @@ export default function AdminInventory() {
     productionDate: "",
     expiryDate: "",
   });
+
+  // --- New Modal States ---
+  const [selectedProductForDetails, setSelectedProductForDetails] = useState<{
+    productId: number;
+    productName: string;
+    totalQuantity: number;
+    batches: StockDto[];
+  } | null>(null);
+  const [selectedStockIdForHistory, setSelectedStockIdForHistory] = useState<number | null>(null);
+  const [batchHistoryMovements, setBatchHistoryMovements] = useState<StockMovementDto[]>([]);
 
   // --- Custom Dropdown States ---
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -151,15 +162,18 @@ export default function AdminInventory() {
     }
   }, []);
 
-  const fetchMovements = useCallback(async () => {
+  const fetchMovementsForBatch = useCallback(async (stockId: number) => {
     try {
       setLoading(true);
       setError(null);
+      // We could fetch all and filter, or if there's a specific endpoint, use it.
+      // Based on previous service, we use getAllMovements then filter.
       const data = await inventoryAdminService.getAllMovements();
-      setMovementsData(data);
+      const filtered = data.filter((m) => m.stockid === stockId);
+      setBatchHistoryMovements(filtered);
     } catch (err: unknown) {
-      setError("Không thể tải lịch sử kho.");
-      console.error("Error fetching movements:", err);
+      setError("Không thể tải lịch sử của lô hàng này.");
+      console.error("Error fetching batch history:", err);
     } finally {
       setLoading(false);
     }
@@ -176,10 +190,35 @@ export default function AdminInventory() {
       fetchLowStock(threshold);
     } else if (activeTab === "STOCKS") {
       fetchStocks();
-    } else if (activeTab === "HISTORY") {
-      fetchMovements();
     }
-  }, [activeTab, fetchLowStock, fetchStocks, fetchMovements, threshold]);
+  }, [activeTab, fetchLowStock, fetchStocks, threshold]);
+
+  // --- Grouping Logic for Stocks ---
+  const groupedStocks = useMemo(() => {
+    const groups: {
+      [key: number]: {
+        productId: number;
+        productName: string;
+        totalQuantity: number;
+        batches: StockDto[];
+      };
+    } = {};
+
+    stocksData.forEach((stock) => {
+      if (!groups[stock.productId]) {
+        groups[stock.productId] = {
+          productId: stock.productId,
+          productName: stock.productName || "Sản phẩm không rõ",
+          totalQuantity: 0,
+          batches: [],
+        };
+      }
+      groups[stock.productId].totalQuantity += stock.quantity;
+      groups[stock.productId].batches.push(stock);
+    });
+
+    return Object.values(groups);
+  }, [stocksData]);
 
   // --- CRUD Handlers for Stocks ---
   const handleOpenModal = (stock?: StockDto) => {
@@ -295,13 +334,13 @@ export default function AdminInventory() {
 
   // --- Derived Data & Pagination Logic ---
 
-  const filteredAlerts = lowStockData.filter(
-    (item) =>
-      item.productName?.toLowerCase().includes(alertSearch.toLowerCase()) ||
-      item.sku?.toLowerCase().includes(alertSearch.toLowerCase()),
-  );
-
-  useEffect(() => setAlertsPage(1), [alertSearch]);
+  const filteredAlerts = useMemo(() => {
+    return lowStockData.filter(
+      (item) =>
+        item.productName?.toLowerCase().includes(alertSearch.toLowerCase()) ||
+        item.sku?.toLowerCase().includes(alertSearch.toLowerCase()),
+    );
+  }, [lowStockData, alertSearch]);
 
   const totalAlertsPages = Math.ceil(filteredAlerts.length / itemsPerPage);
   const paginatedAlerts = filteredAlerts.slice(
@@ -309,21 +348,22 @@ export default function AdminInventory() {
     alertsPage * itemsPerPage,
   );
 
-  const filteredStocks = stocksData.filter(
-    (item) =>
-      item.productName?.toLowerCase().includes(stockSearch.toLowerCase()) ||
-      item.stockId.toString().includes(stockSearch),
+  const filteredGroupedStocks = useMemo(() => {
+    return groupedStocks.filter(
+      (group) =>
+        group.productName.toLowerCase().includes(stockSearch.toLowerCase()) ||
+        group.productId.toString().includes(stockSearch),
+    );
+  }, [groupedStocks, stockSearch]);
+
+  const totalStocksPages = Math.ceil(
+    filteredGroupedStocks.length / itemsPerPage,
   );
-
-  useEffect(() => setStocksPage(1), [stockSearch]);
-
-  const totalStocksPages = Math.ceil(filteredStocks.length / itemsPerPage);
-  const paginatedStocks = filteredStocks.slice(
+  const paginatedStocks = filteredGroupedStocks.slice(
     (stocksPage - 1) * itemsPerPage,
     stocksPage * itemsPerPage,
   );
 
-  // Dropdown Search Logic
   const filteredDropdownProducts = products.filter(
     (p) =>
       p.productname?.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
@@ -381,19 +421,6 @@ export default function AdminInventory() {
             <div className="flex items-center gap-2">
               <Package size={18} />
               Danh sách Lô hàng
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab("HISTORY")}
-            className={`pb-4 px-2 text-sm font-bold transition-all border-b-2 ${
-              activeTab === "HISTORY"
-                ? "border-tet-primary text-tet-primary"
-                : "border-transparent text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <History size={18} />
-              Lịch sử Xuất - Nhập
             </div>
           </button>
         </div>
@@ -585,11 +612,11 @@ export default function AdminInventory() {
               <div className="p-16 flex justify-center">
                 <div className="w-8 h-8 border-4 border-tet-primary border-t-transparent rounded-full animate-spin"></div>
               </div>
-            ) : filteredStocks.length === 0 ? (
+            ) : filteredGroupedStocks.length === 0 ? (
               <div className="p-16 text-center">
                 <Archive size={48} className="mx-auto text-gray-300 mb-4" />
                 <p className="text-gray-500 font-medium">
-                  Không tìm thấy lô hàng nào.
+                  Không tìm thấy sản phẩm nào trong kho.
                 </p>
               </div>
             ) : (
@@ -598,91 +625,44 @@ export default function AdminInventory() {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                        <th className="px-6 py-4 font-bold">Mã Lô</th>
-                        <th className="px-6 py-4 font-bold">Sản phẩm</th>
-                        <th className="px-6 py-4 font-bold">Số lượng</th>
-                        <th className="px-6 py-4 font-bold">Ngày NSX - HSD</th>
-                        <th className="px-6 py-4 font-bold">Trạng thái</th>
-                        <th className="px-6 py-4 font-bold text-right">
-                          Thao tác
-                        </th>
+                        <th className="px-6 py-4 font-bold">Mã SP</th>
+                        <th className="px-6 py-4 font-bold">Tên sản phẩm</th>
+                        <th className="px-6 py-4 font-bold text-center">Tổng số lượng</th>
+                        <th className="px-6 py-4 font-bold text-center">Số lô</th>
+                        <th className="px-6 py-4 font-bold text-right">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
-                      {paginatedStocks.map((stock) => {
-                        let badgeClass = "bg-gray-100 text-gray-700";
-                        if (stock.status === "ACTIVE")
-                          badgeClass = "bg-green-100 text-green-700";
-                        if (stock.status === "OUT_OF_STOCK")
-                          badgeClass = "bg-amber-100 text-amber-700";
-                        if (stock.status === "EXPIRED")
-                          badgeClass = "bg-red-100 text-red-700";
-
-                        const isRowExpired = stock.status === "EXPIRED";
-
+                      {paginatedStocks.map((group) => {
                         return (
                           <tr
-                            key={stock.stockId}
-                            className={`transition-colors hover:bg-gray-50 ${isRowExpired ? "bg-red-50/30" : ""}`}
+                            key={group.productId}
+                            className="transition-colors hover:bg-gray-50"
                           >
                             <td className="px-6 py-4 font-medium text-gray-600">
-                              #{stock.stockId}
+                              #{group.productId}
                             </td>
                             <td className="px-6 py-4">
                               <p className="font-bold text-tet-primary">
-                                {stock.productName || "Sản phẩm không rõ"}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                ID: {stock.productId}
+                                {group.productName}
                               </p>
                             </td>
-                            <td className="px-6 py-4 font-bold text-gray-800">
-                              {stock.quantity}
+                            <td className="px-6 py-4 text-center font-bold text-gray-800">
+                              {group.totalQuantity}
                             </td>
-                            <td className="px-6 py-4 text-xs text-gray-500">
-                              <p>
-                                NSX:{" "}
-                                {stock.productionDate
-                                  ? new Date(
-                                      stock.productionDate,
-                                    ).toLocaleDateString("vi-VN")
-                                  : "-"}
-                              </p>
-                              <p
-                                className={
-                                  isRowExpired ? "text-red-600 font-bold" : ""
-                                }
-                              >
-                                HSD:{" "}
-                                {stock.expiryDate
-                                  ? new Date(
-                                      stock.expiryDate,
-                                    ).toLocaleDateString("vi-VN")
-                                  : "-"}
-                              </p>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span
-                                className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}
-                              >
-                                {stock.status || "UNKNOWN"}
+                            <td className="px-6 py-4 text-center">
+                              <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-bold">
+                                {group.batches.length} lô
                               </span>
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-end gap-2">
                                 <button
-                                  onClick={() => handleOpenModal(stock)}
-                                  className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors"
-                                  title="Sửa lô hàng"
+                                  onClick={() => setSelectedProductForDetails(group)}
+                                  className="flex items-center gap-1.5 px-4 py-2 bg-tet-primary/10 text-tet-primary rounded-xl font-bold hover:bg-tet-primary hover:text-white transition-all text-xs"
+                                  title="Xem chi tiết các lô"
                                 >
-                                  <Edit size={16} />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(stock.stockId)}
-                                  className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
-                                  title="Xóa lô hàng"
-                                >
-                                  <Trash2 size={16} />
+                                  <Info size={14} /> Chi tiết
                                 </button>
                               </div>
                             </td>
@@ -703,18 +683,9 @@ export default function AdminInventory() {
         </div>
       )}
 
-      {/* ================= TAB 3: HISTORY ================= */}
-      {activeTab === "HISTORY" && (
-        <AdminInventoryHistory
-          movements={movementsData}
-          products={products}
-          loading={loading}
-        />
-      )}
-
       {/* ================= MODAL THÊM / SỬA LÔ HÀNG ================= */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10010] flex items-center justify-center p-4">
           <div className="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
               <h3 className="text-xl font-serif font-bold text-tet-primary flex items-center gap-2">
@@ -943,6 +914,194 @@ export default function AdminInventory() {
                   <Save size={18} />
                 )}
                 {editingStock ? "Cập nhật Lô hàng" : "Thêm Lô hàng"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ================= MODAL CHI TIẾT CÁC LÔ HÀNG (Sản phẩm) ================= */}
+      {selectedProductForDetails && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2rem] w-full max-w-4xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
+              <div>
+                <h3 className="text-xl font-serif font-bold text-tet-primary flex items-center gap-2">
+                  <PackageSearch size={24} />
+                  Sản phẩm: {selectedProductForDetails.productName}
+                </h3>
+                <p className="text-sm text-gray-500">ID: {selectedProductForDetails.productId} - Tổng số lượng: {selectedProductForDetails.totalQuantity}</p>
+              </div>
+              <button
+                onClick={() => setSelectedProductForDetails(null)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                    <th className="px-4 py-3 font-bold">Mã Lô</th>
+                    <th className="px-4 py-3 font-bold">Số lượng</th>
+                    <th className="px-4 py-3 font-bold">NSX - HSD</th>
+                    <th className="px-4 py-3 font-bold">Trạng thái</th>
+                    <th className="px-4 py-3 font-bold text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-sm">
+                  {selectedProductForDetails.batches.map((stock) => {
+                    let badgeClass = "bg-gray-100 text-gray-700";
+                    if (stock.status === "ACTIVE") badgeClass = "bg-green-100 text-green-700";
+                    if (stock.status === "OUT_OF_STOCK") badgeClass = "bg-amber-100 text-amber-700";
+                    if (stock.status === "EXPIRED") badgeClass = "bg-red-100 text-red-700";
+
+                    return (
+                      <tr key={stock.stockId} className="hover:bg-gray-50">
+                        <td className="px-4 py-4 font-medium text-gray-600">#{stock.stockId}</td>
+                        <td className="px-4 py-4 font-bold">{stock.quantity}</td>
+                        <td className="px-4 py-4 text-xs text-gray-500">
+                          <p>NSX: {stock.productionDate ? new Date(stock.productionDate).toLocaleDateString("vi-VN") : "-"}</p>
+                          <p className={stock.status === "EXPIRED" ? "text-red-600 font-bold" : ""}>
+                            HSD: {stock.expiryDate ? new Date(stock.expiryDate).toLocaleDateString("vi-VN") : "-"}
+                          </p>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${badgeClass}`}>
+                            {stock.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                             <button
+                              onClick={() => {
+                                setSelectedStockIdForHistory(stock.stockId);
+                                fetchMovementsForBatch(stock.stockId);
+                              }}
+                              className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                              title="Xem lịch sử"
+                            >
+                              <History size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleOpenModal(stock)}
+                              className="p-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors"
+                              title="Sửa lô hàng"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(stock.stockId)}
+                              className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                              title="Xóa lô hàng"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end">
+              <button
+                onClick={() => setSelectedProductForDetails(null)}
+                className="px-6 py-2 rounded-full font-bold text-gray-500 hover:bg-gray-200 transition-all"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL LỊCH SỬ LÔ HÀNG (Small Lot History) ================= */}
+      {selectedStockIdForHistory && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10010] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2rem] w-full max-w-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
+              <h3 className="text-xl font-serif font-bold text-tet-primary flex items-center gap-2">
+                <History size={24} />
+                Lịch sử Lô hàng #{selectedStockIdForHistory}
+              </h3>
+              <button
+                onClick={() => setSelectedStockIdForHistory(null)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              {loading ? (
+                <div className="p-16 flex justify-center">
+                  <div className="w-8 h-8 border-4 border-tet-primary border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : batchHistoryMovements.length === 0 ? (
+                <div className="p-16 text-center">
+                  <PackageSearch size={48} className="mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500 font-medium">Không có lịch sử nhập xuất nào cho lô hàng này.</p>
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                      <th className="px-4 py-3 font-bold">Thời gian</th>
+                      <th className="px-4 py-3 font-bold">Loại</th>
+                      <th className="px-4 py-3 font-bold text-center">Số lượng</th>
+                      <th className="px-4 py-3 font-bold">Ghi chú</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-sm">
+                    {batchHistoryMovements.map((m) => (
+                      <tr key={m.stockmovementid} className="hover:bg-gray-50">
+                        <td className="px-4 py-4">
+                           <div className="flex flex-col">
+                            <span className="font-bold text-gray-700">
+                              {new Date(m.movementdate).toLocaleDateString("vi-VN")}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {new Date(m.movementdate).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          {m.quantity > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-bold">
+                              <ArrowDownLeft size={10} /> Nhập kho
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[10px] font-bold">
+                              <ArrowUpRight size={10} /> Xuất kho
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <span className={`font-black ${m.quantity > 0 ? "text-green-600" : "text-orange-600"}`}>
+                            {m.quantity > 0 ? `+${m.quantity}` : m.quantity}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-xs italic text-gray-600">
+                          {m.note || "N/A"}
+                          {m.orderid && <p className="text-blue-600 non-italic font-bold">Đơn hàng: #{m.orderid}</p>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end">
+              <button
+                onClick={() => setSelectedStockIdForHistory(null)}
+                className="px-6 py-2 rounded-full font-bold text-gray-500 hover:bg-gray-200 transition-all"
+              >
+                Quay lại
               </button>
             </div>
           </div>
