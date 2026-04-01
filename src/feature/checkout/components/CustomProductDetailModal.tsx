@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import { productService, type ProductDetailResponse } from '@/api/productService';
+import { productService } from '@/api/productService';
 
 interface ProductDetail {
     productdetailid: number;
