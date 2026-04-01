@@ -77,9 +77,9 @@ export default function CustomBasketPage() {
       } catch (err: any) {
         setError(
           err?.response?.data?.msg ||
-            err?.response?.data?.message ||
-            err?.message ||
-            "Không thể tải dữ liệu. Vui lòng thử lại."
+          err?.response?.data?.message ||
+          err?.message ||
+          "Không thể tải dữ liệu. Vui lòng thử lại."
         );
       } finally {
         setLoading(false);
@@ -166,14 +166,14 @@ export default function CustomBasketPage() {
     if (unmet.length > 0) {
       setSaveError(
         "Chưa đủ sản phẩm: " +
-          unmet
-            .map((d) => {
-              const picked = pickedItems
-                .filter((i) => i.categoryid === d.categoryid)
-                .reduce((s, i) => s + i.quantity, 0);
-              return `${d.categoryName} (còn thiếu ${d.quantity - picked} món)`;
-            })
-            .join(", ")
+        unmet
+          .map((d) => {
+            const picked = pickedItems
+              .filter((i) => i.categoryid === d.categoryid)
+              .reduce((s, i) => s + i.quantity, 0);
+            return `${d.categoryName} (còn thiếu ${d.quantity - picked} món)`;
+          })
+          .join(", ")
       );
       return;
     }
@@ -256,9 +256,9 @@ export default function CustomBasketPage() {
       console.error("[CustomBasket] ❌ Error in handleAddToCart:", err);
       setSaveError(
         err?.response?.data?.msg ||
-          err?.response?.data?.message ||
-          err?.message ||
-          "Không thể tạo giỏ hàng. Vui lòng thử lại."
+        err?.response?.data?.message ||
+        err?.message ||
+        "Không thể tạo giỏ hàng. Vui lòng thử lại."
       );
     } finally {
       setSaving(false);
@@ -387,7 +387,7 @@ export default function CustomBasketPage() {
             </div>
           </div>
 
-        /* Error */
+          /* Error */
         ) : error ? (
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
@@ -403,7 +403,7 @@ export default function CustomBasketPage() {
             </div>
           </div>
 
-        /* Content */
+          /* Content */
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
@@ -529,11 +529,10 @@ function StepBadge({
   return (
     <div className={`flex items-center gap-2 ${active ? "text-red-600" : "text-gray-400"}`}>
       <span
-        className={`w-6 h-6 rounded-full text-xs font-black flex items-center justify-center ${
-          active
-            ? "bg-red-600 text-white"
-            : "bg-gray-200 text-gray-500"
-        }`}
+        className={`w-6 h-6 rounded-full text-xs font-black flex items-center justify-center ${active
+          ? "bg-red-600 text-white"
+          : "bg-gray-200 text-gray-500"
+          }`}
       >
         {num}
       </span>
@@ -551,22 +550,15 @@ interface ConfigCardProps {
 }
 
 function ConfigCard({ config, isSelected, onSelect }: ConfigCardProps) {
-  const slotCount = config.configDetails?.length ?? 0;
-  const totalItems = (() => {
-    const raw = config.totalunit != null && !isNaN(Number(config.totalunit))
-      ? Number(config.totalunit)
-      : (config.configDetails?.reduce((s, d) => s + (d.quantity ?? 0), 0) ?? 0);
-    return raw;
-  })();
+  const totalItems = config.configDetails?.reduce((s, d) => s + (d.quantity ?? 0), 0) ?? 0;
 
   return (
     <div
       onClick={onSelect}
-      className={`group cursor-pointer bg-white rounded-2xl border-2 shadow-sm hover:shadow-xl transition-all overflow-hidden flex flex-col ${
-        isSelected
-          ? "border-red-700 ring-2 ring-red-200 shadow-lg"
-          : "border-gray-100 hover:border-red-200"
-      }`}
+      className={`group cursor-pointer bg-white rounded-2xl border-2 shadow-sm hover:shadow-xl transition-all overflow-hidden flex flex-col ${isSelected
+        ? "border-red-700 ring-2 ring-red-200 shadow-lg"
+        : "border-gray-100 hover:border-red-200"
+        }`}
     >
       {/* Image / placeholder */}
       <div className="relative h-36 overflow-hidden bg-gradient-to-br from-red-50 to-amber-50">
@@ -579,18 +571,9 @@ function ConfigCard({ config, isSelected, onSelect }: ConfigCardProps) {
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-1">
             <Gift size={36} className="text-purple-300" />
-            {slotCount > 0 && (
-              <div className="flex flex-wrap justify-center gap-1 px-2">
-                {config.configDetails!.slice(0, 3).map((d, i) => (
-                  <span key={i} className="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-semibold">
-                    {d.categoryName} ×{d.quantity}
-                  </span>
-                ))}
-                {slotCount > 3 && (
-                  <span className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-semibold">+{slotCount - 3}</span>
-                )}
-              </div>
-            )}
+            <span className="text-[11px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
+              Tổng sản phẩm: {totalItems}
+            </span>
           </div>
         )}
 
@@ -601,12 +584,7 @@ function ConfigCard({ config, isSelected, onSelect }: ConfigCardProps) {
           </div>
         )}
 
-        {/* Slot count badge */}
-        <div className="absolute bottom-2 left-2">
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-800 text-white shadow">
-            {totalItems} món · {slotCount} danh mục
-          </span>
-        </div>
+
       </div>
 
       {/* Content */}
@@ -619,16 +597,15 @@ function ConfigCard({ config, isSelected, onSelect }: ConfigCardProps) {
         )}
 
         <div className="flex items-center justify-between mt-auto pt-1">
-          <span className="text-[10px] text-gray-400 flex items-center gap-1">
-            <Tag size={10} /> {slotCount} loại
+          <span className="text-[10px] font-bold text-gray-500 italic">
+            Tổng sản phẩm: {totalItems}
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); onSelect(); }}
-            className={`text-[11px] font-bold px-2.5 py-1 rounded-full transition-all ${
-              isSelected
-                ? "bg-red-100 text-tet-primary"
-                : "bg-tet-primary hover:bg-tet-accent text-white shadow-sm"
-            }`}
+            className={`text-[11px] font-bold px-2.5 py-1 rounded-full transition-all ${isSelected
+              ? "bg-red-100 text-tet-primary"
+              : "bg-tet-primary hover:bg-tet-accent text-white shadow-sm"
+              }`}
           >
             {isSelected ? "Đang chọn ✓" : "Chọn →"}
           </button>
@@ -721,6 +698,10 @@ function CustomizationPanel({
   isLoggedIn,
   onChangeQuantity,
 }: CustomizationPanelProps) {
+  const totalQuantity = pickedItems.reduce((s, i) => s + i.quantity, 0);
+  const totalWeight = pickedItems.reduce((s, i) => s + (i.product.unit ?? 0) * i.quantity, 0);
+  const maxQuantity = slotStatus.reduce((s, d) => s + d.quantity, 0);
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
 
@@ -756,13 +737,13 @@ function CustomizationPanel({
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Tiến độ chọn sản phẩm</span>
-            <span className={`text-xs font-bold ${ allSlotsFilled ? "text-green-600" : "text-purple-600" }`}>
+            <span className={`text-xs font-bold ${allSlotsFilled ? "text-green-600" : "text-purple-600"}`}>
               {pickedItems.reduce((s, i) => s + i.quantity, 0)}/{slotStatus.reduce((s, d) => s + d.quantity, 0)} món
             </span>
           </div>
           <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${ allSlotsFilled ? "bg-green-500" : "bg-gradient-to-r from-red-600 to-amber-400" }`}
+              className={`h-full rounded-full transition-all ${allSlotsFilled ? "bg-green-500" : "bg-gradient-to-r from-red-600 to-amber-400"}`}
               style={{
                 width: `${Math.min(
                   100,
@@ -785,12 +766,12 @@ function CustomizationPanel({
           return (
             <div key={slot.categoryid} className="border border-gray-100 rounded-2xl overflow-hidden">
               {/* Slot header */}
-              <div className={`flex items-center justify-between px-4 py-2.5 ${ slot.done ? "bg-green-50 border-b border-green-100" : "bg-amber-50 border-b border-amber-100" }`}>
+              <div className={`flex items-center justify-between px-4 py-2.5 ${slot.done ? "bg-green-50 border-b border-green-100" : "bg-amber-50 border-b border-amber-100"}`}>
                 <div className="flex items-center gap-2">
                   <Tag size={13} className={slot.done ? "text-green-500" : "text-amber-600"} />
                   <span className="text-xs font-bold text-gray-700">{slot.categoryName}</span>
                 </div>
-                <span className={`text-xs font-black px-2 py-0.5 rounded-full ${ slot.done ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800" }`}>
+                <span className={`text-xs font-black px-2 py-0.5 rounded-full ${slot.done ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800"}`}>
                   {slotPicked.reduce((s, i) => s + i.quantity, 0)}/{slot.quantity}
                 </span>
               </div>
@@ -890,12 +871,39 @@ function CustomizationPanel({
           );
         })}
 
-        {/* Total */}
-        <div className="bg-gradient-to-r from-red-50 to-amber-50 rounded-xl px-4 py-3 flex items-center justify-between border border-amber-100">
-          <span className="text-sm font-bold text-gray-600">Tổng giá trị:</span>
-          <span className="text-xl font-black text-red-800">
-            {totalPrice.toLocaleString("vi-VN")}đ
-          </span>
+        {/* Total Summary Container */}
+        <div className="bg-gradient-to-br from-red-50 via-white to-amber-50 rounded-2xl p-4 border border-red-100 shadow-inner space-y-3">
+          <div className="flex items-center justify-between text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-red-50 pb-2">
+            <span>Tóm tắt đơn hàng</span>
+            <Package size={14} className="text-red-300" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 flex items-center gap-1.5">
+                <Tag size={13} className="text-amber-500" /> Tổng số lượng:
+              </span>
+              <span className={`font-black ${totalQuantity === maxQuantity ? "text-green-600" : "text-gray-800"}`}>
+                {totalQuantity} / {maxQuantity} sản phẩm
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 flex items-center gap-1.5">
+                <Sparkles size={13} className="text-orange-400" /> Ước tính trọng lượng:
+              </span>
+              <span className="font-bold text-gray-800">
+                {totalWeight.toLocaleString("vi-VN")}g
+              </span>
+            </div>
+
+            <div className="pt-1 mt-1 border-t border-red-50 flex items-center justify-between">
+              <span className="text-gray-800 font-bold">Thành tiền:</span>
+              <span className="text-2xl font-black text-red-800 drop-shadow-sm">
+                {totalPrice.toLocaleString("vi-VN")}đ
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Feedback */}

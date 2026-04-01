@@ -17,6 +17,8 @@ import {
   Loader2,
   Tag,
   Sparkles,
+  Copy,
+  CheckCircle2,
 } from "lucide-react";
 import {
   productService,
@@ -74,6 +76,10 @@ export default function MyBasketsPage() {
   /* ── Cart state ── */
   const [cartingId, setCartingId] = useState<number | null>(null);
 
+  /* ── Clone state ── */
+  const [cloningId, setCloningId] = useState<number | null>(null);
+  const [clonedSuccessId, setClonedSuccessId] = useState<number | null>(null);
+
   /* ── Fetch baskets ── */
   const fetchBaskets = async () => {
     try {
@@ -118,6 +124,26 @@ export default function MyBasketsPage() {
       alert(err?.response?.data?.msg || err?.response?.data?.message || "Không thể thêm vào giỏ hàng.");
     } finally {
       setCartingId(null);
+    }
+  };
+
+  /* ── Clone (Variant) ── */
+  const handleClone = async (basket: CustomerBasketDto) => {
+    try {
+      setCloningId(basket.productid);
+      const customName = `Bản sao của ${basket.productname}`;
+      await productService.templates.clone(basket.productid, { customName }, token);
+      
+      // Show success briefly
+      setClonedSuccessId(basket.productid);
+      setTimeout(() => setClonedSuccessId(null), 3000);
+      
+      // Refresh list
+      await fetchBaskets();
+    } catch (err: any) {
+      alert(err?.response?.data?.msg || err?.response?.data?.message || "Không thể sao chép giỏ quà.");
+    } finally {
+      setCloningId(null);
     }
   };
 
@@ -385,7 +411,10 @@ export default function MyBasketsPage() {
               onEdit={() => handleOpenEdit(basket)}
               onConfirmDelete={() => setConfirmDeleteId(basket.productid)}
               onAddToCart={() => handleAddToCart(basket)}
+              onClone={() => handleClone(basket)}
               carting={cartingId === basket.productid}
+              cloning={cloningId === basket.productid}
+              isCloned={clonedSuccessId === basket.productid}
             />
           ))}
         </div>
@@ -607,7 +636,10 @@ interface BasketCardProps {
   onEdit: () => void;
   onConfirmDelete: () => void;
   onAddToCart: () => void;
+  onClone: () => void;
   carting: boolean;
+  cloning: boolean;
+  isCloned: boolean;
 }
 
 function BasketCard({
@@ -617,7 +649,10 @@ function BasketCard({
   onEdit,
   onConfirmDelete,
   onAddToCart,
+  onClone,
   carting,
+  cloning,
+  isCloned,
 }: BasketCardProps) {
   const statusColor =
     basket.status === "ACTIVE"
@@ -700,6 +735,24 @@ function BasketCard({
             title="Chỉnh sửa"
           >
             <Edit size={14} />
+          </button>
+          <button
+            onClick={onClone}
+            disabled={cloning}
+            className={`px-3 py-2 rounded-xl transition ${
+              isCloned 
+                ? "bg-green-50 text-green-600" 
+                : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+            }`}
+            title="Tạo bản sao (Biến thể)"
+          >
+            {cloning ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : isCloned ? (
+              <CheckCircle2 size={14} />
+            ) : (
+              <Copy size={14} />
+            )}
           </button>
           <button
             onClick={onConfirmDelete}

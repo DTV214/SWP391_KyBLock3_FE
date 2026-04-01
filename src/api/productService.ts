@@ -131,6 +131,12 @@ const buildUpdateCustomFormData = (basket: UpdateComboProductRequest): FormData 
   if (basket.description != null) form.append('description', basket.description);
   if (basket.status) form.append('status', basket.status);
   if (basket.imageUrl) form.append('imageUrl', basket.imageUrl);
+  if (basket.productDetails) {
+    basket.productDetails.forEach((pd, i) => {
+      if (pd.productid != null) form.append(`productDetails[${i}].productid`, String(pd.productid));
+      if (pd.quantity != null) form.append(`productDetails[${i}].quantity`, String(pd.quantity));
+    });
+  }
   return form;
 };
 
