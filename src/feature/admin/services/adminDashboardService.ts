@@ -30,15 +30,29 @@ export interface DashboardSummary {
     totalCarts: number;
     totalValue: number;
     averageCartValue: number;
-    carts: Array<any>;
+    carts: Array<{
+      cartId: number;
+      accountId: number;
+      totalValue: number;
+      itemCount: number;
+    }>;
   };
   orders: {
     total: number;
     byStatus: Record<string, number>;
   };
-  totalProducts: number;
-  totalCustomers: number;
-  recentOrders: Array<{
+  newAccounts: {
+    period: string;
+    data: Array<{
+      date: string;
+      count: number;
+    }>;
+    totalCount: number;
+  };
+  // Metrics from summary endpoint
+  totalProducts?: number;
+  totalCustomers?: number;
+  recentOrders?: Array<{
     id: string;
     customer: string;
     total: number;
@@ -46,7 +60,7 @@ export interface DashboardSummary {
     statusColor: string;
     date: string;
   }>;
-  topProducts: Array<{
+  topProducts?: Array<{
     name: string;
     sold: number;
     revenue: number;
@@ -54,39 +68,24 @@ export interface DashboardSummary {
   }>;
 }
 
-export const getDashboardSummary = async (period: string = "month"): Promise<DashboardSummary> => {
-  const response: any = await axiosClient.get(API_ENDPOINTS.DASHBOARD.SUMMARY(period));
-  const data = response.data || response;
+export const getDashboardSummary = async (period: string = "month", startDate?: string, endDate?: string): Promise<DashboardSummary> => {
+  const response: any = await axiosClient.get(API_ENDPOINTS.DASHBOARD.SUMMARY(period, startDate, endDate));
+  return response.data || response;
+};
 
-  // Fallback if backend does not yet return these fields in production
-  if (data.totalProducts === undefined || data.totalProducts === null || data.totalProducts === 0) {
-    try {
-      const prodRes: any = await axiosClient.get(`${API_ENDPOINTS.PRODUCTS.LIST}?pageNumber=1&pageSize=1`);
-      data.totalProducts = prodRes?.data?.totalItems || prodRes?.totalItems || 0;
-    } catch {
-      data.totalProducts = 0;
-    }
-  }
+export const getAccountStatistics = async (period: string = "day", startDate?: string, endDate?: string): Promise<any> => {
+  const response = await axiosClient.get(API_ENDPOINTS.DASHBOARD.ACCOUNT_STATS(period, startDate, endDate));
+  return response.data;
+};
 
-  if (data.totalCustomers === undefined || data.totalCustomers === null || data.totalCustomers === 0) {
-    try {
-      // @ts-ignore - resolve endpoint dynamically
-      const adminAccEndpoint = (API_ENDPOINTS as any).ADMIN_ACCOUNTS?.LIST || API_ENDPOINTS.AUTH.LOGIN.replace('/auth/login', '/admin/accounts');
-      const accRes: any = await axiosClient.get(adminAccEndpoint);
-      // Depending on interceptor and wrapper
-      const accounts = accRes?.data?.data || accRes?.data || accRes || [];
-      if (Array.isArray(accounts)) {
-        const customersOnly = accounts.filter((a: any) => a.role === "CUSTOMER");
-        data.totalCustomers = customersOnly.length;
-      } else {
-        data.totalCustomers = 0;
-      }
-    } catch {
-      data.totalCustomers = 0;
-    }
-  }
+export const getPaymentChannelStatistics = async (startDate?: string, endDate?: string): Promise<any> => {
+  const response = await axiosClient.get(API_ENDPOINTS.DASHBOARD.PAYMENT_CHANNELS(startDate, endDate));
+  return response.data;
+};
 
-  return data;
+export const getAbandonedCarts = async (days?: number): Promise<any> => {
+  const response = await axiosClient.get(API_ENDPOINTS.DASHBOARD.ABANDONED_CARTS(days));
+  return response.data;
 };
 
 export interface RevenueDataPoint {
@@ -110,6 +109,9 @@ export const getRevenue = async (period: string = "day", startDate?: string, end
 const adminDashboardService = {
   getDashboardSummary,
   getRevenue,
+  getAccountStatistics,
+  getPaymentChannelStatistics,
+  getAbandonedCarts,
 };
 
 export default adminDashboardService;

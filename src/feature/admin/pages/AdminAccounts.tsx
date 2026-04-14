@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Search,
   Shield,
@@ -30,6 +30,8 @@ export default function AdminAccounts() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -48,7 +50,10 @@ export default function AdminAccounts() {
     try {
       setLoading(true);
       setError(null);
-      const data = await accountAdminService.getAllAccounts();
+      const data = await accountAdminService.getAllAccounts(
+        startDate || undefined,
+        endDate || undefined,
+      );
       setAccounts(data);
     } catch (err: unknown) {
       setError("Không thể tải danh sách tài khoản.");
@@ -65,7 +70,7 @@ export default function AdminAccounts() {
   // Reset pagination on filter change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, roleFilter, statusFilter]);
+  }, [searchTerm, roleFilter, statusFilter, startDate, endDate]);
 
   // --- Handlers ---
   const handleOpenModal = (account: AccountDto) => {
@@ -121,7 +126,7 @@ export default function AdminAccounts() {
   };
 
   // --- Derived Data ---
-  const filteredAccounts = accounts.filter((acc) => {
+  const filteredAccounts = accounts.filter((acc: AccountDto) => {
     const matchSearch =
       acc.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       acc.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -196,13 +201,13 @@ export default function AdminAccounts() {
               type="text"
               placeholder="Tìm theo Username, Email, Tên..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent outline-none text-sm"
             />
           </div>
           <select
             value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRoleFilter(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent outline-none text-sm bg-white"
           >
             <option value="">Tất cả Vai trò (Roles)</option>
@@ -212,7 +217,7 @@ export default function AdminAccounts() {
           </select>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent outline-none text-sm bg-white"
           >
             <option value="">Tất cả Trạng thái</option>
@@ -221,6 +226,32 @@ export default function AdminAccounts() {
             <option value="INACTIVE">Vô hiệu hóa (Inactive)</option>
             <option value="DELETED">Đã xóa (Deleted)</option>
           </select>
+        </div>
+
+        {/* Date Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-bold text-gray-500 ml-1">
+              Ngày bắt đầu (Tài khoản mới)
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent outline-none text-sm bg-white"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-bold text-gray-500 ml-1">
+              Ngày kết thúc
+            </label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent outline-none text-sm bg-white"
+            />
+          </div>
         </div>
       </div>
 
@@ -257,7 +288,7 @@ export default function AdminAccounts() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-sm">
-                  {paginatedAccounts.map((acc) => {
+                  {paginatedAccounts.map((acc: AccountDto) => {
                     const statusUI = getStatusBadge(acc.status);
                     return (
                       <tr
@@ -393,7 +424,7 @@ export default function AdminAccounts() {
                 </label>
                 <select
                   value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewStatus(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent outline-none bg-white font-medium"
                   required
                 >
