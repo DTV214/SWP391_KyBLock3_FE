@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RevenueChart from "../components/RevenueChart";
 import {
@@ -28,7 +28,7 @@ export default function AdminOverview() {
         const result = await adminDashboardService.getDashboardSummary();
         setData(result);
         setError(null);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Failed to fetch dashboard data:", err);
         setError("Không thể tải dữ liệu tổng quan. Vui lòng thử lại sau.");
       } finally {
@@ -92,8 +92,8 @@ export default function AdminOverview() {
       color: "from-purple-500 to-pink-600",
     },
     {
-      label: "Khách hàng",
-      value: (data.totalCustomers ?? 0).toString(),
+      label: "Khách hàng mới",
+      value: (data.newAccounts?.totalCount ?? 0).toString(),
       change: "+0%",
       trend: "up",
       icon: <Users size={24} />,

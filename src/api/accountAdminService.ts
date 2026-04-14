@@ -31,12 +31,14 @@ export interface ActionMessage {
 // --- API Service Dành Riêng Cho Admin ---
 export const accountAdminService = {
   // 1. Lấy danh sách tài khoản
-  getAllAccounts: async (): Promise<AccountDto[]> => {
+  getAllAccounts: async (startDate?: string, endDate?: string): Promise<AccountDto[]> => {
     try {
       const response = await axiosClient.get<
         ApiResponse<AccountDto[]>,
         ApiResponse<AccountDto[]>
-      >(API_ENDPOINTS.ADMIN_ACCOUNTS.LIST);
+      >(API_ENDPOINTS.ADMIN_ACCOUNTS.LIST, {
+        params: { startDate, endDate }
+      });
 
       if (response && response.status === 200 && response.data) {
         return response.data;
