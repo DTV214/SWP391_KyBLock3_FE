@@ -1,64 +1,63 @@
-name: Deploy Frontend to VPS
+name: Deploy Flora Farm Frontend
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: SSH to VPS and deploy frontend
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        env:
+          VITE_API_BASE_URL: http://14.225.207.221:5003
+        run: npm run build
+
+      - name: Archive dist
+        run: tar -czf frontend-dist.tar.gz -C dist .
+
+      - name: Copy dist to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT }}
+          source: "frontend-dist.tar.gz"
+          target: "/tmp"
+
+      - name: Deploy dist on VPS
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT }}
           script: |
             set -e
 
-            # Load PATH để tìm được npm/node (SSH non-interactive không load ~/.bashrc)
-            export PATH="$PATH:/usr/local/bin:/usr/bin:/bin"
-            if [ -f ~/.bashrc ]; then
-              source ~/.bashrc
-            fi
-            if [ -f ~/.nvm/nvm.sh ]; then
-              source ~/.nvm/nvm.sh
-            fi
+            DEPLOY_DIR=/var/www/flora-farm/dist
+            TMP_FILE=/tmp/frontend-dist.tar.gz
 
-            # Kiểm tra npm có sẵn không
-            NPM_PATH=$(which npm || echo "")
-            if [ -z "$NPM_PATH" ]; then
-              echo "Error: npm not found in PATH"
-              echo "Current PATH: $PATH"
-              exit 1
-            fi
-            echo "Using npm at: $NPM_PATH"
-            npm --version
+            mkdir -p $DEPLOY_DIR
+            rm -rf $DEPLOY_DIR/*
+            tar -xzf $TMP_FILE -C $DEPLOY_DIR
+            rm -f $TMP_FILE
 
-            # Thư mục FE trên VPS (không đụng vào 2 repo backend)
-            APP_DIR=/var/www/happybox-fe
-
-            # Nếu chưa có thư mục thì tạo
-            mkdir -p $APP_DIR
-
-            cd $APP_DIR
-
-            # Nếu chưa clone repo thì clone lần đầu
-            if [ ! -d ".git" ]; then
-              git clone https://github.com/DTV214/PRN232_Website_QuaTet_FE.git .
-            fi
-
-            # Luôn đồng bộ về code mới nhất từ nhánh main
-            git fetch origin
-            git reset --hard origin/main
-
-            # Cài dependency & build
-            npm install
-            npm run build
-
+            nginx -t
+            systemctl reload nginx
