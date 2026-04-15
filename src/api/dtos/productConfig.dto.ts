@@ -1,4 +1,4 @@
-// DTO mapped from TetGift.BLL.Dtos.ProductConfigDto (server returns camelCase JSON)
+﻿// DTO mapped from TetGift.BLL.Dtos.ProductConfigDto (server returns camelCase JSON)
 
 import type { ProductDto } from './product.dto';
 
@@ -31,7 +31,11 @@ export interface ProductConfigDto {
   configname: string;
   suitablesuggestion?: string;
   totalunit?: number;
+  maxLength?: number;
+  maxWidth?: number;
+  maxHeight?: number;
   imageurl?: string;
   configDetails?: ConfigDetailDto[];
   products?: ProductDto[];
 }
+

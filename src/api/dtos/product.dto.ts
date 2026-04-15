@@ -1,4 +1,4 @@
-// DTOs mapped from TetGift.BLL.Dtos (server returns camelCase JSON)
+﻿// DTOs mapped from TetGift.BLL.Dtos (server returns camelCase JSON)
 
 export interface StockDto {
   stockId: number;
@@ -25,6 +25,9 @@ export interface ProductDto {
   stocks?: StockDto[];
   totalQuantity?: number;
   unit?: number;
+  length?: number;
+  width?: number;
+  height?: number;
   isCustom?: boolean;
   productDetails?: ProductDetailResponseDto[];
 }
@@ -36,8 +39,12 @@ export interface ProductDetailResponseDto {
   categoryid?: number;
   productname?: string;
   unit?: number;
+  length?: number;
+  width?: number;
+  height?: number;
   price?: number;
   imageurl?: string;
   quantity?: number;
   childProduct?: ProductDto;
 }
+

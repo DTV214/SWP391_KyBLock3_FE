@@ -27,6 +27,9 @@ export default function AdminConfigs() {
     configname: "",
     description: "",
     totalunit: 0,
+      maxLength: 0,
+      maxWidth: 0,
+      maxHeight: 0,
   });
   const [categoryQuantities, setCategoryQuantities] = useState<{ [categoryId: number]: number }>({});
   
@@ -85,6 +88,9 @@ export default function AdminConfigs() {
         configname: config.configname || "",
         description: config.suitablesuggestion || "",
         totalunit: config.totalunit || 0,
+          maxLength: config.maxLength || 0,
+          maxWidth: config.maxWidth || 0,
+          maxHeight: config.maxHeight || 0,
       });
       
       // Load category quantities from configDetails
@@ -103,6 +109,9 @@ export default function AdminConfigs() {
         configname: "",
         description: "",
         totalunit: 0,
+        maxLength: 0,
+        maxWidth: 0,
+        maxHeight: 0,
       });
       setCategoryQuantities({});
     }
@@ -137,6 +146,9 @@ export default function AdminConfigs() {
         Configname: formData.configname,
         Description: formData.description,
         Totalunit: formData.totalunit,
+          MaxLength: formData.maxLength,
+          MaxWidth: formData.maxWidth,
+          MaxHeight: formData.maxHeight,
         CategoryQuantities: categoryQuantities,
       };
 
@@ -176,7 +188,10 @@ export default function AdminConfigs() {
           configid: createdConfigId,
           configname: formData.configname,
           suitablesuggestion: formData.description,
-          totalunit: formData.totalunit
+          totalunit: formData.totalunit,
+            maxLength: formData.maxLength,
+            maxWidth: formData.maxWidth,
+            maxHeight: formData.maxHeight
         } as ProductConfig);
         await loadConfigDetails(createdConfigId);
         setShowConfigDetailSection(true);
@@ -789,7 +804,23 @@ export default function AdminConfigs() {
                     />
                   </div>
 
-                  {/* Category Quantities */}
+                    {/* Kích thước */}
+                    <div className="col-span-1 md:col-span-2 grid grid-cols-3 gap-4 border-t border-gray-200 mt-2 pt-4">
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Dài tối đa (cm)</label>
+                        <input type="number" value={formData.maxLength || ''} onChange={(e) => setFormData({ ...formData, maxLength: parseInt(e.target.value) || 0 })} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent focus:border-transparent" disabled={submitting} min="0" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Rộng tối đa (cm)</label>
+                        <input type="number" value={formData.maxWidth || ''} onChange={(e) => setFormData({ ...formData, maxWidth: parseInt(e.target.value) || 0 })} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent focus:border-transparent" disabled={submitting} min="0" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Cao tối đa (cm)</label>
+                        <input type="number" value={formData.maxHeight || ''} onChange={(e) => setFormData({ ...formData, maxHeight: parseInt(e.target.value) || 0 })} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent focus:border-transparent" disabled={submitting} min="0" />
+                      </div>
+                    </div>
+
+                    {/* Category Quantities */}
                   <div className="mt-6 pt-6 border-t border-gray-200">
                     <label className="block text-sm font-bold text-gray-700 mb-3">
                       Số lượng sản phẩm theo danh mục
@@ -1073,9 +1104,16 @@ export default function AdminConfigs() {
                 <div className="p-4 bg-gray-50 rounded-xl">
                   <p className="text-sm text-gray-500 mb-1">Tổng khối lượng tối đa</p>
                   <p className="font-bold text-tet-accent text-lg">
-                    {viewingConfig.totalunit || 0}g
-                  </p>
-                </div>
+                      {viewingConfig.totalunit || 0}g
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-gray-50 rounded-xl md:col-span-2">
+                    <p className="text-sm text-gray-500 mb-1">Kích thước tối đa (D×R×C)</p>
+                    <p className="font-bold text-lg">
+                      {viewingConfig.maxLength || 0} × {viewingConfig.maxWidth || 0} × {viewingConfig.maxHeight || 0} cm
+                    </p>
+                  </div>
 
                 <div className="p-4 bg-gray-50 rounded-xl md:col-span-2">
                   <p className="text-sm text-gray-500 mb-1">Gợi ý phù hợp</p>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+﻿import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Search, Edit, Trash2, Eye, Package, Gift, Image as ImageIcon } from "lucide-react";
 import { productService, type Product } from "../../../api/productService";
 import { categoryService, type Category } from "../../../api/categoryService";
@@ -54,6 +54,9 @@ export default function AdminProducts() {
     imageUrl: "",
     price: 0,
     unit: 0,
+      length: 0,
+      width: 0,
+      height: 0,
     sku: "",
     categoryid: undefined,
     status: "ACTIVE",
@@ -197,6 +200,9 @@ export default function AdminProducts() {
         imageUrl: "",
         price: 0,
         unit: 0,
+      length: 0,
+      width: 0,
+      height: 0,
         sku: "",
         categoryid: undefined,
         status: "ACTIVE",
@@ -304,6 +310,9 @@ export default function AdminProducts() {
           description: formData.description,
           price: formData.price || 0,
           unit: formData.unit || 0,
+            length: formData.length || 0,
+            width: formData.width || 0,
+            height: formData.height || 0,
           imageUrl: finalImageUrl,
         };
         console.log('[CREATE NORMAL] payload:', createData);
@@ -809,20 +818,46 @@ export default function AdminProducts() {
                   />
                 </div>
 
+                  {/* Kích thước */}
+                  <div className="col-span-1 md:col-span-2 grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Dài (cm)</label>
+                      <input
+                        type="number"
+                        value={formData.length || 0}
+                        onChange={(e) => setFormData({ ...formData, length: Number(e.target.value) })}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent focus:border-transparent"
+                        disabled={submitting} min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Rộng (cm)</label>
+                      <input
+                        type="number"
+                        value={formData.width || 0}
+                        onChange={(e) => setFormData({ ...formData, width: Number(e.target.value) })}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent focus:border-transparent"
+                        disabled={submitting} min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Cao (cm)</label>
+                      <input
+                        type="number"
+                        value={formData.height || 0}
+                        onChange={(e) => setFormData({ ...formData, height: Number(e.target.value) })}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent focus:border-transparent"
+                        disabled={submitting} min="0"
+                      />
+                    </div>
+                  </div>
+
                 {/* Trạng thái */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Trạng thái
-                  </label>
-                  <select
-                    value={formData.status || "ACTIVE"}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent focus:border-transparent"
-                    disabled={submitting}
-                  >
-                    <option value="ACTIVE">ACTIVE – Hoạt động</option>
-                    <option value="INACTIVE">INACTIVE – Tạm dừng</option>
-                    <option value="TEMPLATE">TEMPLATE – Giỏ mẫu</option>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Trạng thái</label>
+                  <select value={formData.status || "ACTIVE"} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent focus:border-transparent" disabled={submitting}>
+                    <option value="ACTIVE">ACTIVE - Hoạt động</option>
+                    <option value="INACTIVE">INACTIVE - Tạm khóa</option>
                     <option value="DRAFT">DRAFT – Nháp</option>
                   </select>
                 </div>
@@ -1068,3 +1103,5 @@ export default function AdminProducts() {
     </div>
   );
 }
+
+

@@ -1,6 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap');
+
 /* src/App.css */
 
-/* Luôn dành chỗ cho scrollbar, tránh shift nội dung */
+/* LuĂ´n dĂ nh chá»— cho scrollbar, trĂ¡nh shift ná»™i dung */
 html,
 body {
   scrollbar-gutter: stable;
@@ -12,9 +14,7 @@ body {
   text-align: left;
 }
 
-/* Các tùy chỉnh font chữ nếu cần */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap');
-
+/* CĂ¡c tĂ¹y chá»‰nh font chá»¯ náº¿u cáº§n */
 .font-serif {
   font-family: 'Playfair Display', serif;
 }

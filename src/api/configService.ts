@@ -1,4 +1,4 @@
-import axiosClient from './axiosClient';
+﻿import axiosClient from './axiosClient';
 import { API_ENDPOINTS } from './apiConfig';
 
 import type { ProductConfigDto } from './dtos/productConfig.dto';
@@ -48,6 +48,9 @@ const mapProductDetailResponseDto = (raw: any): import('./dtos/product.dto').Pro
     productid: toNumber(raw.productid ?? raw.Productid ?? raw.productId ?? raw.ProductId),
     productname: toString(raw.productname ?? raw.Productname ?? raw.productName ?? raw.ProductName),
     unit: toNumber(raw.unit ?? raw.Unit),
+      length: toNumber(raw.length ?? raw.Length),
+      width: toNumber(raw.width ?? raw.Width),
+      height: toNumber(raw.height ?? raw.Height),
     price: toNumber(raw.price ?? raw.Price),
     imageurl: toString(raw.imageurl ?? raw.Imageurl ?? raw.imageUrl ?? raw.ImageUrl),
     quantity: toNumber(raw.quantity ?? raw.Quantity),
@@ -78,6 +81,9 @@ const mapProductDto = (raw: any): ProductDto => {
     price: toNumber(raw.price ?? raw.Price),
     status: toString(raw.status ?? raw.Status),
     unit: toNumber(raw.unit ?? raw.Unit),
+      length: toNumber(raw.length ?? raw.Length),
+      width: toNumber(raw.width ?? raw.Width),
+      height: toNumber(raw.height ?? raw.Height),
     isCustom: typeof (raw.isCustom ?? raw.IsCustom) === 'boolean' ? (raw.isCustom ?? raw.IsCustom) : undefined,
     totalQuantity: toNumber(raw.totalQuantity ?? raw.TotalQuantity),
     stocks,
@@ -121,6 +127,9 @@ const mapProductConfigDto = (raw: any): ProductConfigDto => {
       raw.suitablesuggestion ?? raw.Suitablesuggestion ?? raw.suitableSuggestion ?? raw.SuitableSuggestion,
     ),
     totalunit: toNumber(raw.totalunit ?? raw.Totalunit ?? raw.totalUnit ?? raw.TotalUnit),
+      maxLength: toNumber(raw.maxLength ?? raw.MaxLength ?? raw.maxlength ?? raw.Maxlength),
+      maxWidth: toNumber(raw.maxWidth ?? raw.MaxWidth ?? raw.maxwidth ?? raw.Maxwidth),
+      maxHeight: toNumber(raw.maxHeight ?? raw.MaxHeight ?? raw.maxheight ?? raw.Maxheight),
     imageurl: toString(raw.imageurl ?? raw.Imageurl ?? raw.imageUrl ?? raw.ImageUrl),
     configDetails,
     products,
@@ -283,3 +292,4 @@ export const configDetailService = {
     return response;
   },
 };
+

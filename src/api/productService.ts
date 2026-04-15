@@ -1,4 +1,4 @@
-import axiosClient from './axiosClient';
+﻿import axiosClient from './axiosClient';
 import { API_ENDPOINTS } from './apiConfig';
 import { inventoryAdminService } from './inventoryAdminService';
 import { stockUtils } from '@/lib/stockUtils';
@@ -23,6 +23,9 @@ export interface CreateSingleProductRequest {
   imageUrl?: string;
   price: number;
   unit: number;
+  length?: number;
+  width?: number;
+  height?: number;
   createStockRequest?: any;
 }
 
@@ -71,6 +74,9 @@ export interface BasketProductDetailDto {
   sku?: string;
   price: number;
   unit: number;
+  length?: number;
+  width?: number;
+  height?: number;
   quantity: number;
   imageUrl?: string;
   totalQuantityInStock: number;
@@ -108,6 +114,9 @@ const buildCreateNormalFormData = (product: CreateSingleProductRequest): FormDat
   if (product.description) form.append('description', product.description);
   form.append('price', String(product.price));
   form.append('unit', String(product.unit));
+  if (product.length != null) form.append('length', String(product.length));
+  if (product.width != null) form.append('width', String(product.width));
+  if (product.height != null) form.append('height', String(product.height));
   if (product.imageUrl) form.append('imageUrl', product.imageUrl);
   return form;
 };
@@ -120,6 +129,9 @@ const buildUpdateNormalFormData = (product: Product): FormData => {
   if (product.description) form.append('description', product.description);
   if (product.price != null) form.append('price', String(product.price));
   if (product.unit != null) form.append('unit', String(product.unit));
+  if (product.length != null) form.append('length', String(product.length));
+  if (product.width != null) form.append('width', String(product.width));
+  if (product.height != null) form.append('height', String(product.height));
   if (product.status) form.append('status', product.status);
   if (product.imageUrl) form.append('imageUrl', product.imageUrl);
   return form;
@@ -366,3 +378,4 @@ export const productService = {
     }
   }
 };
+
