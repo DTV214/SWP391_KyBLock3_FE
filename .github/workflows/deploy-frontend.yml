@@ -1,4 +1,4 @@
-name: Deploy Flora Farm Frontend
+name: Deploy Frontend to VPS
 
 on:
   push:
@@ -34,24 +34,25 @@ jobs:
       - name: Copy dist to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
+          host: 14.225.207.221
+          username: root
           password: ${{ secrets.VPS_PASSWORD }}
-          port: ${{ secrets.VPS_PORT }}
+          port: 22
           source: "frontend-dist.tar.gz"
           target: "/tmp"
+          debug: true
 
       - name: Deploy dist on VPS
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
+          host: 14.225.207.221
+          username: root
           password: ${{ secrets.VPS_PASSWORD }}
-          port: ${{ secrets.VPS_PORT }}
+          port: 22
           script: |
             set -e
 
-            DEPLOY_DIR=/var/www/flora-farm/dist
+            DEPLOY_DIR=/var/www/html
             TMP_FILE=/tmp/frontend-dist.tar.gz
 
             mkdir -p $DEPLOY_DIR
