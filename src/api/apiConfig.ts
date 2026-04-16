@@ -12,13 +12,13 @@ interface ViteEnv {
 const ENV_BASE_URL = (import.meta as unknown as { env: ViteEnv }).env
   ?.VITE_API_BASE_URL;
 // Fallback to current production server if env is not set
-// const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5002/api").replace(/\/+$/, "");
+const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5002/api").replace(/\/+$/, "");
 // const ROOT_URL = BASE_URL.replace(/\/api$/i, "");
 
-const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(
-  /\/+$/,
-  "",
-);
+// const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(
+//   /\/+$/,
+//   "",
+// );
 // const BASE_URL = (ENV_BASE_URL?.trim() || "http://localhost:5280/api").replace(/\/+$/, "");
 // Change .env for local/deploy without touching this file.
 export const API_ENDPOINTS = {
@@ -270,6 +270,54 @@ export const API_ENDPOINTS = {
       if (startDate) url += `&startDate=${encodeURIComponent(startDate)}`;
       if (endDate) url += `&endDate=${encodeURIComponent(endDate)}`;
       return url;
+    },
+    MONTHLY_ORDER_REVENUE_COMPARISON: (
+      year: number,
+      month: number,
+      compareYear: number,
+      compareMonth: number,
+    ) => {
+      const params = [
+        `Year=${encodeURIComponent(String(year))}`,
+        `Month=${encodeURIComponent(String(month))}`,
+        `CompareYear=${encodeURIComponent(String(compareYear))}`,
+        `CompareMonth=${encodeURIComponent(String(compareMonth))}`,
+      ];
+      return `${BASE_URL}/dashboard-comparisons/monthly-order-revenue?${params.join("&")}`;
+    },
+    MONTHLY_ACTUAL_REVENUE_COMPARISON: (
+      year: number,
+      month: number,
+      compareYear: number,
+      compareMonth: number,
+    ) => {
+      const params = [
+        `Year=${encodeURIComponent(String(year))}`,
+        `Month=${encodeURIComponent(String(month))}`,
+        `CompareYear=${encodeURIComponent(String(compareYear))}`,
+        `CompareMonth=${encodeURIComponent(String(compareMonth))}`,
+      ];
+      return `${BASE_URL}/dashboard-comparisons/monthly-actual-revenue?${params.join("&")}`;
+    },
+    YEARLY_ORDER_REVENUE_COMPARISON: (
+      year: number,
+      compareYear: number,
+    ) => {
+      const params = [
+        `Year=${encodeURIComponent(String(year))}`,
+        `CompareYear=${encodeURIComponent(String(compareYear))}`,
+      ];
+      return `${BASE_URL}/dashboard-comparisons/yearly-order-revenue-comparison?${params.join("&")}`;
+    },
+    YEARLY_ACTUAL_REVENUE_COMPARISON: (
+      year: number,
+      compareYear: number,
+    ) => {
+      const params = [
+        `Year=${encodeURIComponent(String(year))}`,
+        `CompareYear=${encodeURIComponent(String(compareYear))}`,
+      ];
+      return `${BASE_URL}/dashboard-comparisons/yearly-actual-revenue-comparison?${params.join("&")}`;
     },
     ACCOUNT_STATS: (
       period: string = "day",

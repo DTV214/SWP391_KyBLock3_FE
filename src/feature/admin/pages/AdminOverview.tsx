@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RevenueChart from "../components/RevenueChart";
 import CustomerEfficiencyWidget from "../components/CustomerEfficiencyWidget";
+import MonthlyComparisonChart from "../components/MonthlyComparisonChart";
+import YearlyComparisonBarChart from "../components/YearlyComparisonBarChart";
 import {
   Package,
   ShoppingCart,
@@ -189,6 +191,9 @@ export default function AdminOverview() {
           <CustomerEfficiencyWidget />
         </div>
       </div>
+
+      <MonthlyComparisonChart />
+      <YearlyComparisonBarChart />
 
       {/* System Status */}
       <section className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-3xl border border-blue-100">

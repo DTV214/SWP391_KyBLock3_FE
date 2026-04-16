@@ -124,6 +124,46 @@ export interface RevenueChartResponse {
   totalOrders: number;
 }
 
+export interface MonthlyComparisonDataPoint {
+  day: number;
+  value: number;
+}
+
+export interface MonthlyComparisonMonthData {
+  year: number;
+  month: number;
+  label: string;
+  daysInMonth: number;
+  total: number;
+  data: MonthlyComparisonDataPoint[];
+}
+
+export interface MonthlyComparisonResponse {
+  metric: "ORDER_REVENUE" | "ACTUAL_REVENUE" | string;
+  xAxisDays: number[];
+  baseMonth: MonthlyComparisonMonthData;
+  compareMonth: MonthlyComparisonMonthData;
+}
+
+export interface YearlyComparisonDataPoint {
+  month: number;
+  value: number;
+}
+
+export interface YearlyComparisonYearData {
+  year: number;
+  label: string;
+  total: number;
+  data: YearlyComparisonDataPoint[];
+}
+
+export interface YearlyComparisonResponse {
+  metric: "ORDER_REVENUE" | "ACTUAL_REVENUE" | string;
+  xAxisMonths: number[];
+  baseYear: YearlyComparisonYearData;
+  compareYear: YearlyComparisonYearData;
+}
+
 const toNumber = (value: unknown): number => {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -161,6 +201,66 @@ const normalizeRevenueResponse = (raw: any): RevenueChartResponse => {
   return { period, data, totalRevenue, totalOrders };
 };
 
+const normalizeMonthlyComparisonResponse = (raw: any): MonthlyComparisonResponse => {
+  const container = raw?.data ?? raw;
+  const root = container?.data ?? container;
+
+  const xAxisDays = Array.isArray(root?.xAxisDays)
+    ? root.xAxisDays.map((day: unknown) => toNumber(day))
+    : [];
+
+  const mapMonth = (monthRaw: any): MonthlyComparisonMonthData => {
+    const dataRaw = Array.isArray(monthRaw?.data) ? monthRaw.data : [];
+    return {
+      year: toNumber(monthRaw?.year),
+      month: toNumber(monthRaw?.month),
+      label: String(monthRaw?.label ?? ""),
+      daysInMonth: toNumber(monthRaw?.daysInMonth),
+      total: toNumber(monthRaw?.total),
+      data: dataRaw.map((point: any) => ({
+        day: toNumber(point?.day),
+        value: toNumber(point?.value),
+      })),
+    };
+  };
+
+  return {
+    metric: String(root?.metric ?? ""),
+    xAxisDays,
+    baseMonth: mapMonth(root?.baseMonth),
+    compareMonth: mapMonth(root?.compareMonth),
+  };
+};
+
+const normalizeYearlyComparisonResponse = (raw: any): YearlyComparisonResponse => {
+  const container = raw?.data ?? raw;
+  const root = container?.data ?? container;
+
+  const xAxisMonths = Array.isArray(root?.xAxisMonths)
+    ? root.xAxisMonths.map((month: unknown) => toNumber(month))
+    : [];
+
+  const mapYear = (yearRaw: any): YearlyComparisonYearData => {
+    const dataRaw = Array.isArray(yearRaw?.data) ? yearRaw.data : [];
+    return {
+      year: toNumber(yearRaw?.year),
+      label: String(yearRaw?.label ?? ""),
+      total: toNumber(yearRaw?.total),
+      data: dataRaw.map((point: any) => ({
+        month: toNumber(point?.month),
+        value: toNumber(point?.value),
+      })),
+    };
+  };
+
+  return {
+    metric: String(root?.metric ?? ""),
+    xAxisMonths,
+    baseYear: mapYear(root?.baseYear),
+    compareYear: mapYear(root?.compareYear),
+  };
+};
+
 export const getRevenue = async (period: string = "day", startDate?: string, endDate?: string): Promise<RevenueChartResponse> => {
   const response = await axiosClient.get(API_ENDPOINTS.DASHBOARD.REVENUE(period, startDate, endDate));
   return normalizeRevenueResponse(response);
@@ -169,6 +269,60 @@ export const getRevenue = async (period: string = "day", startDate?: string, end
 export const getActualRevenue = async (period: string = "day", startDate?: string, endDate?: string): Promise<RevenueChartResponse> => {
   const response = await axiosClient.get(API_ENDPOINTS.DASHBOARD.ACTUAL_REVENUE(period, startDate, endDate));
   return normalizeRevenueResponse(response);
+};
+
+export const getMonthlyOrderRevenueComparison = async (
+  year: number,
+  month: number,
+  compareYear: number,
+  compareMonth: number,
+): Promise<MonthlyComparisonResponse> => {
+  const response = await axiosClient.get(
+    API_ENDPOINTS.DASHBOARD.MONTHLY_ORDER_REVENUE_COMPARISON(
+      year,
+      month,
+      compareYear,
+      compareMonth,
+    ),
+  );
+  return normalizeMonthlyComparisonResponse(response);
+};
+
+export const getMonthlyActualRevenueComparison = async (
+  year: number,
+  month: number,
+  compareYear: number,
+  compareMonth: number,
+): Promise<MonthlyComparisonResponse> => {
+  const response = await axiosClient.get(
+    API_ENDPOINTS.DASHBOARD.MONTHLY_ACTUAL_REVENUE_COMPARISON(
+      year,
+      month,
+      compareYear,
+      compareMonth,
+    ),
+  );
+  return normalizeMonthlyComparisonResponse(response);
+};
+
+export const getYearlyOrderRevenueComparison = async (
+  year: number,
+  compareYear: number,
+): Promise<YearlyComparisonResponse> => {
+  const response = await axiosClient.get(
+    API_ENDPOINTS.DASHBOARD.YEARLY_ORDER_REVENUE_COMPARISON(year, compareYear),
+  );
+  return normalizeYearlyComparisonResponse(response);
+};
+
+export const getYearlyActualRevenueComparison = async (
+  year: number,
+  compareYear: number,
+): Promise<YearlyComparisonResponse> => {
+  const response = await axiosClient.get(
+    API_ENDPOINTS.DASHBOARD.YEARLY_ACTUAL_REVENUE_COMPARISON(year, compareYear),
+  );
+  return normalizeYearlyComparisonResponse(response);
 };
 
 export interface CustomerOrderStatistics {
@@ -192,6 +346,10 @@ const adminDashboardService = {
   getDashboardSummary,
   getRevenue,
   getActualRevenue,
+  getMonthlyOrderRevenueComparison,
+  getMonthlyActualRevenueComparison,
+  getYearlyOrderRevenueComparison,
+  getYearlyActualRevenueComparison,
   getAccountStatistics,
   getPaymentChannelStatistics,
   getAbandonedCarts,
