@@ -4,12 +4,32 @@ import { productService, type Product } from "../../../api/productService";
 import { categoryService, type Category } from "../../../api/categoryService";
 import axiosClient from "../../../api/axiosClient";
 import { API_ENDPOINTS } from "../../../api/apiConfig";
+import { useNavigate } from "react-router-dom";
 
 const PAGE_SIZE = 20;
 type MainTab = "single" | "baskets";
 type BasketFilter = "all" | "admin" | "customer";
 
+interface ProductStatisticOrderItem {
+  orderId: number;
+  orderDate: string;
+  customerName: string;
+  quantity: number;
+  grossRevenue: number;
+  netRevenue: number;
+  profit: number;
+}
+
+interface ProductStatisticsData {
+  totalGrossRevenue: number;
+  totalNetRevenue: number;
+  totalProfit: number;
+  totalQuantitySold: number;
+  orders: ProductStatisticOrderItem[];
+}
+
 export default function AdminProducts() {
+  const navigate = useNavigate();
   // ── Tab State ──────────────────────────────────────────────────────────────
   const [mainTab, setMainTab] = useState<MainTab>("single");
   const [basketFilter, setBasketFilter] = useState<BasketFilter>("all");
@@ -26,6 +46,11 @@ export default function AdminProducts() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
+  const [productStats, setProductStats] = useState<ProductStatisticsData | null>(
+    null,
+  );
+  const [productStatsLoading, setProductStatsLoading] = useState(false);
+  const [productStatsError, setProductStatsError] = useState<string | null>(null);
 
   // Image file for upload
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -231,7 +256,53 @@ export default function AdminProducts() {
   // Close view modal
   const handleCloseViewModal = () => {
     setViewingProduct(null);
+    setProductStats(null);
+    setProductStatsError(null);
+    setProductStatsLoading(false);
   };
+
+  const fetchProductStatistics = useCallback(async (productId: number) => {
+    try {
+      setProductStatsLoading(true);
+      setProductStatsError(null);
+      const response: any = await axiosClient.get(
+        API_ENDPOINTS.STATISTICS.PRODUCT(productId),
+      );
+      const payload = response?.data ?? response;
+      const data = payload?.data ?? payload;
+
+      if (!data || typeof data !== "object") {
+        setProductStats({
+          totalGrossRevenue: 0,
+          totalNetRevenue: 0,
+          totalProfit: 0,
+          totalQuantitySold: 0,
+          orders: [],
+        });
+        return;
+      }
+
+      setProductStats({
+        totalGrossRevenue: Number(data.totalGrossRevenue) || 0,
+        totalNetRevenue: Number(data.totalNetRevenue) || 0,
+        totalProfit: Number(data.totalProfit) || 0,
+        totalQuantitySold: Number(data.totalQuantitySold) || 0,
+        orders: Array.isArray(data.orders) ? data.orders : [],
+      });
+    } catch (err) {
+      console.error("Error fetching product statistics:", err);
+      setProductStatsError("Kh\u00f4ng th\u1ec3 t\u1ea3i th\u1ed1ng k\u00ea s\u1ea3n ph\u1ea9m.");
+      setProductStats(null);
+    } finally {
+      setProductStatsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const pid = viewingProduct?.productid;
+    if (!pid) return;
+    void fetchProductStatistics(pid);
+  }, [viewingProduct?.productid, fetchProductStatistics]);
 
   const uploadMedia = async (file: File): Promise<string> => {
     const formData = new FormData();
@@ -410,6 +481,16 @@ export default function AdminProducts() {
       default:
         return status;
     }
+  };
+
+  const formatMoney = (value: number) =>
+    `${(Number(value) || 0).toLocaleString("vi-VN")}đ`;
+
+  const formatDateTime = (value?: string) => {
+    if (!value) return "-";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toLocaleString("vi-VN");
   };
 
   // ── Shared table row renderer ──────────────────────────────────────────────
@@ -1109,6 +1190,144 @@ export default function AdminProducts() {
                     {viewingProduct.isCustom ? "Sản phẩm tùy chỉnh" : "Sản phẩm thường"}
                   </p>
                 </div>
+              </div>
+
+              {/* Statistics */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-lg font-bold text-tet-primary">
+                    {"Th\u1ed1ng k\u00ea s\u1ea3n ph\u1ea9m"}
+                  </h4>
+                  {productStatsLoading && (
+                    <span className="text-xs text-gray-500">
+                      {"\u0110ang t\u1ea3i..."}
+                    </span>
+                  )}
+                </div>
+
+                {productStatsError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+                    {productStatsError}
+                  </div>
+                )}
+
+                {!productStatsError && !productStatsLoading && productStats && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                      <div className="p-4 rounded-xl bg-green-50 border border-green-100">
+                        <p className="text-xs text-green-700 mb-1">
+                          {"T\u1ed5ng doanh thu g\u1ed9p"}
+                        </p>
+                        <p className="font-bold text-green-800 text-lg">
+                          {formatMoney(productStats.totalGrossRevenue)}
+                        </p>
+                      </div>
+                      <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
+                        <p className="text-xs text-blue-700 mb-1">
+                          {"T\u1ed5ng doanh thu thu\u1ea7n"}
+                        </p>
+                        <p className="font-bold text-blue-800 text-lg">
+                          {formatMoney(productStats.totalNetRevenue)}
+                        </p>
+                      </div>
+                      <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+                        <p className="text-xs text-amber-700 mb-1">
+                          {"T\u1ed5ng l\u1ee3i nhu\u1eadn"}
+                        </p>
+                        <p className="font-bold text-amber-800 text-lg">
+                          {formatMoney(productStats.totalProfit)}
+                        </p>
+                      </div>
+                      <div className="p-4 rounded-xl bg-purple-50 border border-purple-100">
+                        <p className="text-xs text-purple-700 mb-1">
+                          {"T\u1ed5ng s\u1ed1 l\u01b0\u1ee3ng \u0111\u00e3 b\u00e1n"}
+                        </p>
+                        <p className="font-bold text-purple-800 text-lg">
+                          {productStats.totalQuantitySold}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-gray-200 overflow-hidden">
+                      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                        <p className="text-sm font-semibold text-gray-700">
+                          {"Danh s\u00e1ch \u0111\u01a1n h\u00e0ng c\u00f3 s\u1ea3n ph\u1ea9m n\u00e0y"}
+                        </p>
+                      </div>
+                      {productStats.orders.length === 0 ? (
+                        <div className="p-4 text-sm text-gray-500">
+                          {"Ch\u01b0a c\u00f3 \u0111\u01a1n h\u00e0ng ph\u00e1t sinh."}
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-white border-b border-gray-100">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                                  {"\u0110\u01a1n"}
+                                </th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                                  {"Ng\u00e0y"}
+                                </th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                                  {"Kh\u00e1ch h\u00e0ng"}
+                                </th>
+                                <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">
+                                  {"SL"}
+                                </th>
+                                <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">
+                                  {"Doanh thu"}
+                                </th>
+                                <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">
+                                  {"L\u1ee3i nhu\u1eadn"}
+                                </th>
+                                <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">
+                                  {"Chi ti\u1ebft"}
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {productStats.orders.map((order) => (
+                                <tr key={order.orderId} className="hover:bg-gray-50">
+                                  <td className="px-4 py-3 font-semibold text-tet-primary">
+                                    #{order.orderId}
+                                  </td>
+                                  <td className="px-4 py-3 text-gray-600">
+                                    {formatDateTime(order.orderDate)}
+                                  </td>
+                                  <td className="px-4 py-3 text-gray-700">
+                                    {order.customerName || "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-right text-gray-700">
+                                    {order.quantity}
+                                  </td>
+                                  <td className="px-4 py-3 text-right font-semibold text-blue-700">
+                                    {formatMoney(order.netRevenue)}
+                                  </td>
+                                  <td className="px-4 py-3 text-right font-semibold text-amber-700">
+                                    {formatMoney(order.profit)}
+                                  </td>
+                                  <td className="px-4 py-3 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        handleCloseViewModal();
+                                        navigate(`/admin/orders/${order.orderId}`);
+                                      }}
+                                      className="px-3 py-1.5 text-xs font-bold rounded-lg border border-tet-primary text-tet-primary hover:bg-tet-primary hover:text-white transition-colors"
+                                    >
+                                      {"Xem \u0111\u01a1n"}
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Description */}

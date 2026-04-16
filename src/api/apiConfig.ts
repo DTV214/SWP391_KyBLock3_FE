@@ -351,6 +351,10 @@ export const API_ENDPOINTS = {
       return url;
     },
   },
+  STATISTICS: {
+    PRODUCT: (productId: string | number) =>
+      `${BASE_URL}/statistics/product/${productId}`,
+  },
   // Feedbacks endpoints
   FEEDBACKS: {
     ADD_ORDER_FEEDBACK: (orderId: string | number) =>
