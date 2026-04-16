@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RevenueChart from "../components/RevenueChart";
+import CustomerEfficiencyWidget from "../components/CustomerEfficiencyWidget";
 import {
   Package,
   ShoppingCart,
@@ -180,7 +181,14 @@ export default function AdminOverview() {
         </div>
       </section>
 
-      <RevenueChart />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <RevenueChart />
+        </div>
+        <div className="lg:col-span-1">
+          <CustomerEfficiencyWidget />
+        </div>
+      </div>
 
       {/* System Status */}
       <section className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-3xl border border-blue-100">

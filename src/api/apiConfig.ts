@@ -286,6 +286,7 @@ export const API_ENDPOINTS = {
       if (days) url += `?days=${days}`;
       return url;
     },
+    CUSTOMER_STATISTICS: `${BASE_URL}/dashboards/customer-statistics`,
   },
   // Feedbacks endpoints
   FEEDBACKS: {

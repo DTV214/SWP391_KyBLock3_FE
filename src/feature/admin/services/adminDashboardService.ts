@@ -106,12 +106,30 @@ export const getRevenue = async (period: string = "day", startDate?: string, end
   return response.data;
 };
 
+export interface CustomerOrderStatistics {
+  accountId: number;
+  fullName: string | null;
+  email: string | null;
+  totalOrders: number;
+  successfulOrders: number;
+  cancelledOrders: number;
+  processingOrders: number;
+  totalSpent: number;
+  successRate: number;
+}
+
+export const getCustomerOrderStatistics = async (): Promise<CustomerOrderStatistics[]> => {
+  const response = await axiosClient.get(API_ENDPOINTS.DASHBOARD.CUSTOMER_STATISTICS);
+  return response.data;
+};
+
 const adminDashboardService = {
   getDashboardSummary,
   getRevenue,
   getAccountStatistics,
   getPaymentChannelStatistics,
   getAbandonedCarts,
+  getCustomerOrderStatistics,
 };
 
 export default adminDashboardService;
