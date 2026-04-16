@@ -25,7 +25,7 @@ jobs:
 
       - name: Build frontend
         env:
-          VITE_API_BASE_URL: http://14.225.207.221:5002
+          VITE_API_BASE_URL: http://14.225.207.221:5002/api
         run: npm run build
 
       - name: Archive dist
