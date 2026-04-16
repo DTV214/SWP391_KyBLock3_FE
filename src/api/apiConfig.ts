@@ -12,10 +12,13 @@ interface ViteEnv {
 const ENV_BASE_URL = (import.meta as unknown as { env: ViteEnv }).env
   ?.VITE_API_BASE_URL;
 // Fallback to current production server if env is not set
-const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5002/api").replace(/\/+$/, "");
-const ROOT_URL = BASE_URL.replace(/\/api$/i, "");
+// const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5002/api").replace(/\/+$/, "");
+// const ROOT_URL = BASE_URL.replace(/\/api$/i, "");
 
-// const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(/\/+$/, "");
+const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(
+  /\/+$/,
+  "",
+);
 // const BASE_URL = (ENV_BASE_URL?.trim() || "http://localhost:5280/api").replace(/\/+$/, "");
 // Change .env for local/deploy without touching this file.
 export const API_ENDPOINTS = {
@@ -211,7 +214,7 @@ export const API_ENDPOINTS = {
     READ: (conversationId: string | number) =>
       `${BASE_URL}/chat/read/${conversationId}`,
     BACKOFFICE_ORDER_DETAIL: (orderId: string | number) =>
-      `${ROOT_URL}/${orderId}`,
+      `${BASE_URL}/${orderId}`,
   },
   STORE_LOCATIONS: {
     LIST: `${BASE_URL}/store-locations`,
@@ -244,7 +247,11 @@ export const API_ENDPOINTS = {
     DELETE: `${BASE_URL}/media/delete`,
   },
   DASHBOARD: {
-    SUMMARY: (period: string = "month", startDate?: string, endDate?: string) => {
+    SUMMARY: (
+      period: string = "month",
+      startDate?: string,
+      endDate?: string,
+    ) => {
       let url = `${BASE_URL}/dashboards/summary?period=${period}`;
       if (startDate) url += `&startDate=${encodeURIComponent(startDate)}`;
       if (endDate) url += `&endDate=${encodeURIComponent(endDate)}`;
@@ -256,7 +263,11 @@ export const API_ENDPOINTS = {
       if (endDate) url += `&endDate=${encodeURIComponent(endDate)}`;
       return url;
     },
-    ACCOUNT_STATS: (period: string = "day", startDate?: string, endDate?: string) => {
+    ACCOUNT_STATS: (
+      period: string = "day",
+      startDate?: string,
+      endDate?: string,
+    ) => {
       let url = `${BASE_URL}/dashboards/accounts?period=${period}`;
       if (startDate) url += `&startDate=${encodeURIComponent(startDate)}`;
       if (endDate) url += `&endDate=${encodeURIComponent(endDate)}`;
