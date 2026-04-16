@@ -6,7 +6,7 @@ import axiosClient from "../../../api/axiosClient";
 import { API_ENDPOINTS } from "../../../api/apiConfig";
 import { useNavigate } from "react-router-dom";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 6;
 type MainTab = "single" | "baskets";
 type BasketFilter = "all" | "admin" | "customer";
 
@@ -51,6 +51,10 @@ export default function AdminProducts() {
   );
   const [productStatsLoading, setProductStatsLoading] = useState(false);
   const [productStatsError, setProductStatsError] = useState<string | null>(null);
+  const [productStatsById, setProductStatsById] = useState<
+    Record<number, ProductStatisticsData>
+  >({});
+  const [singleListStatsLoading, setSingleListStatsLoading] = useState(false);
 
   // Image file for upload
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -261,6 +265,14 @@ export default function AdminProducts() {
     setProductStatsLoading(false);
   };
 
+  const normalizeProductStatistics = (raw: any): ProductStatisticsData => ({
+    totalGrossRevenue: Number(raw?.totalGrossRevenue) || 0,
+    totalNetRevenue: Number(raw?.totalNetRevenue) || 0,
+    totalProfit: Number(raw?.totalProfit) || 0,
+    totalQuantitySold: Number(raw?.totalQuantitySold) || 0,
+    orders: Array.isArray(raw?.orders) ? raw.orders : [],
+  });
+
   const fetchProductStatistics = useCallback(async (productId: number) => {
     try {
       setProductStatsLoading(true);
@@ -282,13 +294,7 @@ export default function AdminProducts() {
         return;
       }
 
-      setProductStats({
-        totalGrossRevenue: Number(data.totalGrossRevenue) || 0,
-        totalNetRevenue: Number(data.totalNetRevenue) || 0,
-        totalProfit: Number(data.totalProfit) || 0,
-        totalQuantitySold: Number(data.totalQuantitySold) || 0,
-        orders: Array.isArray(data.orders) ? data.orders : [],
-      });
+      setProductStats(normalizeProductStatistics(data));
     } catch (err) {
       console.error("Error fetching product statistics:", err);
       setProductStatsError("Kh\u00f4ng th\u1ec3 t\u1ea3i th\u1ed1ng k\u00ea s\u1ea3n ph\u1ea9m.");
@@ -439,6 +445,73 @@ export default function AdminProducts() {
     const matchCategory = !filterCategory || product.categoryid?.toString() === filterCategory;
     return matchStatus && matchCategory;
   });
+  const filteredProductIds = filteredProducts
+    .map((product) => product.productid)
+    .filter((id): id is number => typeof id === "number");
+  const filteredProductIdsKey = filteredProductIds.join(",");
+
+  useEffect(() => {
+    if (mainTab !== "single") return;
+    if (filteredProductIds.length === 0) {
+      setSingleListStatsLoading(false);
+      return;
+    }
+
+    const missingIds = filteredProductIds.filter((id) => !productStatsById[id]);
+    if (missingIds.length === 0) {
+      setSingleListStatsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadMissingStats = async () => {
+      try {
+        setSingleListStatsLoading(true);
+        const entries = await Promise.all(
+          missingIds.map(async (id) => {
+            try {
+              const response: any = await axiosClient.get(
+                API_ENDPOINTS.STATISTICS.PRODUCT(id),
+              );
+              const payload = response?.data ?? response;
+              const data = payload?.data ?? payload;
+              return [id, normalizeProductStatistics(data)] as const;
+            } catch (err) {
+              console.error(`Error fetching list stats for product ${id}:`, err);
+              return [
+                id,
+                {
+                  totalGrossRevenue: 0,
+                  totalNetRevenue: 0,
+                  totalProfit: 0,
+                  totalQuantitySold: 0,
+                  orders: [],
+                } as ProductStatisticsData,
+              ] as const;
+            }
+          }),
+        );
+
+        if (cancelled) return;
+        setProductStatsById((prev) => {
+          const next = { ...prev };
+          entries.forEach(([id, stats]) => {
+            next[id] = stats;
+          });
+          return next;
+        });
+      } finally {
+        if (!cancelled) setSingleListStatsLoading(false);
+      }
+    };
+
+    void loadMissingStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mainTab, filteredProductIdsKey, productStatsById]);
 
   // Displayed baskets based on sub-filter
   const displayedBaskets: Product[] =
@@ -494,11 +567,17 @@ export default function AdminProducts() {
   };
 
   // ── Shared table row renderer ──────────────────────────────────────────────
-  const renderProductRow = (product: Product, origin?: "admin" | "customer") => (
-    <tr key={product.productid} className="hover:bg-gray-50 transition-colors">
-      <td className="px-6 py-4">
+  const renderProductRow = (product: Product, origin?: "admin" | "customer") => {
+    const showSalesStats = !origin;
+    const rowStats =
+      typeof product.productid === "number" ? productStatsById[product.productid] : undefined;
+    const cellPadding = "px-4 py-3";
+
+    return (
+      <tr key={product.productid} className="group hover:bg-gray-50 transition-colors">
+      <td className={cellPadding}>
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0 bg-gray-100">
+          <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0 bg-gray-100">
             {product.imageUrl ? (
               <img
                 src={product.imageUrl}
@@ -525,42 +604,62 @@ export default function AdminProducts() {
           </div>
         </div>
       </td>
-      <td className="px-6 py-4 text-sm text-gray-600 font-mono">{product.sku || "-"}</td>
-      <td className="px-6 py-4 text-sm text-gray-600">{getCategoryName(product.categoryid)}</td>
-      <td className="px-6 py-4">
+      <td className={`${cellPadding} text-sm text-gray-600 font-mono`}>{product.sku || "-"}</td>
+      <td className={`${cellPadding} text-sm text-gray-600`}>{getCategoryName(product.categoryid)}</td>
+      <td className={cellPadding}>
         <span className="text-sm font-bold text-tet-accent">
           {product.price ? product.price.toLocaleString() : "0"}đ
         </span>
       </td>
-      <td className="px-6 py-4">
+      <td className={cellPadding}>
         <span className="text-sm text-gray-600">
           {product.importPrice ? product.importPrice.toLocaleString() : "0"}đ
         </span>
       </td>
-      <td className="px-6 py-4 text-sm text-gray-600">{product.unit || 0}g</td>
-      <td className="px-6 py-4">
+      {showSalesStats && (
+        <td className={`${cellPadding} text-sm font-semibold text-emerald-700`}>
+          {rowStats ? formatMoney(rowStats.totalNetRevenue) : singleListStatsLoading ? "Đang tải..." : "-"}
+        </td>
+      )}
+      {showSalesStats && (
+        <td className={`${cellPadding} text-sm font-semibold text-amber-700`}>
+          {rowStats ? formatMoney(rowStats.totalProfit) : singleListStatsLoading ? "Đang tải..." : "-"}
+        </td>
+      )}
+      {showSalesStats && (
+        <td className={`${cellPadding} text-sm font-semibold text-blue-700`}>
+          {rowStats
+            ? rowStats.totalQuantitySold.toLocaleString("vi-VN")
+            : singleListStatsLoading
+            ? "Đang tải..."
+            : "-"}
+        </td>
+      )}
+      <td className={`${cellPadding} text-sm text-gray-600`}>{product.unit || 0}g</td>
+      <td className={cellPadding}>
         <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(product.status || "")}`}>
           {getStatusText(product.status || "")}
         </span>
       </td>
-      <td className="px-6 py-4">
-        <div className="flex items-center justify-end gap-2">
-          <button onClick={() => handleViewProduct(product)} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors">
+      <td className={`${cellPadding} sticky right-0 z-[1] bg-white group-hover:bg-gray-50 shadow-[-10px_0_14px_-12px_rgba(15,23,42,0.35)]`}>
+        <div className="flex items-center justify-end gap-1">
+          <button onClick={() => handleViewProduct(product)} className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors">
             <Eye size={16} />
           </button>
-          <button onClick={() => handleOpenModal(product)} className="p-2 hover:bg-yellow-50 rounded-lg text-yellow-600 transition-colors">
+          <button onClick={() => handleOpenModal(product)} className="p-1.5 hover:bg-yellow-50 rounded-lg text-yellow-600 transition-colors">
             <Edit size={16} />
           </button>
-          <button onClick={() => handleDelete(product.productid!)} className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors" disabled={loading}>
+          <button onClick={() => handleDelete(product.productid!)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-600 transition-colors" disabled={loading}>
             <Trash2 size={16} />
           </button>
         </div>
       </td>
     </tr>
-  );
+    );
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -707,12 +806,12 @@ export default function AdminProducts() {
             </div>
           ) : (
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="overflow-x-auto max-w-full">
+                <table className="w-full min-w-[1200px]">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      {["Sản phẩm", "SKU", "Danh mục", "Giá", "Giá nhập", "Khối lượng", "Trạng thái", "Thao tác"].map((h) => (
-                        <th key={h} className={`px-6 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider ${h === "Thao tác" ? "text-right" : "text-left"}`}>{h}</th>
+                      {["Sản phẩm", "SKU", "Danh mục", "Giá", "Giá nhập", "Doanh thu", "Lợi nhuận", "Đã bán", "Khối lượng", "Trạng thái", "Thao tác"].map((h) => (
+                        <th key={h} className={`px-4 py-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap ${h === "Thao tác" ? "text-right sticky right-0 z-10 bg-gray-50 min-w-[130px] shadow-[-10px_0_14px_-12px_rgba(15,23,42,0.35)]" : "text-left"}`}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -722,7 +821,7 @@ export default function AdminProducts() {
                 </table>
               </div>
               {/* Pagination */}
-              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+              <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
                 <p className="text-sm text-gray-600">
                   Trang <span className="font-bold">{currentPage}</span> / <span className="font-bold">{totalPages}</span> — Tổng <span className="font-bold">{totalItems}</span> sản phẩm
                 </p>
@@ -778,12 +877,12 @@ export default function AdminProducts() {
             </div>
           ) : (
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="overflow-x-auto max-w-full">
+                <table className="w-full min-w-[980px]">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       {["Giỏ quà", "SKU", "Danh mục", "Giá", "Giá nhập", "Khối lượng", "Trạng thái", "Thao tác"].map((h) => (
-                        <th key={h} className={`px-6 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider ${h === "Thao tác" ? "text-right" : "text-left"}`}>{h}</th>
+                        <th key={h} className={`px-4 py-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap ${h === "Thao tác" ? "text-right sticky right-0 z-10 bg-gray-50 min-w-[130px] shadow-[-10px_0_14px_-12px_rgba(15,23,42,0.35)]" : "text-left"}`}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -797,7 +896,7 @@ export default function AdminProducts() {
               </div>
               {/* Customer basket pagination (when viewing customer or all tab) */}
               {(basketFilter === "customer") && basketTotalPages > 1 && (
-                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+                <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
                   <p className="text-sm text-gray-600">
                     Trang <span className="font-bold">{basketPage}</span> / <span className="font-bold">{basketTotalPages}</span>
                   </p>
@@ -1089,20 +1188,20 @@ export default function AdminProducts() {
       {/* View Product Modal */}
       {viewingProduct && (
         <div 
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-3 md:p-6"
           onClick={handleCloseViewModal}
         >
           <div 
-            className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            className="bg-white rounded-3xl border border-gray-100 p-6 md:p-8 max-w-6xl w-full shadow-2xl relative max-h-[92vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-start mb-6">
-              <h3 className="text-2xl font-serif font-bold text-tet-primary">
+            <div className="flex justify-between items-start mb-5 pb-4 border-b border-gray-100">
+              <h3 className="text-[28px] leading-none font-serif font-bold text-tet-primary">
                 Chi tiết sản phẩm
               </h3>
               <button
                 onClick={handleCloseViewModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1113,11 +1212,11 @@ export default function AdminProducts() {
             <div className="space-y-6">
               {/* Image */}
               {viewingProduct.imageUrl && (
-                <div className="flex justify-center">
+                <div className="flex justify-center bg-gray-50 border border-gray-100 rounded-2xl p-4">
                   <img
                     src={viewingProduct.imageUrl}
                     alt={viewingProduct.productname}
-                    className="max-w-full h-64 object-contain rounded-xl border border-gray-200"
+                    className="max-w-full h-72 object-contain rounded-xl border border-gray-200 bg-white"
                     onError={(e) => {
                       e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
                     }}
@@ -1126,54 +1225,54 @@ export default function AdminProducts() {
               )}
 
               {/* Product Info Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm text-gray-500 mb-1">ID Sản phẩm</p>
                   <p className="font-bold text-tet-primary">{viewingProduct.productid}</p>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm text-gray-500 mb-1">Tên sản phẩm</p>
                   <p className="font-bold">{viewingProduct.productname || "-"}</p>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm text-gray-500 mb-1">SKU</p>
                   <p className="font-bold font-mono">{viewingProduct.sku || "-"}</p>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm text-gray-500 mb-1">Danh mục</p>
                   <p className="font-bold">{getCategoryName(viewingProduct.categoryid)}</p>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm text-gray-500 mb-1">Giá</p>
                   <p className="font-bold text-tet-accent text-lg">
                     {viewingProduct.price ? viewingProduct.price.toLocaleString() : "0"}đ
                   </p>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm text-gray-500 mb-1">Giá nhập</p>
                   <p className="font-bold text-gray-700 text-lg">
                     {viewingProduct.importPrice ? viewingProduct.importPrice.toLocaleString() : "0"}đ
                   </p>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm text-gray-500 mb-1">Khối lượng</p>
                   <p className="font-bold">{viewingProduct.unit || 0}g</p>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm text-gray-500 mb-1">Kích thước (D x R x C)</p>
                   <p className="font-bold">
                     {viewingProduct.length || 0} x {viewingProduct.width || 0} x {viewingProduct.height || 0} cm
                   </p>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm text-gray-500 mb-1">Trạng thái</p>
                   <span
                     className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(
@@ -1184,7 +1283,7 @@ export default function AdminProducts() {
                   </span>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm text-gray-500 mb-1">Loại sản phẩm</p>
                   <p className="font-bold">
                     {viewingProduct.isCustom ? "Sản phẩm tùy chỉnh" : "Sản phẩm thường"}
@@ -1332,7 +1431,7 @@ export default function AdminProducts() {
 
               {/* Description */}
               {viewingProduct.description && (
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm text-gray-500 mb-2">Mô tả</p>
                   <p className="text-gray-700 whitespace-pre-wrap">{viewingProduct.description}</p>
                 </div>

@@ -37,12 +37,12 @@ export default function AdminLayout() {
           </span>
         </nav>
 
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
-          <div className="w-full lg:w-64 sticky top-28">
+        <div className="flex flex-col lg:flex-row gap-8 items-start min-w-0">
+          <div className="w-full lg:w-[16rem] lg:min-w-[16rem] lg:max-w-[16rem] lg:shrink-0 lg:flex-none sticky top-28">
             <AdminSidebar />
           </div>
 
-          <div className="flex-1 w-full">
+          <div className="flex-1 w-full min-w-0">
             <Outlet />
           </div>
         </div>
