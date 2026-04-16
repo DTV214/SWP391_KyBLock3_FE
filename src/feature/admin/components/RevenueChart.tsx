@@ -14,9 +14,11 @@ import adminDashboardService, {
 } from "../services/adminDashboardService";
 
 type FilterType = "week" | "month" | "year";
+type MetricType = "revenue" | "actualRevenue";
 
 export default function RevenueChart() {
   const [filter, setFilter] = useState<FilterType>("week");
+  const [metric, setMetric] = useState<MetricType>("revenue");
   const [data, setData] = useState<RevenueDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,22 +57,24 @@ export default function RevenueChart() {
           endDate = end;
         }
 
-        const response = await adminDashboardService.getRevenue(
-          period,
-          startDate,
-          endDate
-        );
-        setData(response.data);
+        const response = metric === "actualRevenue"
+          ? await adminDashboardService.getActualRevenue(period, startDate, endDate)
+          : await adminDashboardService.getRevenue(period, startDate, endDate);
+        setData(response.data || []);
       } catch (err) {
         console.error("Failed to fetch revenue data:", err);
-        setError("Không thể tải biểu đồ doanh thu.");
+        setError(
+          metric === "actualRevenue"
+            ? "Không thể tải biểu đồ doanh thu thực nhận."
+            : "Không thể tải biểu đồ doanh thu.",
+        );
       } finally {
         setLoading(false);
       }
     };
 
     fetchRevenue();
-  }, [filter]);
+  }, [filter, metric]);
 
   // Format Y-axis ticks to abbreviated VND
   const formatYAxis = (tickItem: number) => {
@@ -107,40 +111,67 @@ export default function RevenueChart() {
         <div className="flex items-center gap-2">
           <TrendingUp className="text-tet-accent" size={24} />
           <h3 className="text-lg font-serif font-bold text-tet-primary">
-            Biểu đồ doanh thu
+            {metric === "actualRevenue"
+              ? "Biểu đồ doanh thu thực nhận"
+              : "Biểu đồ doanh thu"}
           </h3>
         </div>
-        <div className="flex bg-gray-100 p-1 rounded-xl">
-          <button
-            onClick={() => setFilter("week")}
-            className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
-              filter === "week"
-                ? "bg-white text-tet-primary shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            7 Ngày
-          </button>
-          <button
-            onClick={() => setFilter("month")}
-            className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
-              filter === "month"
-                ? "bg-white text-tet-primary shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            30 Ngày
-          </button>
-          <button
-            onClick={() => setFilter("year")}
-            className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
-              filter === "year"
-                ? "bg-white text-tet-primary shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            Năm nay
-          </button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex bg-gray-100 p-1 rounded-xl">
+            <button
+              onClick={() => setMetric("revenue")}
+              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
+                metric === "revenue"
+                  ? "bg-white text-tet-primary shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Doanh thu
+            </button>
+            <button
+              onClick={() => setMetric("actualRevenue")}
+              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
+                metric === "actualRevenue"
+                  ? "bg-white text-tet-primary shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Thực nhận
+            </button>
+          </div>
+
+          <div className="flex bg-gray-100 p-1 rounded-xl">
+            <button
+              onClick={() => setFilter("week")}
+              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
+                filter === "week"
+                  ? "bg-white text-tet-primary shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              7 Ngày
+            </button>
+            <button
+              onClick={() => setFilter("month")}
+              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
+                filter === "month"
+                  ? "bg-white text-tet-primary shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              30 Ngày
+            </button>
+            <button
+              onClick={() => setFilter("year")}
+              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
+                filter === "year"
+                  ? "bg-white text-tet-primary shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Năm nay
+            </button>
+          </div>
         </div>
       </div>
 

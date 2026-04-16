@@ -451,6 +451,11 @@ export default function AdminProducts() {
           {product.price ? product.price.toLocaleString() : "0"}đ
         </span>
       </td>
+      <td className="px-6 py-4">
+        <span className="text-sm text-gray-600">
+          {product.importPrice ? product.importPrice.toLocaleString() : "0"}đ
+        </span>
+      </td>
       <td className="px-6 py-4 text-sm text-gray-600">{product.unit || 0}g</td>
       <td className="px-6 py-4">
         <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(product.status || "")}`}>
@@ -625,7 +630,7 @@ export default function AdminProducts() {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      {["Sản phẩm", "SKU", "Danh mục", "Giá", "Khối lượng", "Trạng thái", "Thao tác"].map((h) => (
+                      {["Sản phẩm", "SKU", "Danh mục", "Giá", "Giá nhập", "Khối lượng", "Trạng thái", "Thao tác"].map((h) => (
                         <th key={h} className={`px-6 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider ${h === "Thao tác" ? "text-right" : "text-left"}`}>{h}</th>
                       ))}
                     </tr>
@@ -696,7 +701,7 @@ export default function AdminProducts() {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      {["Giỏ quà", "SKU", "Danh mục", "Giá", "Khối lượng", "Trạng thái", "Thao tác"].map((h) => (
+                      {["Giỏ quà", "SKU", "Danh mục", "Giá", "Giá nhập", "Khối lượng", "Trạng thái", "Thao tác"].map((h) => (
                         <th key={h} className={`px-6 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider ${h === "Thao tác" ? "text-right" : "text-left"}`}>{h}</th>
                       ))}
                     </tr>

@@ -70,7 +70,30 @@ export interface DashboardSummary {
 
 export const getDashboardSummary = async (period: string = "month", startDate?: string, endDate?: string): Promise<DashboardSummary> => {
   const response: any = await axiosClient.get(API_ENDPOINTS.DASHBOARD.SUMMARY(period, startDate, endDate));
-  return response.data || response;
+  const data: DashboardSummary = (response?.data || response) as DashboardSummary;
+
+  // Fallback: some backend builds do not include totalProducts in summary.
+  if (data.totalProducts == null || Number(data.totalProducts) <= 0) {
+    try {
+      const prodRes: any = await axiosClient.get(`${API_ENDPOINTS.PRODUCTS.LIST}?pageNumber=1&pageSize=1`);
+      const firstWrap = prodRes?.data || prodRes;
+      const paged = firstWrap?.data || firstWrap;
+
+      if (typeof paged?.totalItems === "number") {
+        data.totalProducts = paged.totalItems;
+      } else if (typeof firstWrap?.totalItems === "number") {
+        data.totalProducts = firstWrap.totalItems;
+      } else if (Array.isArray(paged)) {
+        data.totalProducts = paged.length;
+      } else {
+        data.totalProducts = 0;
+      }
+    } catch {
+      data.totalProducts = 0;
+    }
+  }
+
+  return data;
 };
 
 export const getAccountStatistics = async (period: string = "day", startDate?: string, endDate?: string): Promise<any> => {
@@ -101,9 +124,51 @@ export interface RevenueChartResponse {
   totalOrders: number;
 }
 
+const toNumber = (value: unknown): number => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const normalizeRevenueResponse = (raw: any): RevenueChartResponse => {
+  const container = raw?.data ?? raw;
+  // actual-revenue currently returns data.totalActualRevenue = { period, data, totalRevenue, totalOrders }
+  const root = container?.totalActualRevenue ?? container?.actualRevenue ?? container;
+  const period = String(root?.period ?? root?.Period ?? "day");
+  const source = Array.isArray(root?.data)
+    ? root.data
+    : Array.isArray(root?.Data)
+      ? root.Data
+      : [];
+
+  const data: RevenueDataPoint[] = source.map((item: any) => ({
+    date: String(item?.date ?? item?.Date ?? ""),
+    revenue: toNumber(
+      item?.revenue ??
+      item?.Revenue ??
+      item?.actualRevenue ??
+      item?.ActualRevenue ??
+      item?.value ??
+      item?.Value,
+    ),
+    orderCount: toNumber(item?.orderCount ?? item?.OrderCount ?? 0),
+  }));
+
+  const totalRevenue = toNumber(
+    root?.totalRevenue ?? root?.TotalRevenue ?? root?.totalActualRevenue ?? root?.TotalActualRevenue,
+  );
+  const totalOrders = toNumber(root?.totalOrders ?? root?.TotalOrders ?? 0);
+
+  return { period, data, totalRevenue, totalOrders };
+};
+
 export const getRevenue = async (period: string = "day", startDate?: string, endDate?: string): Promise<RevenueChartResponse> => {
   const response = await axiosClient.get(API_ENDPOINTS.DASHBOARD.REVENUE(period, startDate, endDate));
-  return response.data;
+  return normalizeRevenueResponse(response);
+};
+
+export const getActualRevenue = async (period: string = "day", startDate?: string, endDate?: string): Promise<RevenueChartResponse> => {
+  const response = await axiosClient.get(API_ENDPOINTS.DASHBOARD.ACTUAL_REVENUE(period, startDate, endDate));
+  return normalizeRevenueResponse(response);
 };
 
 export interface CustomerOrderStatistics {
@@ -126,6 +191,7 @@ export const getCustomerOrderStatistics = async (): Promise<CustomerOrderStatist
 const adminDashboardService = {
   getDashboardSummary,
   getRevenue,
+  getActualRevenue,
   getAccountStatistics,
   getPaymentChannelStatistics,
   getAbandonedCarts,

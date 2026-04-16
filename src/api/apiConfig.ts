@@ -263,6 +263,16 @@ export const API_ENDPOINTS = {
       if (endDate) url += `&endDate=${encodeURIComponent(endDate)}`;
       return url;
     },
+    ACTUAL_REVENUE: (
+      period: string = "day",
+      startDate?: string,
+      endDate?: string,
+    ) => {
+      let url = `${BASE_URL}/dashboards/actual-revenue?period=${period}`;
+      if (startDate) url += `&startDate=${encodeURIComponent(startDate)}`;
+      if (endDate) url += `&endDate=${encodeURIComponent(endDate)}`;
+      return url;
+    },
     ACCOUNT_STATS: (
       period: string = "day",
       startDate?: string,
