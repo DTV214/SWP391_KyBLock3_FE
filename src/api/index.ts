@@ -12,6 +12,7 @@ export type { Category } from './categoryService';
 export type { ProductConfig, ConfigDetail } from './configService';
 export type { ProductDetailRequest, ProductDetailResponse } from './productDetailService';
 
+
 // DTOs (aligned with backend)
 export type { ProductDto, StockDto, ProductDetailResponseDto } from './dtos/product.dto';
 export type { ProductConfigDto } from './dtos/productConfig.dto';
