@@ -56,6 +56,7 @@ jobs:
             TMP_FILE=/tmp/frontend-dist.tar.gz
 
             mkdir -p $DEPLOY_DIR
+            cp -r $DEPLOY_DIR ${DEPLOY_DIR}_backup_$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
             rm -rf $DEPLOY_DIR/*
             tar -xzf $TMP_FILE -C $DEPLOY_DIR
             rm -f $TMP_FILE
