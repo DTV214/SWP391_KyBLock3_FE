@@ -18,7 +18,7 @@ const LOGO_URL =
   "https://res.cloudinary.com/dratbz8bh/image/upload/v1769523263/Gemini_Generated_Image_h7qrtzh7qrtzh7qr_uszekn.png";
 
 const navItems = [
-  { name: "Trang chủ", path: "/home" },
+  { name: "Trang chủ", path: "/" },
   { name: "Quà tặng", path: "/products" },
   { name: "Tùy Chỉnh Giỏ Quà", path: "/custom-basket" },
   { name: "Giới thiệu", path: "/introduce" },
@@ -35,21 +35,24 @@ export default function Navbar() {
 
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
     if (searchQuery.trim()) {
       navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
-      setIsMenuOpen(false); // Đóng menu nếu ở trên mobile
+      setIsMenuOpen(false);
     }
   };
 
-  // Kiểm tra token để xác định trạng thái đăng nhập
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const role = localStorage.getItem("role");
+
   const isStaff = role === "STAFF";
   const isAdmin = role === "ADMIN";
-  const isBackoffice = role === "ADMIN" || role === "STAFF";
+  const isBackoffice = isAdmin || isStaff;
+
   const panelLabel = isStaff ? "Staff" : isAdmin ? "Admin" : null;
   const panelPath = isStaff ? "/staff" : isAdmin ? "/admin" : null;
+
   const displayName = panelLabel || user.username || "Tài khoản";
   const avatarName = panelLabel || user.username || "User";
 
@@ -63,7 +66,6 @@ export default function Navbar() {
 
   return (
     <nav className="w-full flex flex-col shadow-md sticky top-0 z-[100]">
-      {/* 1. THANH CÔNG CỤ TRÊN (TOP BAR) */}
       <div className="relative z-[2] bg-tet-primary py-2 md:py-3 px-4 md:px-8 flex items-center justify-between gap-4">
         <button
           className="text-white md:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -72,11 +74,11 @@ export default function Navbar() {
           <Menu size={28} />
         </button>
 
-        <Link to="/home" className="flex items-center gap-3 group shrink-0">
+        <Link to="/" className="flex items-center gap-3 group shrink-0">
           <div className="relative w-12 h-12 md:w-14 md:h-14 overflow-hidden rounded-full border-2 border-tet-secondary shadow-[0_0_15px_rgba(237,229,181,0.3)] transition-transform group-hover:scale-105">
             <img
               src={LOGO_URL}
-              alt="Happybox Logo"
+              alt="Flora Farm Logo"
               className="w-full h-full object-cover object-center"
             />
           </div>
@@ -85,7 +87,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <form 
+        <form
           onSubmit={handleSearch}
           className="hidden sm:flex flex-1 max-w-xl mx-4 relative"
         >
@@ -93,10 +95,10 @@ export default function Navbar() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm kiếm hộp quà cao cấp..."
+            placeholder="Tìm kiếm sản phẩm..."
             className="w-full py-2 px-5 pr-12 rounded-full bg-[#fdfaf3] text-sm focus:outline-none focus:ring-2 focus:ring-tet-secondary text-tet-primary placeholder:text-gray-400 shadow-inner"
           />
-          <button 
+          <button
             type="submit"
             className="absolute right-2 top-1/2 -translate-y-1/2 bg-tet-primary p-1.5 rounded-full text-white cursor-pointer hover:bg-tet-accent transition-colors"
           >
@@ -105,7 +107,6 @@ export default function Navbar() {
         </form>
 
         <div className="flex items-center gap-2 md:gap-5 text-white text-sm font-medium">
-          {/* LOGIC HIỂN THỊ TÀI KHOẢN */}
           {!token ? (
             <Link
               to="/login"
@@ -126,22 +127,21 @@ export default function Navbar() {
                     alt="avatar"
                   />
                 </div>
-                <span className="max-w-[100px] truncate">
-                  {displayName}
-                </span>
+                <span className="max-w-[100px] truncate">{displayName}</span>
                 <ChevronDown
                   size={14}
-                  className={`transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`}
+                  className={`transition-transform ${
+                    isUserMenuOpen ? "rotate-180" : ""
+                  }`}
                 />
               </button>
 
-              {/* DROPDOWN MENU */}
               {isUserMenuOpen && (
                 <>
                   <div
                     className="fixed inset-0 z-[-1]"
                     onClick={() => setIsUserMenuOpen(false)}
-                  ></div>
+                  />
                   <div className="absolute right-0 z-[170] mt-3 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 text-tet-primary overflow-hidden animate-in fade-in zoom-in duration-200">
                     {isBackoffice && panelLabel && panelPath && (
                       <Link
@@ -152,6 +152,7 @@ export default function Navbar() {
                         <Settings size={16} /> {panelLabel}
                       </Link>
                     )}
+
                     <Link
                       to="/account/overview"
                       onClick={() => setIsUserMenuOpen(false)}
@@ -159,6 +160,7 @@ export default function Navbar() {
                     >
                       <User size={16} /> Trang cá nhân
                     </Link>
+
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-red-50 text-red-600 transition-colors font-bold text-xs uppercase border-t border-gray-50"
@@ -176,7 +178,6 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-1.5 cursor-pointer relative hover:text-tet-secondary transition-colors group">
-
             <button
               onClick={openCart}
               className="p-2 group-hover:bg-white/10 rounded-full transition-colors"
@@ -186,7 +187,6 @@ export default function Navbar() {
                 {getTotalItems()}
               </span>
             </button>
-
           </div>
 
           <button className="hidden md:flex bg-tet-secondary text-tet-primary px-5 py-2 rounded-full items-center gap-2 font-bold text-sm shadow-lg hover:bg-white hover:scale-105 transition-all">
@@ -196,7 +196,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* 2. THANH MENU CHÍNH (DESKTOP) */}
       <div className="relative z-[1] hidden md:flex bg-[#4a0d06] text-white py-3 justify-center gap-10 lg:gap-14 text-xs lg:text-sm font-medium border-t border-white/5 uppercase tracking-widest">
         {navItems.map((item) => (
           <Link
@@ -235,16 +234,17 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* 3. MENU DI ĐỘNG (MOBILE DRAWER) */}
       <div
-        className={`fixed inset-0 bg-black/60 z-[110] transition-opacity duration-300 md:hidden ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
+        className={`fixed inset-0 bg-black/60 z-[110] transition-opacity duration-300 md:hidden ${
+          isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
         onClick={() => setIsMenuOpen(false)}
       />
 
       <div
-        className={`fixed top-0 left-0 h-full w-[300px] bg-tet-bg z-[120] shadow-2xl transform transition-transform duration-300 ease-out md:hidden ${isMenuOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`fixed top-0 left-0 h-full w-[300px] bg-tet-bg z-[120] shadow-2xl transform transition-transform duration-300 ease-out md:hidden ${
+          isMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         <div className="bg-tet-primary p-6 flex justify-between items-center text-white">
           <div className="flex items-center gap-3">
@@ -256,9 +256,10 @@ export default function Navbar() {
               />
             </div>
             <span className="font-serif font-bold text-xl italic">
-              Happybox
+              Flora Farm
             </span>
           </div>
+
           <button
             onClick={() => setIsMenuOpen(false)}
             className="p-1 hover:bg-white/10 rounded-full"
@@ -305,6 +306,7 @@ export default function Navbar() {
                 </button>
               </>
             )}
+
             <div className="flex items-center gap-3 text-tet-accent">
               <Phone size={20} fill="currentColor" /> Hotline: 1900 1234
             </div>

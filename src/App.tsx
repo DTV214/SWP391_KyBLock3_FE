@@ -54,7 +54,7 @@ import AdminBlogs from "@/feature/admin/pages/AdminBlogs";
 import AdminInventory from "@/feature/admin/pages/AdminInventory";
 import AdminAccounts from "@/feature/admin/pages/AdminAccounts";
 import AdminStoreLocations from "@/feature/admin/pages/AdminStoreLocations";
-import AdminContactManagement from "@/feature/admin/pages/AdminContactManagement"; // <-- THÊM DÒNG NÀY
+import AdminContactManagement from "@/feature/admin/pages/AdminContactManagement";
 
 // Staff Module
 import StaffLayout from "@/feature/staff/layout/StaffLayout";
@@ -73,7 +73,6 @@ import PaymentFailure from "@/feature/checkout/pages/PaymentFailure";
 import VNPayReturn from "@/feature/checkout/pages/VNPayReturn";
 import CustomerChatWidget from "@/feature/chat/components/CustomerChatWidget";
 
-// --- MIDDLEWARES ---
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
@@ -81,29 +80,31 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   if (token) {
     if (role === "ADMIN") return <Navigate to="/admin" replace />;
     if (role === "STAFF") return <Navigate to="/staff" replace />;
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/" replace />;
   }
+
   return children;
 };
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem("token");
-  return token ? children : <Navigate to="/login" />;
+  return token ? children : <Navigate to="/login" replace />;
 };
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
-  return token && role === "ADMIN" ? children : <Navigate to="/home" />;
+  return token && role === "ADMIN" ? children : <Navigate to="/" replace />;
 };
 
 const StaffRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
+
   return token && (role === "STAFF" || role === "ADMIN") ? (
     children
   ) : (
-    <Navigate to="/home" />
+    <Navigate to="/" replace />
   );
 };
 
@@ -116,13 +117,15 @@ function App() {
           <main className="flex-grow">
             <Routes>
               {/* --- PUBLIC ROUTES --- */}
-              <Route path="/home" element={<HomePage />} />
+              <Route path="/" element={<HomePage />} />
+              <Route path="/home" element={<Navigate to="/" replace />} />
+
               <Route path="/introduce" element={<IntroducePage />} />
               <Route path="/blogs" element={<BlogPage />} />
               <Route path="/blog/:id" element={<BlogDetailPage />} />
               <Route path="/contact" element={<ContactPage />} />
-              <Route path="/quotation" element={<QuotationIntroPage />} />
 
+              <Route path="/quotation" element={<QuotationIntroPage />} />
               <Route
                 path="/quotation/create"
                 element={<QuotationCreatePage />}
@@ -135,6 +138,7 @@ function App() {
                 path="/quotation/status/:id"
                 element={<QuotationStatusPage />}
               />
+
               <Route path="/products" element={<ProductPage />} />
               <Route path="/custom-basket" element={<CustomBasketPage />} />
               <Route path="/product/:id" element={<ProductDetailPage />} />
@@ -164,8 +168,6 @@ function App() {
                 }
               />
 
-              <Route path="/" element={<Navigate to="/home" />} />
-
               {/* --- CUSTOMER ACCOUNT ROUTES --- */}
               <Route
                 path="/account"
@@ -175,7 +177,7 @@ function App() {
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<Navigate to="overview" />} />
+                <Route index element={<Navigate to="overview" replace />} />
                 <Route path="overview" element={<AccountOverview />} />
                 <Route path="baskets" element={<MyBasketsPage />} />
                 <Route path="baskets/:id/edit" element={<EditBasket />} />
@@ -195,7 +197,7 @@ function App() {
                   </StaffRoute>
                 }
               >
-                <Route index element={<Navigate to="dashboard" />} />
+                <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<StaffDashboardPage />} />
                 <Route path="quotations" element={<StaffQuotationsPage />} />
                 <Route
@@ -205,7 +207,6 @@ function App() {
                 <Route path="chats" element={<AdminChatPage />} />
                 <Route path="orders" element={<StaffOrdersPage />} />
                 <Route path="orders/:orderId" element={<StaffOrdersPage />} />
-                {/* Cho phép Staff xử lý Contact */}
                 <Route path="contacts" element={<AdminContactManagement />} />
               </Route>
 
@@ -218,7 +219,7 @@ function App() {
                   </AdminRoute>
                 }
               >
-                <Route index element={<Navigate to="overview" />} />
+                <Route index element={<Navigate to="overview" replace />} />
                 <Route path="overview" element={<AdminOverview />} />
                 <Route path="products" element={<AdminProducts />} />
                 <Route path="categories" element={<AdminCategories />} />
@@ -235,8 +236,7 @@ function App() {
                   path="store-locations"
                   element={<AdminStoreLocations />}
                 />
-                <Route path="contacts" element={<AdminContactManagement />} />{" "}
-                {/* <-- ROUTE LIÊN HỆ */}
+                <Route path="contacts" element={<AdminContactManagement />} />
                 <Route
                   path="quotations"
                   element={<AdminApprovalQuotationsPage />}
@@ -261,6 +261,7 @@ function App() {
               <Route path="/payments/vnpay-return" element={<VNPayReturn />} />
             </Routes>
           </main>
+
           <Footer />
           <BackToTop />
           <ChatBot />
