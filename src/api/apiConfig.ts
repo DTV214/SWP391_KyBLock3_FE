@@ -342,7 +342,14 @@ export const API_ENDPOINTS = {
       if (days) url += `?days=${days}`;
       return url;
     },
-    CUSTOMER_STATISTICS: `${BASE_URL}/dashboards/customer-statistics`,
+    CUSTOMER_STATISTICS: (startDate?: string, endDate?: string) => {
+      let url = `${BASE_URL}/dashboards/customer-statistics`;
+      const params = [];
+      if (startDate) params.push(`startDate=${encodeURIComponent(startDate)}`);
+      if (endDate) params.push(`endDate=${encodeURIComponent(endDate)}`);
+      if (params.length > 0) url += `?${params.join("&")}`;
+      return url;
+    },
   },
   // Feedbacks endpoints
   FEEDBACKS: {

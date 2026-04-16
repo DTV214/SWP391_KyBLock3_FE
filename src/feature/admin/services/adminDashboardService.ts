@@ -334,11 +334,12 @@ export interface CustomerOrderStatistics {
   cancelledOrders: number;
   processingOrders: number;
   totalSpent: number;
+  totalSpentAllTime: number;
   successRate: number;
 }
 
-export const getCustomerOrderStatistics = async (): Promise<CustomerOrderStatistics[]> => {
-  const response = await axiosClient.get(API_ENDPOINTS.DASHBOARD.CUSTOMER_STATISTICS);
+export const getCustomerOrderStatistics = async (startDate?: string, endDate?: string): Promise<CustomerOrderStatistics[]> => {
+  const response = await axiosClient.get(API_ENDPOINTS.DASHBOARD.CUSTOMER_STATISTICS(startDate, endDate));
   return response.data;
 };
 
