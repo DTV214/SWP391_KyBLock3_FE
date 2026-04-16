@@ -23,12 +23,13 @@ export default function AccountOverview() {
   // 1. Khởi tạo State để quản lý dữ liệu người dùng
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  
+
   // State cho custom baskets
   const [customBaskets, setCustomBaskets] = useState<CustomerBasketDto[]>([]);
   const [loadingBaskets, setLoadingBaskets] = useState(false);
   const [showBasketsModal, setShowBasketsModal] = useState(false);
-  const [selectedBasket, setSelectedBasket] = useState<CustomerBasketDto | null>(null);
+  const [selectedBasket, setSelectedBasket] =
+    useState<CustomerBasketDto | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   // 2. Fetch dữ liệu từ API khi component được mount
@@ -53,12 +54,12 @@ export default function AccountOverview() {
   const fetchCustomBaskets = async () => {
     try {
       setLoadingBaskets(true);
-      const token = localStorage.getItem('token') || '';
+      const token = localStorage.getItem("token") || "";
       const response = await productService.getMyBaskets(token);
-      console.log('My baskets response:', response);
+      console.log("My baskets response:", response);
       setCustomBaskets(response.data || []);
     } catch (error) {
-      console.error('Error fetching custom baskets:', error);
+      console.error("Error fetching custom baskets:", error);
     } finally {
       setLoadingBaskets(false);
     }
@@ -81,50 +82,63 @@ export default function AccountOverview() {
 
   // Xóa giỏ quà
   const handleDeleteBasket = async (productId: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa giỏ quà này không?')) return;
-    
-    console.log('=== DELETE CUSTOM BASKET ===');
-    console.log('Product ID:', productId);
-    
+    if (!confirm("Bạn có chắc chắn muốn xóa giỏ quà này không?")) return;
+
+    console.log("=== DELETE CUSTOM BASKET ===");
+    console.log("Product ID:", productId);
+
     try {
-      const token = localStorage.getItem('token') || '';
-      console.log('Calling API: DELETE /products/' + productId);
-      
+      const token = localStorage.getItem("token") || "";
+      console.log("Calling API: DELETE /products/" + productId);
+
       await productService.delete(productId, token);
-      
-      console.log('✅ Basket deleted successfully');
-      alert('Đã xóa giỏ quà thành công');
-      
+
+      console.log("✅ Basket deleted successfully");
+      alert("Đã xóa giỏ quà thành công");
+
       // Refresh danh sách giỏ quà
       await fetchCustomBaskets();
-    } catch (error: any) {
-      console.error('❌ Error deleting basket:', error);
-      console.error('Error response:', error.response);
-      console.error('Error message:', error.response?.data?.message || error.message);
-      
-      alert(error.response?.data?.message || error.message || 'Không thể xóa giỏ quà');
+    } catch (error: unknown) {
+      console.error("❌ Error deleting basket:", error);
+      let errorMessage = "Không thể xóa giỏ quà";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        console.error("Error message:", errorMessage);
+      } else if (
+        typeof error === "object" &&
+        error !== null &&
+        "response" in error
+      ) {
+        const apiError = error as {
+          response?: { data?: { message?: string } };
+        };
+        errorMessage = apiError.response?.data?.message || errorMessage;
+        console.error("Error response:", apiError.response);
+      }
+
+      alert(errorMessage);
     } finally {
-      console.log('=== END DELETE BASKET ===');
+      console.log("=== END DELETE BASKET ===");
     }
   };
 
   // Chỉnh sửa giỏ quà - navigate đến trang edit
   const handleEditBasket = (basket: CustomerBasketDto) => {
-    console.log('=== NAVIGATE TO EDIT BASKET ===');
-    console.log('Basket:', basket);
-    
+    console.log("=== NAVIGATE TO EDIT BASKET ===");
+    console.log("Basket:", basket);
+
     // Navigate đến trang chỉnh sửa với productId
     // Bạn có thể tạo route /account/baskets/:id/edit
     // Hoặc navigate đến /products với state để mở modal edit
-    navigate(`/account/baskets/${basket.productid}/edit`, { 
-      state: { basket } 
+    navigate(`/account/baskets/${basket.productid}/edit`, {
+      state: { basket },
     });
   };
 
   // 3. Hiển thị trạng thái loading trong khi chờ API
   if (loading) {
     return (
-      <div className="min-h-[400px] flex flex-col items-center justify-center text-tet-primary">
+      <div className="min-h-100 flex flex-col items-center justify-center text-tet-primary">
         <Loader2 className="animate-spin mb-4" size={40} />
         <p className="font-serif italic text-sm">
           Đang lấy thông tin quà Tết của bạn...
@@ -180,33 +194,43 @@ export default function AccountOverview() {
       </section>
 
       {/* 2. Hạng thành viên & Số dư ví (REAL DATA) */}
-      <section className="bg-[#FBF5E8] p-6 rounded-3xl border border-tet-secondary/30 flex justify-between items-center group cursor-pointer hover:shadow-md transition-all">
+      <section className="bg-linear-to-r from-[#FBF5E8] to-white p-8 rounded-[2.5rem] border border-tet-secondary/30 flex items-center gap-6 group hover:shadow-md transition-all">
+        <div className="p-4 bg-tet-primary/10 rounded-2xl text-tet-primary shadow-inner">
+          <ShieldCheck size={32} />
+        </div>
         <div>
           <p className="text-xs text-tet-primary/60 font-bold uppercase tracking-widest mb-1">
             Hạng thành viên
           </p>
-          <h3 className="text-3xl font-serif font-black text-tet-primary uppercase">
-            {profile.role === "CUSTOMER" ? "Bạc" : profile.role}
+          <h3 className="text-3xl font-serif font-black text-tet-primary uppercase tracking-wide">
+            {profile.role === "CUSTOMER" ? "THÀNH VIÊN BẠC" : profile.role}
           </h3>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-tet-primary/60 font-bold uppercase tracking-widest mb-1">
-            Số dư ví Happybox
-          </p>
-          <p className="text-3xl font-bold text-tet-accent">
-            {profile.walletBalance.toLocaleString()}{" "}
-            <span className="text-sm font-medium">VNĐ</span>
-          </p>
         </div>
       </section>
 
       {/* 3. Truy cập nhanh (Giữ nguyên giao diện của bạn) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Thông tin cá nhân", icon: <User size={24} />, onClick: () => navigate('/account/profile') },
-          { label: "Lịch sử đơn hàng", icon: <ClipboardList size={24} />, onClick: () => navigate('/account/orders') },
-          { label: "Quản lý địa chỉ", icon: <MapPin size={24} />, onClick: () => navigate('/account/addresses') },
-          { label: "Giỏ quà của tôi", icon: <Gift size={24} />, onClick: () => navigate('/account/baskets') },
+          {
+            label: "Thông tin cá nhân",
+            icon: <User size={24} />,
+            onClick: () => navigate("/account/profile"),
+          },
+          {
+            label: "Lịch sử đơn hàng",
+            icon: <ClipboardList size={24} />,
+            onClick: () => navigate("/account/orders"),
+          },
+          {
+            label: "Quản lý địa chỉ",
+            icon: <MapPin size={24} />,
+            onClick: () => navigate("/account/addresses"),
+          },
+          {
+            label: "Giỏ quà của tôi",
+            icon: <Gift size={24} />,
+            onClick: () => navigate("/account/baskets"),
+          },
         ].map((item, i) => (
           <div
             key={i}
@@ -238,20 +262,24 @@ export default function AccountOverview() {
 
       {/* Modal: Danh sách giỏ quà tùy chỉnh */}
       {showBasketsModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-9999 flex items-center justify-center p-4"
           onClick={handleCloseBasketsModal}
         >
-          <div 
+          <div
             className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex-shrink-0 bg-gradient-to-r from-tet-primary to-tet-accent p-6 text-white rounded-t-3xl">
+            <div className="shrink-0 bg-linear-to-r from-tet-primary to-tet-accent p-6 text-white rounded-t-3xl">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-2xl font-bold mb-2">Giỏ quà tùy chỉnh của bạn</h3>
-                  <p className="text-sm opacity-90">Quản lý các giỏ quà đã tạo</p>
+                  <h3 className="text-2xl font-bold mb-2">
+                    Giỏ quà tùy chỉnh của bạn
+                  </h3>
+                  <p className="text-sm opacity-90">
+                    Quản lý các giỏ quà đã tạo
+                  </p>
                 </div>
                 <button
                   onClick={handleCloseBasketsModal}
@@ -274,8 +302,12 @@ export default function AccountOverview() {
               ) : customBaskets.length === 0 ? (
                 <div className="text-center py-20">
                   <Gift size={64} className="mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500 text-lg mb-2">Chưa có giỏ quà tùy chỉnh nào</p>
-                  <p className="text-gray-400 text-sm">Hãy tạo giỏ quà từ template để bắt đầu!</p>
+                  <p className="text-gray-500 text-lg mb-2">
+                    Chưa có giỏ quà tùy chỉnh nào
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    Hãy tạo giỏ quà từ template để bắt đầu!
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -298,11 +330,15 @@ export default function AccountOverview() {
                           </div>
                         )}
                         <div className="absolute top-3 right-3">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
-                            basket.status === 'DRAFT' ? 'bg-yellow-500 text-white' :
-                            basket.status === 'ACTIVE' ? 'bg-green-500 text-white' :
-                            'bg-gray-500 text-white'
-                          }`}>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
+                              basket.status === "DRAFT"
+                                ? "bg-yellow-500 text-white"
+                                : basket.status === "ACTIVE"
+                                  ? "bg-green-500 text-white"
+                                  : "bg-gray-500 text-white"
+                            }`}
+                          >
                             {basket.status}
                           </span>
                         </div>
@@ -310,21 +346,25 @@ export default function AccountOverview() {
 
                       {/* Content */}
                       <div className="p-4">
-                        <h4 className="text-lg font-bold text-tet-primary mb-2 line-clamp-2 min-h-[3.5rem]">
+                        <h4 className="text-lg font-bold text-tet-primary mb-2 line-clamp-2 min-h-14">
                           {basket.productname}
                         </h4>
                         <p className="text-xs text-gray-500 mb-3 line-clamp-2">
-                          {basket.description || 'Giỏ quà tùy chỉnh'}
+                          {basket.description || "Giỏ quà tùy chỉnh"}
                         </p>
 
                         <div className="grid grid-cols-2 gap-2 mb-4">
                           <div className="bg-blue-50 p-2 rounded-lg">
                             <p className="text-xs text-gray-600">Tổng giá</p>
-                            <p className="text-sm font-bold text-blue-600">{basket.totalPrice.toLocaleString()}đ</p>
+                            <p className="text-sm font-bold text-blue-600">
+                              {basket.totalPrice.toLocaleString()}đ
+                            </p>
                           </div>
                           <div className="bg-purple-50 p-2 rounded-lg">
                             <p className="text-xs text-gray-600">Số món</p>
-                            <p className="text-sm font-bold text-purple-600">{basket.productDetails?.length || 0}</p>
+                            <p className="text-sm font-bold text-purple-600">
+                              {basket.productDetails?.length || 0}
+                            </p>
                           </div>
                         </div>
 
@@ -345,7 +385,9 @@ export default function AccountOverview() {
                             Sửa
                           </button>
                           <button
-                            onClick={() => handleDeleteBasket(basket.productid!)}
+                            onClick={() =>
+                              handleDeleteBasket(basket.productid!)
+                            }
                             className="px-3 py-2 bg-red-50 text-red-600 rounded-lg font-bold hover:bg-red-100 transition-all"
                           >
                             <Trash2 size={14} />
@@ -354,9 +396,9 @@ export default function AccountOverview() {
                         <button
                           onClick={() => {
                             // TODO: implement payment logic
-                            alert('Chức năng thanh toán đang được phát triển');
+                            alert("Chức năng thanh toán đang được phát triển");
                           }}
-                          className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-bold hover:shadow-lg transition-all text-sm"
+                          className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 bg-linear-to-r from-green-500 to-emerald-600 text-white rounded-lg font-bold hover:shadow-lg transition-all text-sm"
                         >
                           <ShoppingCart size={14} />
                           Thanh toán
@@ -369,7 +411,7 @@ export default function AccountOverview() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex-shrink-0 border-t border-gray-100 p-6 flex gap-3">
+            <div className="shrink-0 border-t border-gray-100 p-6 flex gap-3">
               <button
                 onClick={handleCloseBasketsModal}
                 className="flex-1 px-6 py-3 border border-gray-300 text-gray-600 rounded-full font-bold hover:bg-gray-50 transition-all"
@@ -377,8 +419,8 @@ export default function AccountOverview() {
                 Đóng
               </button>
               <button
-                onClick={() => navigate('/custom-basket')}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-tet-primary to-tet-accent text-white rounded-full font-bold hover:shadow-lg transition-all"
+                onClick={() => navigate("/custom-basket")}
+                className="flex-1 px-6 py-3 bg-linear-to-r from-tet-primary to-tet-accent text-white rounded-full font-bold hover:shadow-lg transition-all"
               >
                 Tạo giỏ quà mới
               </button>
@@ -389,20 +431,24 @@ export default function AccountOverview() {
 
       {/* Modal: Chi tiết giỏ quà */}
       {showDetailsModal && selectedBasket && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-9999 flex items-center justify-center p-4"
           onClick={handleCloseDetailsModal}
         >
-          <div 
+          <div
             className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex-shrink-0 bg-gradient-to-r from-tet-primary to-tet-accent p-6 text-white rounded-t-3xl">
+            <div className="shrink-0 bg-linear-to-r from-tet-primary to-tet-accent p-6 text-white rounded-t-3xl">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-2xl font-bold mb-2">{selectedBasket.productname}</h3>
-                  <p className="text-sm opacity-90">{selectedBasket.description || 'Giỏ quà tùy chỉnh'}</p>
+                  <h3 className="text-2xl font-bold mb-2">
+                    {selectedBasket.productname}
+                  </h3>
+                  <p className="text-sm opacity-90">
+                    {selectedBasket.description || "Giỏ quà tùy chỉnh"}
+                  </p>
                 </div>
                 <button
                   onClick={handleCloseDetailsModal}
@@ -419,23 +465,33 @@ export default function AccountOverview() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-blue-50 p-4 rounded-xl">
                   <p className="text-xs text-gray-600 mb-1">Tổng giá</p>
-                  <p className="text-lg font-bold text-blue-600">{selectedBasket.totalPrice.toLocaleString()}đ</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {selectedBasket.totalPrice.toLocaleString()}đ
+                  </p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-xl">
                   <p className="text-xs text-gray-600 mb-1">Trọng lượng</p>
-                  <p className="text-lg font-bold text-green-600">{selectedBasket.totalWeight}g</p>
+                  <p className="text-lg font-bold text-green-600">
+                    {selectedBasket.totalWeight}g
+                  </p>
                 </div>
                 <div className="bg-purple-50 p-4 rounded-xl">
                   <p className="text-xs text-gray-600 mb-1">Số món</p>
-                  <p className="text-lg font-bold text-purple-600">{selectedBasket.productDetails?.length || 0}</p>
+                  <p className="text-lg font-bold text-purple-600">
+                    {selectedBasket.productDetails?.length || 0}
+                  </p>
                 </div>
                 <div className="bg-amber-50 p-4 rounded-xl">
                   <p className="text-xs text-gray-600 mb-1">Trạng thái</p>
-                  <p className={`text-lg font-bold ${
-                    selectedBasket.status === 'DRAFT' ? 'text-yellow-600' :
-                    selectedBasket.status === 'ACTIVE' ? 'text-green-600' :
-                    'text-gray-600'
-                  }`}>
+                  <p
+                    className={`text-lg font-bold ${
+                      selectedBasket.status === "DRAFT"
+                        ? "text-yellow-600"
+                        : selectedBasket.status === "ACTIVE"
+                          ? "text-green-600"
+                          : "text-gray-600"
+                    }`}
+                  >
                     {selectedBasket.status}
                   </p>
                 </div>
@@ -452,8 +508,11 @@ export default function AccountOverview() {
 
               {/* Product Details */}
               <div>
-                <h4 className="text-lg font-bold text-tet-primary mb-4">Sản phẩm trong giỏ</h4>
-                {selectedBasket.productDetails && selectedBasket.productDetails.length > 0 ? (
+                <h4 className="text-lg font-bold text-tet-primary mb-4">
+                  Sản phẩm trong giỏ
+                </h4>
+                {selectedBasket.productDetails &&
+                selectedBasket.productDetails.length > 0 ? (
                   <div className="space-y-3">
                     {selectedBasket.productDetails.map((detail, index) => (
                       <div
@@ -476,22 +535,31 @@ export default function AccountOverview() {
                             {detail.productname}
                           </h5>
                           <p className="text-xs text-gray-500">
-                            SKU: {detail.sku || 'N/A'}
+                            SKU: {detail.sku || "N/A"}
                           </p>
                           <div className="flex gap-4 mt-1">
                             <span className="text-xs text-gray-600">
-                              Giá: <span className="font-bold text-tet-accent">{detail.price.toLocaleString()}đ</span>
+                              Giá:{" "}
+                              <span className="font-bold text-tet-accent">
+                                {detail.price.toLocaleString()}đ
+                              </span>
                             </span>
                             <span className="text-xs text-gray-600">
-                              Trọng lượng: <span className="font-bold">{detail.unit}g</span>
+                              Trọng lượng:{" "}
+                              <span className="font-bold">{detail.unit}g</span>
                             </span>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-500 mb-1">Số lượng</p>
-                          <p className="text-2xl font-bold text-tet-primary">x{detail.quantity}</p>
+                          <p className="text-2xl font-bold text-tet-primary">
+                            x{detail.quantity}
+                          </p>
                           <p className="text-xs text-gray-600 mt-1">
-                            = <span className="font-bold text-blue-600">{detail.subtotal.toLocaleString()}đ</span>
+                            ={" "}
+                            <span className="font-bold text-blue-600">
+                              {detail.subtotal.toLocaleString()}đ
+                            </span>
                           </p>
                         </div>
                       </div>
@@ -507,7 +575,7 @@ export default function AccountOverview() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex-shrink-0 border-t border-gray-100 p-6 flex gap-3">
+            <div className="shrink-0 border-t border-gray-100 p-6 flex gap-3">
               <button
                 onClick={handleCloseDetailsModal}
                 className="flex-1 px-6 py-3 border border-gray-300 text-gray-600 rounded-full font-bold hover:bg-gray-50 transition-all"
@@ -519,16 +587,16 @@ export default function AccountOverview() {
                   handleCloseDetailsModal();
                   handleEditBasket(selectedBasket);
                 }}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-tet-primary to-tet-accent text-white rounded-full font-bold hover:shadow-lg transition-all"
+                className="flex-1 px-6 py-3 bg-linear-to-r from-tet-primary to-tet-accent text-white rounded-full font-bold hover:shadow-lg transition-all"
               >
                 Chỉnh sửa giỏ quà
               </button>
               <button
                 onClick={() => {
                   // TODO: implement payment logic
-                  alert('Chức năng thanh toán đang được phát triển');
+                  alert("Chức năng thanh toán đang được phát triển");
                 }}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                className="flex-1 px-6 py-3 bg-linear-to-r from-green-500 to-emerald-600 text-white rounded-full font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2"
               >
                 <ShoppingCart size={16} />
                 Thanh toán

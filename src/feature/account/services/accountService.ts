@@ -6,12 +6,12 @@ export interface ProfileData {
   accountId: number;
   username: string;
   email: string;
-  fullName: string; // Lưu ý: Server dùng fullName (chữ N viết hoa)
+  fullName: string;
   phone: string;
   address: string | null;
   role: string;
   status: string;
-  walletBalance: number;
+  // ĐÃ XÓA: walletBalance
 }
 
 // 2. Interface cho Response chuẩn của Happybox
@@ -29,19 +29,14 @@ export interface UpdateProfilePayload {
 }
 
 const accountService = {
-  // Lấy thông tin cá nhân
   getProfile: async (): Promise<ProfileResponse> => {
     return axiosClient.get(API_ENDPOINTS.USER.PROFILE);
   },
-
-  // Cập nhật thông tin cá nhân (Họ tên, SĐT, Địa chỉ)
   updateProfile: async (
     payload: UpdateProfilePayload,
   ): Promise<{ status: number; msg: string }> => {
     return axiosClient.put(API_ENDPOINTS.USER.PROFILE, payload);
   },
-
-  // Vô hiệu hóa/Xóa tài khoản
   deleteProfile: async (): Promise<{ status: number; msg: string }> => {
     return axiosClient.delete(API_ENDPOINTS.USER.PROFILE);
   },

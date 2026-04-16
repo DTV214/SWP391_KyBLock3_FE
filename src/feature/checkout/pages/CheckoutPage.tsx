@@ -1,21 +1,22 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Separator } from '@/components/ui/separator';
-import { Wallet, Loader2, AlertCircle } from 'lucide-react';
-import { cartService, type CartItemResponse } from '@/feature/cart/services/cartService';
-import { orderService } from '@/feature/checkout/services/orderService';
-import { paymentService } from '@/feature/checkout/services/paymentService';
-import { walletService, type WalletResponse } from '@/feature/checkout/services/walletService';
-import type { PromotionResponse } from '@/feature/checkout/services/promotionService';
-import PaymentSuccessModal from '../components/PaymentSuccessModal';
-import PromotionSelectionModal from '../components/PromotionSelectionModal';
-import CustomProductDetailModal from '../components/CustomProductDetailModal';
-import { Ticket } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, AlertCircle, Ticket } from "lucide-react";
+import {
+  cartService,
+  type CartItemResponse,
+} from "@/feature/cart/services/cartService";
+import { orderService } from "@/feature/checkout/services/orderService";
+import { paymentService } from "@/feature/checkout/services/paymentService";
+import type { PromotionResponse } from "@/feature/checkout/services/promotionService";
+import PaymentSuccessModal from "../components/PaymentSuccessModal";
+import PromotionSelectionModal from "../components/PromotionSelectionModal";
+import CustomProductDetailModal from "../components/CustomProductDetailModal";
 
 interface FormData {
   customerName: string;
@@ -24,7 +25,7 @@ interface FormData {
   customerAddress: string;
   note: string;
   promotionCode: string;
-  paymentMethod: 'VNPAY' | 'WALLET';
+  paymentMethod: "VNPAY";
   province: string;
   district: string;
   ward: string;
@@ -37,55 +38,46 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [promotion, setPromotion] = useState<PromotionResponse | null>(null);
-  const [wallet, setWallet] = useState<WalletResponse | null>(null);
-  const [walletLoading, setWalletLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [successOrderId, setSuccessOrderId] = useState<number | undefined>();
   const [promotionModalOpen, setPromotionModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedDetailItem, setSelectedDetailItem] = useState<CartItemResponse | null>(null);
+  const [selectedDetailItem, setSelectedDetailItem] =
+    useState<CartItemResponse | null>(null);
 
   const [formData, setFormData] = useState<FormData>({
-    customerName: '',
-    customerPhone: '',
-    customerEmail: '',
-    customerAddress: '',
-    note: '',
-    promotionCode: '',
-    paymentMethod: 'VNPAY',
-    province: '',
-    district: '',
-    ward: '',
+    customerName: "",
+    customerPhone: "",
+    customerEmail: "",
+    customerAddress: "",
+    note: "",
+    promotionCode: "",
+    paymentMethod: "VNPAY",
+    province: "",
+    district: "",
+    ward: "",
   });
 
-  // Load cart items and wallet on mount
+  // Load cart items on mount
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
-          setError('Vui lòng đăng nhập để tiếp tục');
-          navigate('/login');
+          setError("Vui lòng đăng nhập để tiếp tục");
+          navigate("/login");
           return;
         }
 
         // Load cart
         const cartResponse = await cartService.getCart(token);
         setCartItems(cartResponse.items);
-
-        // Load wallet
-        setWalletLoading(true);
-        const walletResponse = await walletService.getWallet(token);
-        if (walletResponse) {
-          setWallet(walletResponse);
-        }
-      } catch (err: any) {
-        console.error('Error loading data:', err);
-        setError('Không thể tải dữ liệu. Vui lòng thử lại.');
+      } catch (err: unknown) {
+        console.error("Error loading data:", err);
+        setError("Không thể tải dữ liệu. Vui lòng thử lại.");
       } finally {
         setIsLoading(false);
-        setWalletLoading(false);
       }
     };
 
@@ -93,7 +85,7 @@ export default function CheckoutPage() {
   }, [navigate]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -102,24 +94,19 @@ export default function CheckoutPage() {
     }));
   };
 
-  const handlePaymentMethodChange = (value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      paymentMethod: value as 'VNPAY' | 'WALLET',
-    }));
-  };
-
-  const handleSelectPromotionFromModal = (selectedPromotion: PromotionResponse | null) => {
+  const handleSelectPromotionFromModal = (
+    selectedPromotion: PromotionResponse | null,
+  ) => {
     setPromotion(selectedPromotion);
     if (selectedPromotion) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        promotionCode: selectedPromotion.code
+        promotionCode: selectedPromotion.code,
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        promotionCode: ''
+        promotionCode: "",
       }));
     }
   };
@@ -138,7 +125,10 @@ export default function CheckoutPage() {
       }
 
       // Nếu discount vượt quá maxDiscountPrice, giới hạn ở maxDiscountPrice
-      if (promotion.maxDiscountPrice && discountValue > promotion.maxDiscountPrice) {
+      if (
+        promotion.maxDiscountPrice &&
+        discountValue > promotion.maxDiscountPrice
+      ) {
         discountValue = promotion.maxDiscountPrice;
       }
     }
@@ -163,36 +153,28 @@ export default function CheckoutPage() {
       !formData.customerEmail ||
       !formData.customerAddress
     ) {
-      setError('Vui lòng điền đầy đủ thông tin liên hệ');
+      setError("Vui lòng điền đầy đủ thông tin liên hệ");
       return;
     }
 
     if (cartItems.length === 0) {
-      setError('Giỏ hàng của bạn trống');
+      setError("Giỏ hàng của bạn trống");
       return;
-    }
-
-    // Check wallet balance if paying by wallet
-    if (formData.paymentMethod === 'WALLET') {
-      if (!wallet || wallet.balance < finalPrice) {
-        setError(`Số dư ví không đủ. Bạn cần ${(finalPrice - (wallet?.balance || 0)).toLocaleString()}đ nữa.`);
-        return;
-      }
     }
 
     try {
       setIsSubmitting(true);
       setError(null);
 
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        setError('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
-        navigate('/login');
+        setError("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+        navigate("/login");
         return;
       }
 
       // Step 1: Create order
-      console.log('📝 Creating order...');
+      console.log("📝 Creating order...");
       const orderResponse = await orderService.createOrder(
         {
           customerName: formData.customerName,
@@ -202,50 +184,43 @@ export default function CheckoutPage() {
           note: formData.note,
           promotionCode: formData.promotionCode,
         },
-        token
+        token,
       );
-      console.log('✅ Order created:', orderResponse);
+      console.log("✅ Order created:", orderResponse);
 
-      // Step 2: Pay based on selected method
-      if (formData.paymentMethod === 'WALLET') {
-        // Wallet payment
-        console.log('💳 Processing wallet payment...');
-        await paymentService.paymentByWallet(orderResponse.orderId, token);
-        console.log('✅ Wallet payment successful');
+      // Step 2: VNPAY payment
+      console.log("💳 Creating payment...");
+      const paymentResponse = await paymentService.createPayment(
+        {
+          orderId: orderResponse.orderId,
+          paymentMethod: "VNPAY", // Chỉ còn VNPay
+        },
+        token,
+      );
+      console.log("✅ Payment created:", paymentResponse);
 
-        // Show success modal
-        setSuccessOrderId(orderResponse.orderId);
-        setPaymentSuccess(true);
+      // Step 3: Redirect to payment URL
+      if (paymentResponse.paymentUrl || paymentResponse.paymentLink) {
+        const paymentUrl =
+          paymentResponse.paymentUrl || paymentResponse.paymentLink;
+        console.log("🔗 Redirecting to payment URL:", paymentUrl);
+        window.location.href = paymentUrl;
       } else {
-        // VNPAY payment
-        console.log('💳 Creating payment...');
-        const paymentResponse = await paymentService.createPayment(
-          {
-            orderId: orderResponse.orderId,
-            paymentMethod: formData.paymentMethod,
-          },
-          token
-        );
-        console.log('✅ Payment created:', paymentResponse);
-
-        // Step 3: Redirect to payment URL
-        if (paymentResponse.paymentUrl || paymentResponse.paymentLink) {
-          const paymentUrl = paymentResponse.paymentUrl || paymentResponse.paymentLink;
-          console.log('🔗 Redirecting to payment URL:', paymentUrl);
-          window.location.href = paymentUrl;
-        } else {
-          // If no payment URL, show success page
-          navigate('/checkout/success', {
-            state: { orderId: orderResponse.orderId }
-          });
-        }
+        // If no payment URL, show success page
+        navigate("/checkout/success", {
+          state: { orderId: orderResponse.orderId },
+        });
       }
-    } catch (err: any) {
-      console.error('Error during checkout:', err);
-      const errorMessage =
-        err.response?.data?.msg ||
-        err.message ||
-        'Có lỗi xảy ra trong quá trình thanh toán. Vui lòng thử lại.';
+    } catch (err: unknown) {
+      console.error("Error during checkout:", err);
+      let errorMessage =
+        "Có lỗi xảy ra trong quá trình thanh toán. Vui lòng thử lại.";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "object" && err !== null && "response" in err) {
+        const apiError = err as { response?: { data?: { msg?: string } } };
+        errorMessage = apiError.response?.data?.msg || errorMessage;
+      }
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -273,7 +248,8 @@ export default function CheckoutPage() {
         </h1>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+            <AlertCircle size={18} className="shrink-0" />
             {error}
           </div>
         )}
@@ -394,63 +370,27 @@ export default function CheckoutPage() {
                   </h3>
                   <RadioGroup
                     value={formData.paymentMethod}
-                    onValueChange={handlePaymentMethodChange}
                     className="space-y-3"
                   >
-                    <div className="flex items-center justify-between p-4 border rounded-2xl cursor-pointer hover:bg-gray-50 transition-all">
+                    <div className="flex items-center justify-between p-4 border rounded-2xl cursor-pointer transition-all border-blue-500 bg-blue-50/30">
                       <div className="flex items-center gap-3">
                         <RadioGroupItem value="VNPAY" id="vnpay" />
                         <Label
                           htmlFor="vnpay"
-                          className="font-bold text-sm cursor-pointer"
+                          className="font-bold text-sm cursor-pointer block"
                         >
                           Thanh toán qua VNPAY
+                          <span className="block text-xs font-normal text-gray-500 mt-1">
+                            An toàn & Nhanh chóng
+                          </span>
                         </Label>
                       </div>
-                      <Wallet size={20} className="text-gray-400" />
+                      <img
+                        src="https://vnpay.vn/s1/statics.vnpay.vn/2023/9/06ncktiwd6dc1694418189687.png"
+                        alt="VNPay"
+                        className="h-6"
+                      />
                     </div>
-
-                    <div
-                      className={`flex items-center justify-between p-4 border rounded-2xl cursor-pointer hover:bg-gray-50 transition-all ${wallet && wallet.balance < finalPrice
-                        ? 'opacity-60 border-red-200'
-                        : ''
-                        }`}
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        <RadioGroupItem
-                          value="WALLET"
-                          id="wallet"
-                          disabled={!wallet || wallet.balance < finalPrice}
-                        />
-                        <div className="flex-1">
-                          <Label
-                            htmlFor="wallet"
-                            className="font-bold text-sm cursor-pointer block"
-                          >
-                            Thanh toán bằng ví
-                          </Label>
-                          {wallet && (
-                            <p className={`text-xs mt-1 ${wallet.balance >= finalPrice
-                              ? 'text-green-600 font-medium'
-                              : 'text-red-600 font-medium'
-                              }`}>
-                              Số dư: {wallet.balance.toLocaleString()}đ
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <Wallet size={20} className={wallet && wallet.balance >= finalPrice ? 'text-tet-primary' : 'text-gray-400'} />
-                    </div>
-
-                    {wallet && wallet.balance < finalPrice && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-                        <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                        <div className="text-sm text-red-700">
-                          <p className="font-bold">Số dư ví không đủ</p>
-                          <p>Bạn cần thêm {(finalPrice - wallet.balance).toLocaleString()}đ</p>
-                        </div>
-                      </div>
-                    )}
                   </RadioGroup>
                 </section>
               </div>
@@ -458,51 +398,22 @@ export default function CheckoutPage() {
 
             {/* CỘT PHẢI: TÓM TẮT ĐƠN HÀNG (Sticky) */}
             <aside className="w-full lg:w-1/3 sticky top-28">
-              {/* Wallet Balance Panel */}
-              {wallet && (
-                <div className={`mb-6 p-6 rounded-2xl shadow-md border-2 ${wallet.balance >= finalPrice
-                  ? 'bg-green-50 border-green-200'
-                  : 'bg-orange-50 border-orange-200'
-                  }`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className={`text-lg font-bold ${wallet.balance >= finalPrice
-                      ? 'text-green-900'
-                      : 'text-orange-900'
-                      }`}>
-                      💳 Ví của bạn
-                    </h4>
-                    {walletLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  </div>
-                  <p className={`text-3xl font-black ${wallet.balance >= finalPrice
-                    ? 'text-green-600'
-                    : 'text-orange-600'
-                    }`}>
-                    {wallet.balance.toLocaleString()}đ
-                  </p>
-                  <p className={`text-sm mt-2 ${wallet.balance >= finalPrice
-                    ? 'text-green-700'
-                    : 'text-orange-700'
-                    }`}>
-                    {wallet.balance >= finalPrice
-                      ? '✅ Đủ để thanh toán'
-                      : `⚠️ Thiếu ${(finalPrice - wallet.balance).toLocaleString()}đ`}
-                  </p>
-                </div>
-              )}
-
               <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-100 space-y-8">
                 <h3 className="text-xl font-serif font-bold text-tet-primary">
                   Đơn hàng của bạn
                 </h3>
 
                 {/* Danh sách sản phẩm */}
-                <div className="space-y-4 max-h-96 overflow-y-auto">
+                <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar pr-2">
                   {cartItems.length > 0 ? (
                     cartItems.map((item) => (
                       <div
                         key={item.cartDetailId}
-                        className={`flex gap-3 pb-4 border-b last:border-b-0 ${item.isCustomItem ? 'cursor-pointer hover:bg-gray-50 -mx-4 px-4 py-2 rounded-lg transition-colors' : ''
-                          }`}
+                        className={`flex gap-3 pb-4 border-b border-gray-100 last:border-b-0 ${
+                          item.isCustomItem
+                            ? "cursor-pointer hover:bg-gray-50 -mx-4 px-4 py-2 rounded-lg transition-colors"
+                            : ""
+                        }`}
                         onClick={() => {
                           if (item.isCustomItem) {
                             setSelectedDetailItem(item);
@@ -510,7 +421,7 @@ export default function CheckoutPage() {
                           }
                         }}
                       >
-                        <div className="relative w-16 h-16 bg-gray-50 rounded-xl overflow-hidden shrink-0">
+                        <div className="relative w-16 h-16 bg-gray-50 rounded-xl overflow-hidden shrink-0 border border-gray-100">
                           {item.imageUrl ? (
                             <img
                               src={item.imageUrl}
@@ -518,7 +429,7 @@ export default function CheckoutPage() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-tet-secondary to-tet-primary/10">
+                            <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-tet-secondary to-tet-primary/10">
                               <span className="text-2xl">🎁</span>
                             </div>
                           )}
@@ -530,16 +441,16 @@ export default function CheckoutPage() {
                           <h4 className="text-sm font-bold text-tet-primary line-clamp-2">
                             {item.productName}
                             {item.isCustomItem && (
-                              <span className="ml-2 text-[10px] bg-tet-primary/20 text-tet-primary px-2 py-1 rounded-full font-medium">
+                              <span className="ml-2 text-[10px] bg-tet-primary/10 text-tet-primary px-2 py-1 rounded-full font-medium">
                                 Xem chi tiết
                               </span>
                             )}
                           </h4>
-                          <p className="text-[10px] text-gray-400 uppercase font-bold">
-                            SKU: {item.sku}
+                          <p className="text-[10px] text-gray-400 uppercase font-bold mt-0.5">
+                            SKU: {item.sku || "N/A"}
                           </p>
                           <p className="text-sm font-bold text-tet-primary mt-1">
-                            {(item.subTotal || 0).toLocaleString()}đ
+                            {(item.subTotal || 0).toLocaleString("vi-VN")}đ
                           </p>
                         </div>
                       </div>
@@ -557,25 +468,30 @@ export default function CheckoutPage() {
                   <button
                     type="button"
                     onClick={() => setPromotionModalOpen(true)}
-                    className="w-full flex items-center justify-between gap-3 bg-gradient-to-r from-tet-primary/10 to-tet-secondary/10 border-2 border-tet-primary/20 p-4 rounded-2xl hover:border-tet-primary/40 transition-all group"
+                    className="w-full flex items-center justify-between gap-3 bg-linear-to-r from-tet-primary/5 to-tet-secondary/5 border-2 border-tet-primary/20 p-4 rounded-2xl hover:border-tet-primary/40 transition-all group"
                   >
                     <div className="flex items-center gap-3 flex-1">
-                      <div className="p-2 bg-tet-primary/20 rounded-lg group-hover:bg-tet-primary/30 transition-all">
+                      <div className="p-2 bg-tet-primary/10 rounded-lg group-hover:bg-tet-primary/20 transition-all">
                         <Ticket size={20} className="text-tet-primary" />
                       </div>
                       <div className="text-left">
                         <p className="text-sm font-bold text-tet-primary">
-                          {promotion ? `Mã: ${promotion.code}` : 'Chọn mã giảm giá'}
+                          {promotion
+                            ? `Mã: ${promotion.code}`
+                            : "Chọn mã giảm giá"}
                         </p>
                         {promotion && (
-                          <p className="text-xs text-gray-500">
-                            Giảm {promotion.isPercentage ? `${promotion.discountValue}%` : `${Math.round(promotion.discountValue / 1000)}K`}
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Giảm{" "}
+                            {promotion.isPercentage
+                              ? `${promotion.discountValue}%`
+                              : `${Math.round(promotion.discountValue / 1000)}K`}
                           </p>
                         )}
                       </div>
                     </div>
-                    <span className="text-sm font-bold text-tet-primary px-3 py-1 bg-white rounded-lg">
-                      {promotion ? '✓' : '+'}
+                    <span className="text-sm font-bold text-tet-primary px-3 py-1 bg-white rounded-lg shadow-sm border border-gray-100">
+                      {promotion ? "✓" : "+"}
                     </span>
                   </button>
                 )}
@@ -590,10 +506,10 @@ export default function CheckoutPage() {
                         </p>
                       </div>
                     )}
-                    <div className="space-y-3 pt-6 border-t border-gray-50">
+                    <div className="space-y-3 pt-6 border-t border-gray-100">
                       <div className="flex justify-between text-sm text-gray-500 font-medium">
                         <span>Tạm tính</span>
-                        <span>{totalPrice.toLocaleString()}đ</span>
+                        <span>{totalPrice.toLocaleString("vi-VN")}đ</span>
                       </div>
                       <div className="flex justify-between text-sm text-gray-500 font-medium">
                         <span>Phí vận chuyển</span>
@@ -602,21 +518,22 @@ export default function CheckoutPage() {
                       {discountValue > 0 && (
                         <div className="flex justify-between text-sm text-green-600 font-bold">
                           <span>Giảm giá</span>
-                          <span>-{discountValue.toLocaleString()}đ</span>
+                          <span>-{discountValue.toLocaleString("vi-VN")}đ</span>
                         </div>
                       )}
-                      <Separator />
-                      <div className="flex justify-between items-center">
+                      <Separator className="bg-gray-100" />
+                      <div className="flex justify-between items-center pt-2">
                         <span className="text-lg font-serif font-bold text-tet-primary uppercase">
                           Tổng cộng
                         </span>
                         <div className="text-right">
                           <p className="text-2xl font-black text-tet-primary italic">
-                            {finalPrice.toLocaleString()}đ
+                            {finalPrice.toLocaleString("vi-VN")}đ
                           </p>
                           {discountValue > 0 && (
                             <p className="text-[10px] text-green-600 font-bold tracking-tighter italic">
-                              🌸 Tiết kiệm: {discountValue.toLocaleString()}đ
+                              🌸 Tiết kiệm:{" "}
+                              {discountValue.toLocaleString("vi-VN")}đ
                             </p>
                           )}
                         </div>
@@ -626,12 +543,12 @@ export default function CheckoutPage() {
                     <button
                       type="submit"
                       disabled={isSubmitting || cartItems.length === 0}
-                      className="w-full bg-[#4a0d06] text-white py-5 rounded-2xl font-bold text-lg shadow-xl hover:bg-tet-accent disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                      className="w-full bg-linear-to-r from-[#7a160e] to-tet-accent hover:from-[#4a0d06] hover:to-[#7a160e] text-white py-4 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 flex items-center justify-center gap-2"
                     >
                       {isSubmitting && (
                         <Loader2 className="h-5 w-5 animate-spin" />
                       )}
-                      {isSubmitting ? 'Đang xử lý...' : 'Đặt hàng'}
+                      {isSubmitting ? "Đang xử lý..." : "Đặt hàng (VNPay)"}
                     </button>
 
                     <p className="text-[10px] text-center text-gray-400 italic font-medium">

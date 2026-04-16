@@ -36,14 +36,12 @@ export const API_ENDPOINTS = {
     ADMIN_UPDATE: (id: string | number) => `${BASE_URL}/contacts/admin/${id}`,
     ADMIN_DELETE: (id: string | number) => `${BASE_URL}/contacts/admin/${id}`,
   },
-  // ThÃƒÂªm vÃƒÂ o bÃƒÂªn trong const API_ENDPOINTS = { ... }
-  // Inventory & Stocks endpoints
+
   INVENTORY: {
-    // SÃ¡Â»Â­a lÃ¡ÂºÂ¡i thÃƒÂ nh inventories (sÃ¡Â»â€˜ nhiÃ¡Â»Âu)
     LOW_STOCK: (threshold: number = 10) =>
       `${BASE_URL}/inventories/low-stock?threshold=${threshold}`,
 
-    // CÃƒÂ¡c endpoint CRUD cho lÃƒÂ´ hÃƒÂ ng
+    
     STOCKS: `${BASE_URL}/inventories/stocks`,
     STOCK_DETAIL: (id: string | number) =>
       `${BASE_URL}/inventories/stocks/${id}`,
@@ -171,14 +169,14 @@ export const API_ENDPOINTS = {
     CREATE: `${BASE_URL}/payments`,
     BY_ORDER: (orderId: string | number) =>
       `${BASE_URL}/payments/order/${orderId}`,
-    PAY_BY_WALLET: `${BASE_URL}/payments/wallet/pay`,
+    // PAY_BY_WALLET: `${BASE_URL}/payments/wallet/pay`,
     VNPAY_RETURN: `${BASE_URL}/payments/vnpay-return`,
   },
 
-  // Wallet endpoints
-  WALLET: {
-    GET: `${BASE_URL}/wallet`,
-  },
+  // // Wallet endpoints
+  // WALLET: {
+  //   GET: `${BASE_URL}/wallet`,
+  // },
 
   // Promotions endpoints
   PROMOTIONS: {
@@ -193,7 +191,7 @@ export const API_ENDPOINTS = {
     LIMITED_PUBLIC: `${BASE_URL}/promotions/limited/public`,
     SAVE_TO_ACCOUNT: `${BASE_URL}/promotions/accounts`,
   },
-  // ThÃƒÂªm vÃƒÂ o bÃƒÂªn trong const API_ENDPOINTS = { ... }
+
   BLOGS: {
     LIST: `${BASE_URL}/blogs`,
     DETAIL: (id: string | number) => `${BASE_URL}/blogs/${id}`,
