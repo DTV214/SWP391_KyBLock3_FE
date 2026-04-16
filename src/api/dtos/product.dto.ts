@@ -21,6 +21,7 @@ export interface ProductDto {
   description?: string;
   imageUrl?: string;
   price?: number;
+  importPrice?: number;
   status?: string;
   stocks?: StockDto[];
   totalQuantity?: number;
@@ -43,6 +44,7 @@ export interface ProductDetailResponseDto {
   width?: number;
   height?: number;
   price?: number;
+  importPrice?: number;
   imageurl?: string;
   quantity?: number;
   childProduct?: ProductDto;

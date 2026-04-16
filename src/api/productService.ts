@@ -21,6 +21,7 @@ export interface CreateSingleProductRequest {
   productname: string;
   description?: string;
   imageUrl?: string;
+  importPrice?: number;
   price: number;
   unit: number;
   length?: number;
@@ -112,6 +113,7 @@ const buildCreateNormalFormData = (product: CreateSingleProductRequest): FormDat
   form.append('sku', product.sku);
   form.append('productname', product.productname);
   if (product.description) form.append('description', product.description);
+  if (product.importPrice != null) form.append('importPrice', String(product.importPrice));
   form.append('price', String(product.price));
   form.append('unit', String(product.unit));
   if (product.length != null) form.append('length', String(product.length));
@@ -127,6 +129,7 @@ const buildUpdateNormalFormData = (product: Product): FormData => {
   if (product.sku) form.append('sku', product.sku);
   if (product.productname) form.append('productname', product.productname);
   if (product.description) form.append('description', product.description);
+  if (product.importPrice != null) form.append('importPrice', String(product.importPrice));
   if (product.price != null) form.append('price', String(product.price));
   if (product.unit != null) form.append('unit', String(product.unit));
   if (product.length != null) form.append('length', String(product.length));

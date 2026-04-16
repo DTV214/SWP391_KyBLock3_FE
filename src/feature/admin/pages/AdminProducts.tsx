@@ -53,6 +53,7 @@ export default function AdminProducts() {
     description: "",
     imageUrl: "",
     price: 0,
+    importPrice: 0,
     unit: 0,
       length: 0,
       width: 0,
@@ -199,6 +200,7 @@ export default function AdminProducts() {
         description: "",
         imageUrl: "",
         price: 0,
+        importPrice: 0,
         unit: 0,
       length: 0,
       width: 0,
@@ -255,6 +257,10 @@ export default function AdminProducts() {
         setError("Vui lòng nhập SKU cho sản phẩm thường");
         return;
       }
+      if (formData.importPrice == null || formData.importPrice <= 0) {
+        setError("Vui lòng nhập giá nhập hợp lệ (> 0)");
+        return;
+      }
       if (!formData.price || formData.price <= 0) {
         setError("Vui lòng nhập giá hợp lệ (> 0)");
         return;
@@ -308,11 +314,12 @@ export default function AdminProducts() {
           sku: formData.sku || '',
           productname: formData.productname,
           description: formData.description,
-          price: formData.price || 0,
-          unit: formData.unit || 0,
-            length: formData.length || 0,
-            width: formData.width || 0,
-            height: formData.height || 0,
+          importPrice: formData.importPrice!,
+          price: formData.price!,
+          unit: formData.unit!,
+          length: formData.length || 0,
+          width: formData.width || 0,
+          height: formData.height || 0,
           imageUrl: finalImageUrl,
         };
         console.log('[CREATE NORMAL] payload:', createData);
@@ -802,6 +809,22 @@ export default function AdminProducts() {
                   />
                 </div>
 
+                {/* Giá nhập */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Giá nhập (VNĐ)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={formData.importPrice || 0}
+                    onChange={(e) => setFormData({ ...formData, importPrice: Number(e.target.value) })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-tet-accent focus:border-transparent"
+                    disabled={submitting}
+                    min="0"
+                  />
+                </div>
+
                 {/* Khối lượng */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -1042,6 +1065,13 @@ export default function AdminProducts() {
                   <p className="text-sm text-gray-500 mb-1">Giá</p>
                   <p className="font-bold text-tet-accent text-lg">
                     {viewingProduct.price ? viewingProduct.price.toLocaleString() : "0"}đ
+                  </p>
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <p className="text-sm text-gray-500 mb-1">Giá nhập</p>
+                  <p className="font-bold text-gray-700 text-lg">
+                    {viewingProduct.importPrice ? viewingProduct.importPrice.toLocaleString() : "0"}đ
                   </p>
                 </div>
 
