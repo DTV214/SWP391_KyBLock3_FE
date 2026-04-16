@@ -15,11 +15,11 @@ const ENV_BASE_URL = (import.meta as unknown as { env: ViteEnv }).env
 // const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5002/api").replace(/\/+$/, "");
 // const ROOT_URL = BASE_URL.replace(/\/api$/i, "");
 
-const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(
-  /\/+$/,
-  "",
-);
-// const BASE_URL = (ENV_BASE_URL?.trim() || "http://localhost:5280/api").replace(/\/+$/, "");
+// const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(
+//   /\/+$/,
+//   "",
+// );
+const BASE_URL = (ENV_BASE_URL?.trim() || "http://localhost:5280/api").replace(/\/+$/, "");
 // Change .env for local/deploy without touching this file.
 export const API_ENDPOINTS = {
   AUTH: {
@@ -294,7 +294,14 @@ export const API_ENDPOINTS = {
       if (days) url += `?days=${days}`;
       return url;
     },
-    CUSTOMER_STATISTICS: `${BASE_URL}/dashboards/customer-statistics`,
+    CUSTOMER_STATISTICS: (startDate?: string, endDate?: string) => {
+      let url = `${BASE_URL}/dashboards/customer-statistics`;
+      const params = [];
+      if (startDate) params.push(`startDate=${encodeURIComponent(startDate)}`);
+      if (endDate) params.push(`endDate=${encodeURIComponent(endDate)}`);
+      if (params.length > 0) url += `?${params.join("&")}`;
+      return url;
+    },
   },
   // Feedbacks endpoints
   FEEDBACKS: {

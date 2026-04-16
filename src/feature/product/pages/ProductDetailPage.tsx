@@ -298,8 +298,10 @@ export default function ProductDetailPage() {
                       </span>
                     </li>
                     <li className="flex justify-between">
-                      <span>Kích thước hộp:</span>{" "}
-                      <span className="font-bold">35cm x 25cm x 12cm</span>
+                      <span>Kích thước (D x R x C):</span>{" "}
+                      <span className="font-bold">
+                        {product.length || 0}cm x {product.width || 0}cm x {product.height || 0}cm
+                      </span>
                     </li>
                     <li className="flex justify-between">
                       <span>Hạn sử dụng:</span>{" "}

@@ -33,6 +33,9 @@ export default function AdminAccounts() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
+  // Sort State
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+
   // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 10;
@@ -137,8 +140,14 @@ export default function AdminAccounts() {
     return matchSearch && matchRole && matchStatus;
   });
 
-  const totalPages = Math.ceil(filteredAccounts.length / itemsPerPage);
-  const paginatedAccounts = filteredAccounts.slice(
+  const sortedAccounts = [...filteredAccounts].sort((a, b) => {
+    const timeA = a.dayCreate ? new Date(a.dayCreate).getTime() : 0;
+    const timeB = b.dayCreate ? new Date(b.dayCreate).getTime() : 0;
+    return sortOrder === "desc" ? timeB - timeA : timeA - timeB;
+  });
+
+  const totalPages = Math.ceil(sortedAccounts.length / itemsPerPage);
+  const paginatedAccounts = sortedAccounts.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
@@ -283,6 +292,17 @@ export default function AdminAccounts() {
                     <th className="px-6 py-4 font-bold">Tài khoản</th>
                     <th className="px-6 py-4 font-bold">Liên hệ</th>
                     <th className="px-6 py-4 font-bold">Vai trò (Role)</th>
+                    <th 
+                      className="px-6 py-4 font-bold cursor-pointer hover:bg-gray-100 transition-colors group"
+                      onClick={() => setSortOrder(prev => prev === "desc" ? "asc" : "desc")}
+                    >
+                      <div className="flex items-center gap-1">
+                        Ngày tạo
+                        <span className="text-[10px] text-gray-400 group-hover:text-gray-600">
+                          {sortOrder === "desc" ? "▼" : "▲"}
+                        </span>
+                      </div>
+                    </th>
                     <th className="px-6 py-4 font-bold">Trạng thái</th>
                     <th className="px-6 py-4 font-bold text-right">Thao tác</th>
                   </tr>
@@ -317,6 +337,9 @@ export default function AdminAccounts() {
                           >
                             {acc.role}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 text-xs font-medium text-gray-600">
+                          {acc.dayCreate ? new Date(acc.dayCreate).toLocaleDateString("vi-VN") : "---"}
                         </td>
                         <td className="px-6 py-4">
                           <span

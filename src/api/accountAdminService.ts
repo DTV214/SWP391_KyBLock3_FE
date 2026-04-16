@@ -11,6 +11,7 @@ export interface AccountDto {
   role: string;
   status: string; // PENDING, ACTIVE, INACTIVE, DELETED
   createdAt?: string;
+  dayCreate?: string;
 }
 
 export interface UpdateAccountStatusRequest {

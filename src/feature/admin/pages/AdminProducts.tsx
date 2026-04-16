@@ -1086,6 +1086,13 @@ export default function AdminProducts() {
                 </div>
 
                 <div className="p-4 bg-gray-50 rounded-xl">
+                  <p className="text-sm text-gray-500 mb-1">Kích thước (D x R x C)</p>
+                  <p className="font-bold">
+                    {viewingProduct.length || 0} x {viewingProduct.width || 0} x {viewingProduct.height || 0} cm
+                  </p>
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded-xl">
                   <p className="text-sm text-gray-500 mb-1">Trạng thái</p>
                   <span
                     className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(
