@@ -108,7 +108,10 @@ export default function AdminProducts() {
       });
       const res: any = await axiosClient.get(`${API_ENDPOINTS.PRODUCTS.LIST}?${params.toString()}`);
       const paged = res?.data;
-      setProducts(Array.isArray(paged?.data) ? paged.data : []);
+      const visibleProducts = Array.isArray(paged?.data)
+        ? paged.data.filter((product: Product) => !product.configid)
+        : [];
+      setProducts(visibleProducts);
       setCurrentPage(paged?.currentPage ?? page);
       setTotalPages(paged?.totalPages ?? 1);
       setTotalItems(paged?.totalItems ?? 0);
