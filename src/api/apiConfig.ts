@@ -12,13 +12,13 @@ interface ViteEnv {
 const ENV_BASE_URL = (import.meta as unknown as { env: ViteEnv }).env
   ?.VITE_API_BASE_URL;
 // Fallback to current production server if env is not set
-// const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5002/api").replace(/\/+$/, "");
+const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5002/api").replace(/\/+$/, "");
 // const ROOT_URL = BASE_URL.replace(/\/api$/i, "");
 
-const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(
-  /\/+$/,
-  "",
-);
+// const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(
+//   /\/+$/,
+//   "",
+// );
 // const BASE_URL = (ENV_BASE_URL?.trim() || "http://localhost:5280/api").replace(/\/+$/, "");
 // Change .env for local/deploy without touching this file.
 export const API_ENDPOINTS = {
@@ -318,6 +318,34 @@ export const API_ENDPOINTS = {
         `CompareYear=${encodeURIComponent(String(compareYear))}`,
       ];
       return `${BASE_URL}/dashboard-comparisons/yearly-actual-revenue-comparison?${params.join("&")}`;
+    },
+    CATEGORY_PERFORMANCE: (
+      period: string,
+      date?: string,
+      year?: number,
+      month?: number,
+    ) => {
+      const params = [`period=${encodeURIComponent(period)}`];
+      if (date) params.push(`date=${encodeURIComponent(date)}`);
+      if (year != null) params.push(`year=${encodeURIComponent(String(year))}`);
+      if (month != null) params.push(`month=${encodeURIComponent(String(month))}`);
+      return `${BASE_URL}/dashboard-rankings/category-performance?${params.join("&")}`;
+    },
+    CATEGORY_PRODUCTS_PERFORMANCE: (
+      categoryId: string | number,
+      period: string,
+      date?: string,
+      year?: number,
+      month?: number,
+    ) => {
+      const params = [
+        `categoryId=${encodeURIComponent(String(categoryId))}`,
+        `period=${encodeURIComponent(period)}`,
+      ];
+      if (date) params.push(`date=${encodeURIComponent(date)}`);
+      if (year != null) params.push(`year=${encodeURIComponent(String(year))}`);
+      if (month != null) params.push(`month=${encodeURIComponent(String(month))}`);
+      return `${BASE_URL}/dashboard-rankings/category-products-performance?${params.join("&")}`;
     },
     ACCOUNT_STATS: (
       period: string = "day",

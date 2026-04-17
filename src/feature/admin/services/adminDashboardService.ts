@@ -164,10 +164,94 @@ export interface YearlyComparisonResponse {
   compareYear: YearlyComparisonYearData;
 }
 
+export type DashboardRankingPeriod = "week" | "month" | "year";
+
+export interface DashboardRankingParams {
+  period: DashboardRankingPeriod;
+  date?: string;
+  year?: number;
+  month?: number;
+}
+
+export interface DashboardRankingRange {
+  period: DashboardRankingPeriod | string;
+  label: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface CategoryPerformanceItem {
+  categoryId: number;
+  categoryName: string;
+  revenue: number;
+  profit: number;
+  quantitySold: number;
+}
+
+export interface CategoryPerformanceResponse {
+  range: DashboardRankingRange;
+  totalRevenue: number;
+  totalProfit: number;
+  totalQuantitySold: number;
+  data: CategoryPerformanceItem[];
+}
+
+export interface ProductPerformanceItem extends CategoryPerformanceItem {
+  productId: number;
+  productName: string;
+}
+
+export interface CategoryProductsPerformanceResponse {
+  range: DashboardRankingRange;
+  categoryId: number;
+  categoryName: string;
+  totalRevenue: number;
+  totalProfit: number;
+  totalQuantitySold: number;
+  data: ProductPerformanceItem[];
+}
+
 const toNumber = (value: unknown): number => {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 };
+
+const unwrapRankingPayload = (raw: any): any => {
+  const root = raw ?? {};
+
+  if (
+    root?.range ||
+    root?.Range ||
+    root?.totalRevenue != null ||
+    root?.TotalRevenue != null ||
+    Array.isArray(root?.data) ||
+    Array.isArray(root?.Data)
+  ) {
+    return root;
+  }
+
+  const nested = root?.data ?? root?.Data;
+
+  if (
+    nested?.range ||
+    nested?.Range ||
+    nested?.totalRevenue != null ||
+    nested?.TotalRevenue != null ||
+    Array.isArray(nested?.data) ||
+    Array.isArray(nested?.Data)
+  ) {
+    return nested;
+  }
+
+  return root;
+};
+
+const normalizeRankingRange = (raw: any): DashboardRankingRange => ({
+  period: String(raw?.period ?? raw?.Period ?? ""),
+  label: String(raw?.label ?? raw?.Label ?? ""),
+  startDate: String(raw?.startDate ?? raw?.StartDate ?? ""),
+  endDate: String(raw?.endDate ?? raw?.EndDate ?? ""),
+});
 
 const normalizeRevenueResponse = (raw: any): RevenueChartResponse => {
   const container = raw?.data ?? raw;
@@ -261,6 +345,58 @@ const normalizeYearlyComparisonResponse = (raw: any): YearlyComparisonResponse =
   };
 };
 
+const normalizeCategoryPerformanceResponse = (raw: any): CategoryPerformanceResponse => {
+  const root = unwrapRankingPayload(raw);
+  const source = Array.isArray(root?.data)
+    ? root.data
+    : Array.isArray(root?.Data)
+      ? root.Data
+      : [];
+
+  return {
+    range: normalizeRankingRange(root?.range ?? root?.Range),
+    totalRevenue: toNumber(root?.totalRevenue ?? root?.TotalRevenue),
+    totalProfit: toNumber(root?.totalProfit ?? root?.TotalProfit),
+    totalQuantitySold: toNumber(root?.totalQuantitySold ?? root?.TotalQuantitySold),
+    data: source.map((item: any) => ({
+      categoryId: toNumber(item?.categoryId ?? item?.CategoryId),
+      categoryName: String(item?.categoryName ?? item?.CategoryName ?? ""),
+      revenue: toNumber(item?.revenue ?? item?.Revenue),
+      profit: toNumber(item?.profit ?? item?.Profit),
+      quantitySold: toNumber(item?.quantitySold ?? item?.QuantitySold),
+    })),
+  };
+};
+
+const normalizeCategoryProductsPerformanceResponse = (
+  raw: any,
+): CategoryProductsPerformanceResponse => {
+  const root = unwrapRankingPayload(raw);
+  const source = Array.isArray(root?.data)
+    ? root.data
+    : Array.isArray(root?.Data)
+      ? root.Data
+      : [];
+
+  return {
+    range: normalizeRankingRange(root?.range ?? root?.Range),
+    categoryId: toNumber(root?.categoryId ?? root?.CategoryId),
+    categoryName: String(root?.categoryName ?? root?.CategoryName ?? ""),
+    totalRevenue: toNumber(root?.totalRevenue ?? root?.TotalRevenue),
+    totalProfit: toNumber(root?.totalProfit ?? root?.TotalProfit),
+    totalQuantitySold: toNumber(root?.totalQuantitySold ?? root?.TotalQuantitySold),
+    data: source.map((item: any) => ({
+      productId: toNumber(item?.productId ?? item?.ProductId),
+      productName: String(item?.productName ?? item?.ProductName ?? ""),
+      categoryId: toNumber(item?.categoryId ?? item?.CategoryId),
+      categoryName: String(item?.categoryName ?? item?.CategoryName ?? ""),
+      revenue: toNumber(item?.revenue ?? item?.Revenue),
+      profit: toNumber(item?.profit ?? item?.Profit),
+      quantitySold: toNumber(item?.quantitySold ?? item?.QuantitySold),
+    })),
+  };
+};
+
 export const getRevenue = async (period: string = "day", startDate?: string, endDate?: string): Promise<RevenueChartResponse> => {
   const response = await axiosClient.get(API_ENDPOINTS.DASHBOARD.REVENUE(period, startDate, endDate));
   return normalizeRevenueResponse(response);
@@ -323,6 +459,36 @@ export const getYearlyActualRevenueComparison = async (
     API_ENDPOINTS.DASHBOARD.YEARLY_ACTUAL_REVENUE_COMPARISON(year, compareYear),
   );
   return normalizeYearlyComparisonResponse(response);
+};
+
+export const getCategoryPerformance = async (
+  params: DashboardRankingParams,
+): Promise<CategoryPerformanceResponse> => {
+  const response = await axiosClient.get(
+    API_ENDPOINTS.DASHBOARD.CATEGORY_PERFORMANCE(
+      params.period,
+      params.date,
+      params.year,
+      params.month,
+    ),
+  );
+  return normalizeCategoryPerformanceResponse(response);
+};
+
+export const getCategoryProductsPerformance = async (
+  categoryId: string | number,
+  params: DashboardRankingParams,
+): Promise<CategoryProductsPerformanceResponse> => {
+  const response = await axiosClient.get(
+    API_ENDPOINTS.DASHBOARD.CATEGORY_PRODUCTS_PERFORMANCE(
+      categoryId,
+      params.period,
+      params.date,
+      params.year,
+      params.month,
+    ),
+  );
+  return normalizeCategoryProductsPerformanceResponse(response);
 };
 
 export interface CustomerOrderStatistics {
@@ -394,6 +560,8 @@ const adminDashboardService = {
   getMonthlyActualRevenueComparison,
   getYearlyOrderRevenueComparison,
   getYearlyActualRevenueComparison,
+  getCategoryPerformance,
+  getCategoryProductsPerformance,
   getAccountStatistics,
   getPaymentChannelStatistics,
   getAbandonedCarts,

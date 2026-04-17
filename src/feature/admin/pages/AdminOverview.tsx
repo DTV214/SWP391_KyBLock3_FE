@@ -5,6 +5,7 @@ import CustomerEfficiencyWidget from "../components/CustomerEfficiencyWidget";
 import { DashboardInsightsContainer } from "../components/insights/DashboardInsightsContainer";
 import MonthlyComparisonChart from "../components/MonthlyComparisonChart";
 import YearlyComparisonBarChart from "../components/YearlyComparisonBarChart";
+import CategoryPerformanceCharts from "../components/CategoryPerformanceCharts";
 import {
   Package,
   ShoppingCart,
@@ -227,6 +228,7 @@ export default function AdminOverview() {
 
       <MonthlyComparisonChart />
       <YearlyComparisonBarChart />
+      <CategoryPerformanceCharts />
 
       {/* System Status */}
       <section className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-3xl border border-blue-100">
