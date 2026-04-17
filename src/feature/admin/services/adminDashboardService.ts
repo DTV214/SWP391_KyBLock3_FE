@@ -343,6 +343,49 @@ export const getCustomerOrderStatistics = async (startDate?: string, endDate?: s
   return response.data;
 };
 
+export interface HighlightCustomer {
+  accountId: number;
+  fullName: string;
+  email: string;
+  totalValue: number;
+  orderCount: number;
+}
+
+export interface HighlightProduct {
+  productId: number;
+  productName: string;
+  imageUrl: string | null;
+  totalQuantity: number;
+  totalRevenue: number;
+}
+
+export interface CancellationStats {
+  cancelledOrders: number;
+  validOrders: number;
+  cancellationRate: number;
+}
+
+export interface AbandonedCartValue {
+  cartCount: number;
+  totalLostValue: number;
+}
+
+export interface DashboardHighlights {
+  topSpender: HighlightCustomer | null;
+  mostFrequentBuyer: HighlightCustomer | null;
+  topCanceler: HighlightCustomer | null;
+  topSellingProduct: HighlightProduct | null;
+  underperformingProduct: HighlightProduct | null;
+  cancellationStats: CancellationStats;
+  averageOrderValue: number;
+  abandonedCartValue: AbandonedCartValue;
+}
+
+export const getDashboardInsights = async (startDate?: string, endDate?: string): Promise<DashboardHighlights> => {
+  const response = await axiosClient.get(API_ENDPOINTS.DASHBOARD.INSIGHTS(startDate, endDate));
+  return response.data;
+};
+
 const adminDashboardService = {
   getDashboardSummary,
   getRevenue,
@@ -355,6 +398,7 @@ const adminDashboardService = {
   getPaymentChannelStatistics,
   getAbandonedCarts,
   getCustomerOrderStatistics,
+  getDashboardInsights,
 };
 
 export default adminDashboardService;

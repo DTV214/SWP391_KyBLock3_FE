@@ -350,6 +350,14 @@ export const API_ENDPOINTS = {
       if (params.length > 0) url += `?${params.join("&")}`;
       return url;
     },
+    INSIGHTS: (startDate?: string, endDate?: string) => {
+      let url = `${BASE_URL}/dashboards/insights`;
+      const params = [];
+      if (startDate) params.push(`startDate=${encodeURIComponent(startDate)}`);
+      if (endDate) params.push(`endDate=${encodeURIComponent(endDate)}`);
+      if (params.length > 0) url += `?${params.join("&")}`;
+      return url;
+    },
   },
   STATISTICS: {
     PRODUCT: (productId: string | number) =>

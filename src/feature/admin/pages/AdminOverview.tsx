@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RevenueChart from "../components/RevenueChart";
 import CustomerEfficiencyWidget from "../components/CustomerEfficiencyWidget";
+import { DashboardInsightsContainer } from "../components/insights/DashboardInsightsContainer";
 import MonthlyComparisonChart from "../components/MonthlyComparisonChart";
 import YearlyComparisonBarChart from "../components/YearlyComparisonBarChart";
 import {
@@ -211,6 +212,9 @@ export default function AdminOverview() {
           ))}
         </div>
       </section>
+
+      {/* PO Insights Banner */}
+      <DashboardInsightsContainer />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
