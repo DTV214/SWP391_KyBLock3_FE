@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -123,7 +123,7 @@ const formatCompactNumber = (value: number): string => {
 
 const truncateLabel = (value: string, maxLength = 24): string => {
   if (value.length <= maxLength) return value;
-  return `${value.slice(0, maxLength - 1)}…`;
+  return `${value.slice(0, maxLength - 1)}...`;
 };
 
 const buildCategoryRows = (
@@ -200,49 +200,78 @@ function SummaryStats({
   );
 }
 
-function DetailsTable({
+function DetailsList({
+  metric,
   rows,
 }: {
+  metric: MetricKey;
   rows: RankingRow[];
 }) {
+  const metricOption =
+    METRIC_OPTIONS.find((option) => option.key === metric) ?? METRIC_OPTIONS[0];
+
   return (
-    <div className="mt-5 overflow-x-auto">
-      <table className="min-w-[680px] w-full text-sm">
-        <thead>
-          <tr className="border-b border-gray-100 text-left text-xs uppercase tracking-wide text-gray-500">
-            <th className="py-3 pr-4 font-bold">Tên</th>
-            <th className="py-3 pr-4 text-right font-bold">Doanh thu</th>
-            <th className="py-3 pr-4 text-right font-bold">Lợi nhuận</th>
-            <th className="py-3 pr-4 text-right font-bold">Số lượng</th>
-            <th className="py-3 text-right font-bold">Tỷ trọng</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-b border-gray-50 last:border-0">
-              <td className="py-3 pr-4">
-                <p className="font-semibold text-tet-primary">{row.name}</p>
+    <aside className="w-full lg:w-[340px] lg:shrink-0">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold text-tet-primary">Chi tiết</p>
+          <p className="text-xs font-medium text-gray-500">{rows.length} mục</p>
+        </div>
+        <div className="flex items-center gap-2 text-xs font-bold text-gray-600">
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: metricOption.color }}
+          />
+          {metricOption.label}
+        </div>
+      </div>
+
+      <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
+        {rows.map((row, index) => (
+          <div
+            key={row.id}
+            className="rounded-xl border border-gray-100 bg-gray-50/70 p-3"
+          >
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-tet-primary">
+                  {index + 1}. {row.name}
+                </p>
                 {row.categoryName && (
-                  <p className="text-xs text-gray-500 mt-0.5">{row.categoryName}</p>
+                  <p className="mt-0.5 truncate text-xs font-medium text-gray-500">
+                    {row.categoryName}
+                  </p>
                 )}
-              </td>
-              <td className="py-3 pr-4 text-right font-semibold text-gray-700">
-                {currencyFormatter.format(row.revenue)}
-              </td>
-              <td className="py-3 pr-4 text-right font-semibold text-gray-700">
-                {currencyFormatter.format(row.profit)}
-              </td>
-              <td className="py-3 pr-4 text-right font-semibold text-gray-700">
-                {numberFormatter.format(row.quantitySold)}
-              </td>
-              <td className="py-3 text-right font-semibold text-gray-700">
+              </div>
+              <span className="rounded-full bg-white px-2 py-1 text-xs font-bold text-gray-600">
                 {row.share.toFixed(1)}%
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <p className="font-semibold text-gray-500">Doanh thu</p>
+                <p className="mt-0.5 truncate font-bold text-gray-800">
+                  {formatCompactNumber(row.revenue)}
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-500">Lợi nhuận</p>
+                <p className="mt-0.5 truncate font-bold text-gray-800">
+                  {formatCompactNumber(row.profit)}
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-500">SL</p>
+                <p className="mt-0.5 truncate font-bold text-gray-800">
+                  {numberFormatter.format(row.quantitySold)}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </aside>
   );
 }
 
@@ -265,7 +294,8 @@ function PerformanceHorizontalChart({
 }) {
   const metricOption =
     METRIC_OPTIONS.find((option) => option.key === metric) ?? METRIC_OPTIONS[0];
-  const chartHeight = Math.max(320, rows.length * 54 + 96);
+  const chartRows = rows.slice(0, 8);
+  const chartHeight = 320;
 
   const CustomTooltip = ({ active, payload }: any) => {
     const row = payload?.[0]?.payload as RankingRow | undefined;
@@ -322,67 +352,69 @@ function PerformanceHorizontalChart({
         </div>
       </div>
 
-      <div className="relative w-full" style={{ height: chartHeight }}>
-        {loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/70 backdrop-blur-sm">
-            <Loader2 className="animate-spin text-tet-accent" size={32} />
-          </div>
-        )}
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+        <div className="relative min-w-0 flex-1" style={{ height: chartHeight }}>
+          {loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/70 backdrop-blur-sm">
+              <Loader2 className="animate-spin text-tet-accent" size={32} />
+            </div>
+          )}
 
-        {error && !loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 text-center text-sm font-semibold text-red-600">
-            {error}
-          </div>
-        )}
+          {error && !loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 text-center text-sm font-semibold text-red-600">
+              {error}
+            </div>
+          )}
 
-        {!error && !loading && rows.length === 0 && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl border border-gray-100 bg-gray-50 px-4 text-center text-sm font-semibold text-gray-500">
-            {emptyText}
-          </div>
-        )}
+          {!error && !loading && rows.length === 0 && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl border border-gray-100 bg-gray-50 px-4 text-center text-sm font-semibold text-gray-500">
+              {emptyText}
+            </div>
+          )}
 
-        {!error && rows.length > 0 && (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={rows}
-              layout="vertical"
-              margin={{ top: 8, right: 24, left: 12, bottom: 8 }}
-              barCategoryGap={16}
-            >
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-              <XAxis
-                type="number"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "#9ca3af", fontSize: 12 }}
-                tickFormatter={(value: number) =>
-                  metric === "quantitySold"
-                    ? numberFormatter.format(value)
-                    : formatCompactNumber(value)
-                }
-              />
-              <YAxis
-                type="category"
-                dataKey="name"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "#4b5563", fontSize: 12, fontWeight: 600 }}
-                tickFormatter={(value: string) => truncateLabel(value)}
-                width={164}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar
-                dataKey="value"
-                fill={metricOption.color}
-                radius={[0, 7, 7, 0]}
-                maxBarSize={30}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
+          {!error && chartRows.length > 0 && (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartRows}
+                layout="vertical"
+                margin={{ top: 8, right: 20, left: 0, bottom: 8 }}
+                barCategoryGap={10}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+                <XAxis
+                  type="number"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#9ca3af", fontSize: 11 }}
+                  tickFormatter={(value: number) =>
+                    metric === "quantitySold"
+                      ? numberFormatter.format(value)
+                      : formatCompactNumber(value)
+                  }
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#4b5563", fontSize: 11, fontWeight: 600 }}
+                  tickFormatter={(value: string) => truncateLabel(value, 18)}
+                  width={126}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar
+                  dataKey="value"
+                  fill={metricOption.color}
+                  radius={[0, 6, 6, 0]}
+                  maxBarSize={22}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {rows.length > 0 && <DetailsList metric={metric} rows={rows} />}
       </div>
-
-      {rows.length > 0 && <DetailsTable rows={rows} />}
     </div>
   );
 }

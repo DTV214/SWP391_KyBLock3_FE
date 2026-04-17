@@ -1,4 +1,4 @@
-// Backend base URL (.NET 8)
+﻿// Backend base URL (.NET 8)
 // src/api/apiConfig.ts
 // Prefer configuring via Vite env:
 // - VITE_API_BASE_URL=http://localhost:5280/api
@@ -51,10 +51,10 @@ export const API_ENDPOINTS = {
     DELETE_STOCK: (id: string | number) =>
       `${BASE_URL}/inventories/stocks/${id}`,
 
-    // LÃ¡ÂºÂ¥y tÃ¡Â»â€œn kho theo Product
+    // Lấy tồn kho theo Product
     STOCKS_BY_PRODUCT: (productId: string | number) =>
       `${BASE_URL}/inventories/products/${productId}/stocks`,
-    // LÃ¡Â»â€¹ch sÃ¡Â»Â­ di chuyÃ¡Â»Æ’n kho
+    // Lịch sử di chuyển kho
     STOCK_MOVEMENTS: `${BASE_URL}/inventories/movements`,
   },
   // Products endpoints
