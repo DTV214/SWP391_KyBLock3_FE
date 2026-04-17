@@ -50,6 +50,7 @@ export interface OrderResponse {
     totalPrice: number;
     discountValue: number;
     finalPrice: number;
+    actualRevenue?: number | null;
     status: string;
     customerName: string;
     customerPhone: string;

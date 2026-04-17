@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   Users,
   DollarSign,
+  Wallet,
   ArrowUp,
   ArrowDown,
   Gift,
@@ -23,13 +24,28 @@ export default function AdminOverview() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DashboardSummary | null>(null);
+  const [actualRevenueTotal, setActualRevenueTotal] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const result = await adminDashboardService.getDashboardSummary();
-        setData(result);
+        const [summaryResult, actualRevenueResult] = await Promise.allSettled([
+          adminDashboardService.getDashboardSummary(),
+          adminDashboardService.getActualRevenue(),
+        ]);
+
+        if (summaryResult.status !== "fulfilled") {
+          throw summaryResult.reason;
+        }
+
+        if (actualRevenueResult.status === "fulfilled") {
+          setActualRevenueTotal(actualRevenueResult.value.totalRevenue);
+        } else {
+          setActualRevenueTotal(null);
+        }
+
+        setData(summaryResult.value);
         setError(null);
       } catch (err: unknown) {
         console.error("Failed to fetch dashboard data:", err);
@@ -79,6 +95,19 @@ export default function AdminOverview() {
       color: "from-green-500 to-emerald-600",
     },
     {
+      label: "Tổng doanh thu thực nhận",
+      value: actualRevenueTotal == null
+        ? "Chưa có dữ liệu"
+        : new Intl.NumberFormat("vi-VN", {
+            style: "currency",
+            currency: "VND",
+          }).format(actualRevenueTotal),
+      change: "+0%",
+      trend: "up",
+      icon: <Wallet size={24} />,
+      color: "from-teal-500 to-cyan-600",
+    },
+    {
       label: "Đơn hàng",
       value: (data.orders?.total ?? 0).toString(),
       change: "+0%",
@@ -125,7 +154,7 @@ export default function AdminOverview() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {stats.map((stat, index) => (
           <div
             key={index}

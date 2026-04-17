@@ -56,6 +56,7 @@ export default function OrderCard({
   const [showFloatingError, setShowFloatingError] = useState(false);
   const firstItem = order.items[0];
   const placeholder = "https://via.placeholder.com/80?text=No+Image";
+  const actualRevenue = order.actualRevenue ?? null;
 
   useEffect(() => {
     setOrder(initialOrder);
@@ -263,6 +264,14 @@ export default function OrderCard({
               <p className="text-xl font-black text-tet-primary">
                 {order.finalPrice.toLocaleString()}đ
               </p>
+              {isAdmin && (
+                <p className="text-[10px] text-emerald-600 font-bold italic">
+                  Doanh thu thực nhận:{" "}
+                  {actualRevenue == null
+                    ? "Chưa có dữ liệu"
+                    : `${actualRevenue.toLocaleString()}đ`}
+                </p>
+              )}
               {order.discountValue && order.discountValue > 0 && (
                 <p className="text-[10px] text-green-600 font-bold italic">
                   Tiết kiệm: {order.discountValue.toLocaleString()}đ

@@ -528,6 +528,18 @@ export default function OrderDetailModal({
                   {displayOrder.finalPrice.toLocaleString("vi-VN")}đ
                 </span>
               </div>
+              {isAdmin && (
+                <div className="flex justify-between text-sm pt-2">
+                  <span className="text-gray-600 font-medium">
+                    Doanh thu thực nhận
+                  </span>
+                  <span className="font-bold text-emerald-700">
+                    {displayOrder.actualRevenue == null
+                      ? "Chưa có dữ liệu"
+                      : `${displayOrder.actualRevenue.toLocaleString("vi-VN")}đ`}
+                  </span>
+                </div>
+              )}
             </div>
           </section>
 
