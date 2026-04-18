@@ -525,6 +525,20 @@ export interface HighlightProduct {
   totalRevenue: number;
 }
 
+export interface TrendingProductPoint {
+  date: string;
+  quantity: number;
+}
+
+export interface TrendingProduct {
+  productId: number;
+  productName: string;
+  imageUrl: string | null;
+  totalSoldInPeriod: number;
+  growthRate: number;
+  trendData: TrendingProductPoint[];
+}
+
 export interface CancellationStats {
   cancelledOrders: number;
   validOrders: number;
@@ -552,6 +566,45 @@ export const getDashboardInsights = async (startDate?: string, endDate?: string)
   return response.data;
 };
 
+const normalizeTrendingProductsResponse = (raw: any): TrendingProduct[] => {
+  const source = Array.isArray(raw)
+    ? raw
+    : Array.isArray(raw?.data)
+      ? raw.data
+      : Array.isArray(raw?.Data)
+        ? raw.Data
+        : Array.isArray(raw?.data?.data)
+          ? raw.data.data
+          : [];
+
+  return source.map((item: any) => {
+    const trendSource = Array.isArray(item?.trendData)
+      ? item.trendData
+      : Array.isArray(item?.TrendData)
+        ? item.TrendData
+        : [];
+
+    return {
+      productId: toNumber(item?.productId ?? item?.ProductId),
+      productName: String(item?.productName ?? item?.ProductName ?? ""),
+      imageUrl: item?.imageUrl ?? item?.ImageUrl ?? null,
+      totalSoldInPeriod: toNumber(item?.totalSoldInPeriod ?? item?.TotalSoldInPeriod),
+      growthRate: toNumber(item?.growthRate ?? item?.GrowthRate),
+      trendData: trendSource.map((point: any) => ({
+        date: String(point?.date ?? point?.Date ?? ""),
+        quantity: toNumber(point?.quantity ?? point?.Quantity),
+      })),
+    };
+  });
+};
+
+export const getTrendingProducts = async (
+  period: DashboardRankingPeriod = "week",
+): Promise<TrendingProduct[]> => {
+  const response = await axiosClient.get(API_ENDPOINTS.STATISTICS.TRENDING(period));
+  return normalizeTrendingProductsResponse(response);
+};
+
 const adminDashboardService = {
   getDashboardSummary,
   getRevenue,
@@ -567,6 +620,7 @@ const adminDashboardService = {
   getAbandonedCarts,
   getCustomerOrderStatistics,
   getDashboardInsights,
+  getTrendingProducts,
 };
 
 export default adminDashboardService;

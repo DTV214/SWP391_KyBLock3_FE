@@ -6,6 +6,7 @@ import { DashboardInsightsContainer } from "../components/insights/DashboardInsi
 import MonthlyComparisonChart from "../components/MonthlyComparisonChart";
 import YearlyComparisonBarChart from "../components/YearlyComparisonBarChart";
 import CategoryPerformanceCharts from "../components/CategoryPerformanceCharts";
+import TopTrendingProducts from "../components/TopTrendingProducts";
 import {
   Package,
   ShoppingCart,
@@ -228,6 +229,7 @@ export default function AdminOverview() {
 
       <MonthlyComparisonChart />
       <YearlyComparisonBarChart />
+      <TopTrendingProducts />
       <CategoryPerformanceCharts />
 
       {/* System Status */}
