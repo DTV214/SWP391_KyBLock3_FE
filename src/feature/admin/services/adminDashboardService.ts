@@ -7,9 +7,11 @@ export interface DashboardSummary {
     data: Array<{
       date: string;
       revenue: number;
+      revenueBeforeDiscount?: number;
       orderCount: number;
     }>;
     totalRevenue: number;
+    totalRevenueBeforeDiscount?: number;
     totalOrders: number;
   };
   paymentChannels: {
@@ -69,8 +71,66 @@ export interface DashboardSummary {
 }
 
 export const getDashboardSummary = async (period: string = "month", startDate?: string, endDate?: string): Promise<DashboardSummary> => {
-  const response: any = await axiosClient.get(API_ENDPOINTS.DASHBOARD.SUMMARY(period, startDate, endDate));
-  const data: DashboardSummary = (response?.data || response) as DashboardSummary;
+  const response: any = await axiosClient.get(
+    API_ENDPOINTS.DASHBOARD.SUMMARY(period, startDate, endDate),
+  );
+  const root = response?.data ?? response;
+  const summaryRoot =
+    root?.revenue ||
+    root?.orders ||
+    root?.newAccounts ||
+    root?.paymentChannels ||
+    root?.abandonedCarts
+      ? root
+      : (root?.data ?? root?.Data ?? root);
+
+  const toSafeNumber = (value: unknown): number => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const revenueRoot = summaryRoot?.revenue ?? summaryRoot?.Revenue ?? {};
+  const revenueDataSource = Array.isArray(revenueRoot?.data)
+    ? revenueRoot.data
+    : Array.isArray(revenueRoot?.Data)
+      ? revenueRoot.Data
+      : [];
+  const totalRevenueBeforeDiscountFromData = revenueDataSource.reduce(
+    (sum: number, item: any) =>
+      sum +
+      toSafeNumber(
+        item?.revenueBeforeDiscount ??
+          item?.RevenueBeforeDiscount ??
+          item?.totalBeforeDiscount ??
+          item?.TotalBeforeDiscount,
+      ),
+    0,
+  );
+  const paymentChannelsRoot =
+    summaryRoot?.paymentChannels ?? summaryRoot?.PaymentChannels ?? {};
+  const paymentChannelsTotalAmount = toSafeNumber(
+    paymentChannelsRoot?.total?.totalAmount ??
+      paymentChannelsRoot?.Total?.TotalAmount ??
+      paymentChannelsRoot?.totalAmount ??
+      paymentChannelsRoot?.TotalAmount,
+  );
+  const totalRevenueBeforeDiscount =
+    toSafeNumber(
+      revenueRoot?.totalRevenueBeforeDiscount ??
+        revenueRoot?.TotalRevenueBeforeDiscount,
+    ) ||
+    totalRevenueBeforeDiscountFromData ||
+    paymentChannelsTotalAmount;
+  const data: DashboardSummary = {
+    ...(summaryRoot as DashboardSummary),
+    revenue: {
+      ...revenueRoot,
+      totalRevenue: toSafeNumber(
+        revenueRoot?.totalRevenue ?? revenueRoot?.TotalRevenue,
+      ),
+      totalRevenueBeforeDiscount,
+    },
+  };
 
   // Fallback: some backend builds do not include totalProducts in summary.
   if (data.totalProducts == null || Number(data.totalProducts) <= 0) {

@@ -87,6 +87,17 @@ export default function AdminOverview() {
 
   const stats = [
     {
+      label: "Tổng doanh thu",
+      value: new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+      }).format(data.revenue?.totalRevenueBeforeDiscount ?? 0),
+      change: "+0%",
+      trend: "up",
+      icon: <DollarSign size={24} />,
+      color: "from-amber-500 to-orange-600",
+    },
+    {
       label: "Tổng doanh thu thực nhận",
       value: new Intl.NumberFormat("vi-VN", {
         style: "currency",
@@ -157,7 +168,7 @@ export default function AdminOverview() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         {stats.map((stat, index) => (
           <div
             key={index}
