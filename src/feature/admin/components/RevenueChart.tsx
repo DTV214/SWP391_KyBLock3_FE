@@ -65,8 +65,8 @@ export default function RevenueChart() {
         console.error("Failed to fetch revenue data:", err);
         setError(
           metric === "actualRevenue"
-            ? "Không thể tải biểu đồ doanh thu thực nhận."
-            : "Không thể tải biểu đồ doanh thu.",
+            ? "Không thể tải biểu đồ doanh thu."
+            : "Không thể tải biểu đồ lợi nhuận.",
         );
       } finally {
         setLoading(false);
@@ -112,7 +112,7 @@ export default function RevenueChart() {
           <TrendingUp className="text-tet-accent" size={24} />
           <h3 className="text-lg font-serif font-bold text-tet-primary">
             {metric === "actualRevenue"
-              ? "Biểu đồ doanh thu thực nhận"
+              ? "Biểu đồ lợi nhuận"
               : "Biểu đồ doanh thu"}
           </h3>
         </div>
@@ -136,7 +136,7 @@ export default function RevenueChart() {
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              Thực nhận
+              lợi nhận
             </button>
           </div>
 

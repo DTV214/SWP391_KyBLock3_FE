@@ -14,6 +14,16 @@ import {
 } from "@/feature/checkout/services/orderService";
 import type { SortBy } from "@/feature/account/utils/orderFilterUtils";
 
+// Trạng thái đơn hàng đã thanh toán
+const PAID_STATUSES = [
+  "CONFIRMED",
+  "PAID_WAITING_STOCK",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED",
+  "COMPLETED",
+];
+
 export default function AdminOrderHistory() {
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -24,6 +34,7 @@ export default function AdminOrderHistory() {
 
   const {
     allOrders,
+    filteredOrders,
     paginatedOrders,
     isLoading,
     error,
@@ -148,12 +159,122 @@ export default function AdminOrderHistory() {
     );
   }
 
+  // Tính toán doanh thu và lợi nhuận
+  // Chỉ tính từ đơn hàng đã thanh toán và áp dụng các filter
+  const calculateRevenueStats = () => {
+    const paidOrders = filteredOrders.filter((order) =>
+      PAID_STATUSES.includes(order.status)
+    );
+
+    if (paidOrders.length === 0) {
+      return {
+        totalRevenue: 0,
+        averageActualRevenue: 0,
+        averageProfit: 0,
+        paidOrderCount: 0,
+      };
+    }
+
+    // Tổng doanh thu từ totalPrice (tổng tiền đơn hàng)
+    const sumTotalPrice = paidOrders.reduce(
+      (sum, order) => sum + (order.totalPrice || 0),
+      0
+    );
+
+    // Tổng doanh thu thực nhận từ finalPrice (đã trừ voucher)
+    const sumFinalPrice = paidOrders.reduce(
+      (sum, order) => sum + (order.finalPrice || 0),
+      0
+    );
+
+    // Tổng lợi nhuận từ actualRevenue
+    const sumProfit = paidOrders.reduce(
+      (sum, order) => sum + (order.actualRevenue || 0),
+      0
+    );
+
+    return {
+      totalRevenue: sumTotalPrice / paidOrders.length,
+      averageActualRevenue: sumFinalPrice / paidOrders.length,
+      averageProfit: sumProfit / paidOrders.length,
+      paidOrderCount: paidOrders.length,
+    };
+  };
+
+  const { totalRevenue, averageActualRevenue, averageProfit, paidOrderCount } =
+    calculateRevenueStats();
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       className="space-y-6"
     >
+      {/* Revenue Summary Card */}
+      <div className="bg-gradient-to-r from-tet-primary/10 to-tet-primary/5 border border-tet-primary/20 rounded-2xl p-6 shadow-sm">
+        <div className="flex flex-col gap-4">
+          <p className="text-sm font-semibold text-tet-primary">
+            {"📊 Thống kê Doanh thu"}
+          </p>
+          <div className="grid grid-cols-3 gap-6">
+            {/* Tổng doanh thu */}
+            <div className="flex flex-col gap-1">
+              <p className="text-xs font-medium text-gray-600">
+                {"Tổng doanh thu"}
+              </p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-blue-600">
+                  {totalRevenue.toLocaleString("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                    maximumFractionDigits: 0,
+                  })}
+                </span>
+                <span className="text-xs text-gray-500">{"/đơn"}</span>
+              </div>
+            </div>
+
+            {/* Doanh thu thực nhận trung bình */}
+            <div className="flex flex-col gap-1">
+              <p className="text-xs font-medium text-gray-600">
+                {"Doanh thu thực nhận"}
+              </p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-tet-primary">
+                  {averageActualRevenue.toLocaleString("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                    maximumFractionDigits: 0,
+                  })}
+                </span>
+                <span className="text-xs text-gray-500">{"/đơn"}</span>
+              </div>
+            </div>
+
+            {/* Lợi nhuận trung bình */}
+            <div className="flex flex-col gap-1">
+              <p className="text-xs font-medium text-gray-600">
+                {"Lợi nhuận"}
+              </p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-amber-600">
+                  {averageProfit.toLocaleString("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                    maximumFractionDigits: 0,
+                  })}
+                </span>
+                <span className="text-xs text-gray-500">{"/đơn"}</span>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-500">
+            {"Tính từ "}{paidOrderCount}{" đơn hàng đã thanh toán"}
+          </p>
+        </div>
+      </div>
+
       <OrderFilters
         onSearchChange={handleSearch}
         onStatusChange={handleStatusFilterChange}

@@ -87,7 +87,7 @@ export default function AdminOverview() {
 
   const stats = [
     {
-      label: "Tổng doanh thu",
+      label: "Tổng doanh thu thực nhận",
       value: new Intl.NumberFormat("vi-VN", {
         style: "currency",
         currency: "VND",
@@ -98,7 +98,7 @@ export default function AdminOverview() {
       color: "from-green-500 to-emerald-600",
     },
     {
-      label: "Tổng doanh thu thực nhận",
+      label: "Tổng Lợi nhuận",
       value: actualRevenueTotal == null
         ? "Chưa có dữ liệu"
         : new Intl.NumberFormat("vi-VN", {
