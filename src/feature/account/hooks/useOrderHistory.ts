@@ -31,7 +31,10 @@ export const useOrderHistory = () => {
     const [totalItems, setTotalItems] = useState(0);
 
     // Filter and sort state
-    const [filters, setFilters] = useState<OrderFilters>({ quotationType: 'normal' });
+    const [filters, setFilters] = useState<OrderFilters>({
+        quotationType: 'normal',
+        vatType: 'all',
+    });
     const [sortBy, setSortBy] = useState<SortBy>('date-desc');
 
     // Load all orders from API
@@ -108,6 +111,13 @@ export const useOrderHistory = () => {
         }));
     };
 
+    const handleVatTypeChange = (vatType: 'all' | 'vat' | 'non-vat') => {
+        setFilters((prev) => ({
+            ...prev,
+            vatType,
+        }));
+    };
+
     const handleDateRangeChange = (dateRangeLabel: string) => {
         const dateRangeOptions = getDateRangeOptions();
         const selected = dateRangeOptions.find((opt) => opt.label === dateRangeLabel);
@@ -169,6 +179,7 @@ export const useOrderHistory = () => {
         totalPages,
         totalItems,
         handleQuotationTypeChange,
+        handleVatTypeChange,
         handleStatusFilterChange,
         handleDateRangeChange,
         handlePriceRangeChange,

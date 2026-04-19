@@ -3,6 +3,7 @@ import type { OrderResponse } from '@/feature/checkout/services/orderService';
 // Types for filtering and sorting
 export interface OrderFilters {
     status?: string;
+    vatType?: 'all' | 'vat' | 'non-vat';
     startDate?: Date;
     endDate?: Date;
     minPrice?: number;
@@ -53,6 +54,14 @@ export const filterOrders = (
             return false;
         }
         if (filters.quotationType === 'normal' && isQuotationOrder) {
+            return false;
+        }
+
+        // Filter by VAT type
+        if (filters.vatType === 'vat' && !order.requireVatInvoice) {
+            return false;
+        }
+        if (filters.vatType === 'non-vat' && order.requireVatInvoice) {
             return false;
         }
 

@@ -38,6 +38,7 @@ export default function OrderHistory() {
     currentPage,
     totalPages,
     handleQuotationTypeChange,
+    handleVatTypeChange,
     handleStatusFilterChange,
     handleDateRangeChange,
     handleSearch,
@@ -205,6 +206,7 @@ export default function OrderHistory() {
       <OrderFilters
         onSearchChange={handleSearch}
         onStatusChange={handleStatusFilterChange}
+        onVatTypeChange={handleVatTypeChange}
         onDateRangeChange={handleDateRangeChange}
         onSortChange={(sort) => handleSort(sort as SortBy)}
         sortBy={sortBy}

@@ -7,6 +7,7 @@ import { ORDER_STATUS } from "../utils/orderStatusUtils";
 interface OrderFiltersProps {
   onSearchChange: (query: string) => void;
   onStatusChange: (status: string) => void;
+  onVatTypeChange: (vatType: "all" | "vat" | "non-vat") => void;
   onDateRangeChange: (range: string) => void;
   onSortChange: (sort: SortBy) => void;
   sortBy: SortBy;
@@ -15,6 +16,7 @@ interface OrderFiltersProps {
 export default function OrderFilters({
   onSearchChange,
   onStatusChange,
+  onVatTypeChange,
   onDateRangeChange,
   onSortChange,
   sortBy,
@@ -69,7 +71,7 @@ export default function OrderFilters({
 
       {/* Advanced Filters */}
       {showAdvanced && (
-        <div className="pt-4 border-t border-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="pt-4 border-t border-gray-50 grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Status Filter */}
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-widest text-gray-500">
@@ -94,6 +96,24 @@ export default function OrderFilters({
                 Yêu cầu hủy (Cần duyệt)
               </option>
               <option value={ORDER_STATUS.CANCELLED}>Đã hủy</option>
+            </select>
+          </div>
+
+          {/* VAT Filter */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-gray-500">
+              Loại hóa đơn
+            </label>
+            <select
+              defaultValue="all"
+              onChange={(e) =>
+                onVatTypeChange(e.target.value as "all" | "vat" | "non-vat")
+              }
+              className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm font-bold text-tet-primary outline-none focus:ring-2 focus:ring-tet-secondary cursor-pointer"
+            >
+              <option value="all">Tất cả</option>
+              <option value="vat">Đơn có VAT</option>
+              <option value="non-vat">Đơn không VAT</option>
             </select>
           </div>
 

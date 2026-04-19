@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { X, Loader2, Edit2, Save, X as XIcon, Package } from "lucide-react";
+import { X, Loader2, Edit2, Save, X as XIcon, Package, FileDown } from "lucide-react";
 import {
   type OrderResponse,
   type OrderItem,
@@ -53,6 +53,7 @@ export default function OrderDetailModal({
     productId: 0,
     productName: "",
   });
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
   const [stockMovementsLoading, setStockMovementsLoading] = useState(false);
 
@@ -153,6 +154,19 @@ export default function OrderDetailModal({
       note: displayOrder.note,
     });
     setIsEditing(false);
+  };
+
+  const handleDownloadInvoice = async () => {
+    try {
+      setIsDownloadingInvoice(true);
+      const token = localStorage.getItem("token") || undefined;
+      await orderService.downloadInvoice(displayOrder.orderId, token);
+    } catch (error) {
+      console.error("Error downloading invoice:", error);
+      alert("Không thể tải hóa đơn. Vui lòng thử lại!");
+    } finally {
+      setIsDownloadingInvoice(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -616,7 +630,19 @@ export default function OrderDetailModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="sticky bottom-0 bg-white/90 backdrop-blur-md border-t border-gray-100 p-6 flex justify-end z-10">
+        <div className="sticky bottom-0 bg-white/90 backdrop-blur-md border-t border-gray-100 p-6 flex justify-end gap-3 z-10">
+          <button
+            onClick={handleDownloadInvoice}
+            disabled={isDownloadingInvoice}
+            className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
+          >
+            {isDownloadingInvoice ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileDown className="w-4 h-4" />
+            )}
+            {displayOrder.requireVatInvoice ? "Tải hóa đơn VAT" : "Tải hóa đơn"}
+          </button>
           <button
             onClick={onClose}
             className="px-8 py-3 bg-gray-900 text-white rounded-full hover:bg-black transition-all font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5"

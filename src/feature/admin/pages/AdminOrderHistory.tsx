@@ -43,6 +43,7 @@ export default function AdminOrderHistory() {
     currentPage,
     totalPages,
     handleQuotationTypeChange,
+    handleVatTypeChange,
     handleStatusFilterChange,
     handleDateRangeChange,
     handleSearch,
@@ -278,6 +279,7 @@ export default function AdminOrderHistory() {
       <OrderFilters
         onSearchChange={handleSearch}
         onStatusChange={handleStatusFilterChange}
+        onVatTypeChange={handleVatTypeChange}
         onDateRangeChange={handleDateRangeChange}
         onSortChange={(sort) => handleSort(sort as SortBy)}
         sortBy={sortBy}

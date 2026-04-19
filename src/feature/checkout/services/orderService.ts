@@ -401,8 +401,22 @@ export const downloadInvoice = async (
   orderId: number,
   token?: string,
 ): Promise<void> => {
+  return downloadPdfByUrl(
+    API_ENDPOINTS.ORDERS.INVOICE(orderId),
+    orderId,
+    token,
+    "HoaDon",
+  );
+};
+
+const downloadPdfByUrl = async (
+  requestUrl: string,
+  orderId: number,
+  token: string | undefined,
+  filePrefix: string,
+): Promise<void> => {
   const response = await axiosClient.get(
-    `${API_ENDPOINTS.ORDERS.DETAIL(orderId)}/invoice`,
+    requestUrl,
     {
       responseType: "blob",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -419,17 +433,20 @@ export const downloadInvoice = async (
   }
 
   const blob = new Blob([fileBlob], { type: "application/pdf" });
-  const url = window.URL.createObjectURL(blob);
+  const objectUrl = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", `HoaDon_${orderId.toString().padStart(6, "0")}.pdf`);
+  link.href = objectUrl;
+  link.setAttribute(
+    "download",
+    `${filePrefix}_${orderId.toString().padStart(6, "0")}.pdf`,
+  );
   document.body.appendChild(link);
   link.click();
 
   if (link.parentNode) {
     link.parentNode.removeChild(link);
   }
-  window.URL.revokeObjectURL(url);
+  window.URL.revokeObjectURL(objectUrl);
 };
 
 // Export all as object for easier importing
