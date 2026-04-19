@@ -83,7 +83,7 @@ export default function Navbar() {
             />
           </div>
           <span className="hidden lg:block text-white font-serif font-bold text-2xl italic tracking-tighter">
-            Flora Farm
+            Quà Tết yêu thương
           </span>
         </Link>
 

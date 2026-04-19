@@ -585,18 +585,25 @@ export interface HighlightProduct {
   totalRevenue: number;
 }
 
-export interface TrendingProductPoint {
-  date: string;
-  quantity: number;
+export interface SeasonalTrendCategory {
+  categoryId: number;
+  categoryName: string;
+  totalSold: number;
+  percentage: number;
 }
 
-export interface TrendingProduct {
+export interface SeasonalTrendProduct {
   productId: number;
   productName: string;
   imageUrl: string | null;
-  totalSoldInPeriod: number;
-  growthRate: number;
-  trendData: TrendingProductPoint[];
+  totalSold: number;
+}
+
+export interface SeasonalTrendResponse {
+  requestedMonth: number;
+  referenceYear: number;
+  topCategories: SeasonalTrendCategory[];
+  topProducts: SeasonalTrendProduct[];
 }
 
 export interface CancellationStats {
@@ -626,43 +633,52 @@ export const getDashboardInsights = async (startDate?: string, endDate?: string)
   return response.data;
 };
 
-const normalizeTrendingProductsResponse = (raw: any): TrendingProduct[] => {
-  const source = Array.isArray(raw)
-    ? raw
-    : Array.isArray(raw?.data)
-      ? raw.data
-      : Array.isArray(raw?.Data)
-        ? raw.Data
-        : Array.isArray(raw?.data?.data)
-          ? raw.data.data
-          : [];
+const normalizeSeasonalTrendResponse = (raw: any): SeasonalTrendResponse => {
+  const root = raw?.data ?? raw?.Data ?? raw ?? {};
+  const payload =
+    root?.requestedMonth != null ||
+    root?.referenceYear != null ||
+    Array.isArray(root?.topCategories) ||
+    Array.isArray(root?.topProducts)
+      ? root
+      : (root?.data ?? root?.Data ?? root);
 
-  return source.map((item: any) => {
-    const trendSource = Array.isArray(item?.trendData)
-      ? item.trendData
-      : Array.isArray(item?.TrendData)
-        ? item.TrendData
-        : [];
+  const topCategoriesSource = Array.isArray(payload?.topCategories)
+    ? payload.topCategories
+    : Array.isArray(payload?.TopCategories)
+      ? payload.TopCategories
+      : [];
 
-    return {
+  const topProductsSource = Array.isArray(payload?.topProducts)
+    ? payload.topProducts
+    : Array.isArray(payload?.TopProducts)
+      ? payload.TopProducts
+      : [];
+
+  return {
+    requestedMonth: toNumber(payload?.requestedMonth ?? payload?.RequestedMonth),
+    referenceYear: toNumber(payload?.referenceYear ?? payload?.ReferenceYear),
+    topCategories: topCategoriesSource.map((item: any) => ({
+      categoryId: toNumber(item?.categoryId ?? item?.CategoryId),
+      categoryName: String(item?.categoryName ?? item?.CategoryName ?? ""),
+      totalSold: toNumber(item?.totalSold ?? item?.TotalSold),
+      percentage: toNumber(item?.percentage ?? item?.Percentage),
+    })),
+    topProducts: topProductsSource.map((item: any) => ({
       productId: toNumber(item?.productId ?? item?.ProductId),
       productName: String(item?.productName ?? item?.ProductName ?? ""),
       imageUrl: item?.imageUrl ?? item?.ImageUrl ?? null,
-      totalSoldInPeriod: toNumber(item?.totalSoldInPeriod ?? item?.TotalSoldInPeriod),
-      growthRate: toNumber(item?.growthRate ?? item?.GrowthRate),
-      trendData: trendSource.map((point: any) => ({
-        date: String(point?.date ?? point?.Date ?? ""),
-        quantity: toNumber(point?.quantity ?? point?.Quantity),
-      })),
-    };
-  });
+      totalSold: toNumber(item?.totalSold ?? item?.TotalSold),
+    })),
+  };
 };
 
-export const getTrendingProducts = async (
-  period: DashboardRankingPeriod = "week",
-): Promise<TrendingProduct[]> => {
-  const response = await axiosClient.get(API_ENDPOINTS.STATISTICS.TRENDING(period));
-  return normalizeTrendingProductsResponse(response);
+export const getSeasonalTrend = async (
+  month: number,
+  year: number,
+): Promise<SeasonalTrendResponse> => {
+  const response = await axiosClient.get(API_ENDPOINTS.STATISTICS.SEASONAL_TREND(month, year));
+  return normalizeSeasonalTrendResponse(response);
 };
 
 const adminDashboardService = {
@@ -680,7 +696,7 @@ const adminDashboardService = {
   getAbandonedCarts,
   getCustomerOrderStatistics,
   getDashboardInsights,
-  getTrendingProducts,
+  getSeasonalTrend,
 };
 
 export default adminDashboardService;

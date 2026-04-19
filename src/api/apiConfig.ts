@@ -390,8 +390,8 @@ export const API_ENDPOINTS = {
   STATISTICS: {
     PRODUCT: (productId: string | number) =>
       `${BASE_URL}/statistics/product/${productId}`,
-    TRENDING: (period: "week" | "month" | "year" = "week") =>
-      `${BASE_URL}/statistics/trending?period=${encodeURIComponent(period)}`,
+    SEASONAL_TREND: (month: number, year: number) =>
+      `${BASE_URL}/statistics/seasonal-trend?month=${encodeURIComponent(String(month))}&year=${encodeURIComponent(String(year))}`,
   },
   // Feedbacks endpoints
   FEEDBACKS: {

@@ -27,7 +27,7 @@ export default function Footer() {
                 />
               </div>
               <span className="font-serif text-3xl font-bold italic tracking-tighter text-white">
-                Happybox
+                Quà Tết yêu thương
               </span>
             </div>
             <p className="max-w-xs text-sm italic leading-relaxed opacity-80">
@@ -79,11 +79,17 @@ export default function Footer() {
             </h3>
             <div className="space-y-6 text-sm opacity-90">
               <div className="flex items-start justify-center gap-3 sm:justify-start">
-                <MapPin size={18} className="mt-1 shrink-0 text-tet-secondary" />
+                <MapPin
+                  size={18}
+                  className="mt-1 shrink-0 text-tet-secondary"
+                />
                 <p>123 Trần Hưng Đạo, Quận Hoàn Kiếm, TP. Hà Nội</p>
               </div>
               <div className="flex items-start justify-center gap-3 sm:justify-start">
-                <MapPin size={18} className="mt-1 shrink-0 text-tet-secondary" />
+                <MapPin
+                  size={18}
+                  className="mt-1 shrink-0 text-tet-secondary"
+                />
                 <p>456 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh</p>
               </div>
               <div className="group flex items-center justify-center gap-3 border-t border-white/10 pt-4 sm:justify-start">
@@ -91,11 +97,15 @@ export default function Footer() {
                   size={18}
                   className="text-tet-secondary group-hover:animate-bounce"
                 />
-                <p className="text-xl font-bold tracking-wider text-white">1900 1234</p>
+                <p className="text-xl font-bold tracking-wider text-white">
+                  1900 1234
+                </p>
               </div>
               <div className="flex items-center justify-center gap-3 sm:justify-start">
                 <Mail size={18} className="text-tet-secondary" />
-                <p className="cursor-pointer hover:underline">contact@happybox.vn</p>
+                <p className="cursor-pointer hover:underline">
+                  contact@happybox.vn
+                </p>
               </div>
             </div>
           </div>
@@ -104,8 +114,12 @@ export default function Footer() {
         <div className="mt-20 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-[10px] uppercase tracking-[0.2em] opacity-50 md:flex-row md:text-xs">
           <p>© 2026 Happybox - Tinh Hoa Quà Tết Việt. All rights reserved.</p>
           <div className="flex gap-6">
-            <span className="cursor-pointer hover:text-white">Privacy Policy</span>
-            <span className="cursor-pointer hover:text-white">Terms of Use</span>
+            <span className="cursor-pointer hover:text-white">
+              Privacy Policy
+            </span>
+            <span className="cursor-pointer hover:text-white">
+              Terms of Use
+            </span>
           </div>
         </div>
       </div>
