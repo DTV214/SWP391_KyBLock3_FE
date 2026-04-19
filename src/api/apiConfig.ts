@@ -155,6 +155,8 @@ export const API_ENDPOINTS = {
     DETAIL: (orderId: string | number) => `${BASE_URL}/orders/${orderId}`,
     MY_ORDERS: `${BASE_URL}/orders/me`,
     INVOICE: (orderId: string | number) => `${BASE_URL}/orders/${orderId}/invoice`,
+    INVOICE_VAT: (orderId: string | number) =>
+      `${BASE_URL}/orders/${orderId}/invoice-vat`,
     UPDATE_SHIPPING_INFO: (orderId: string | number) =>
       `${BASE_URL}/orders/${orderId}/shipping-info`,
     UPDATE_STATUS: (orderId: string | number) =>

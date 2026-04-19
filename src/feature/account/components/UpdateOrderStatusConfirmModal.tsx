@@ -3,6 +3,7 @@ import { AlertCircle, Loader2, X } from 'lucide-react';
 import { useState } from 'react';
 import type { OrderResponse } from '@/feature/checkout/services/orderService';
 import { translateOrderStatus } from '../utils/orderStatusUtils';
+import VatOrderBadge from './VatOrderBadge';
 
 interface UpdateOrderStatusConfirmModalProps {
     order: OrderResponse | null;
@@ -93,8 +94,9 @@ export default function UpdateOrderStatusConfirmModal({
                                             <span className="font-bold">Thay d?i:</span>
                                         </p>
                                         <div className="space-y-2 ml-4">
-                                            <p className="text-sm text-blue-900">
-                                                Tr?ng th�i hi?n t?i: <span className="font-bold text-blue-600">{getStatusLabel(order.status)}</span>
+                                            <p className="text-sm text-blue-900 flex flex-wrap items-center gap-2">
+                                                {order.requireVatInvoice && <VatOrderBadge />}
+                                                <span>Tr?ng th�i hi?n t?i: <span className="font-bold text-blue-600">{getStatusLabel(order.status)}</span></span>
                                             </p>
                                             <p className="text-sm text-blue-900 flex items-center gap-2">
                                                 <span>?</span>

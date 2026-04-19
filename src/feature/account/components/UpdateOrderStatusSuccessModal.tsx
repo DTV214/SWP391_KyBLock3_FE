@@ -2,6 +2,7 @@
 import { CheckCircle, X } from 'lucide-react';
 import type { OrderResponse } from '@/feature/checkout/services/orderService';
 import { translateOrderStatus } from '../utils/orderStatusUtils';
+import VatOrderBadge from './VatOrderBadge';
 
 interface UpdateOrderStatusSuccessModalProps {
     order: OrderResponse | null;
@@ -83,9 +84,12 @@ export default function UpdateOrderStatusSuccessModal({
                                             <p className="text-sm text-gray-600"><span className="font-medium">M� don h�ng:</span></p>
                                             <p className="text-sm font-bold text-gray-900">#{order.orderId}</p>
                                         </div>
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex justify-between items-center gap-3">
                                             <p className="text-sm text-gray-600"><span className="font-medium">Tr?ng th�i m?i:</span></p>
-                                            <p className="text-sm font-bold text-tet-primary">{getStatusLabel(order.status)}</p>
+                                            <div className="flex flex-wrap items-center justify-end gap-2">
+                                                {order.requireVatInvoice && <VatOrderBadge />}
+                                                <p className="text-sm font-bold text-tet-primary">{getStatusLabel(order.status)}</p>
+                                            </div>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <p className="text-sm text-gray-600"><span className="font-medium">T?ng ti?n:</span></p>

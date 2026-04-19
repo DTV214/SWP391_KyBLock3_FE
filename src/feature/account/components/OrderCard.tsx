@@ -21,6 +21,7 @@ import {
   getStatusColorClass,
 } from "../utils/orderStatusUtils";
 import { formatOrderDate } from "../utils/orderFilterUtils";
+import VatOrderBadge from "./VatOrderBadge";
 
 interface OrderCardProps {
   order: OrderResponse;
@@ -211,11 +212,14 @@ export default function OrderCard({
               <Calendar size={14} /> {formatOrderDate(order.orderDateTime)}
             </span>
           </div>
-          <span
-            className={`text-[10px] px-3 py-1 rounded-full border font-bold uppercase tracking-widest ${getDisplayStatusColorClass(order.status)}`}
-          >
-            {getDisplayStatusLabel(order.status)}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {order.requireVatInvoice && <VatOrderBadge />}
+            <span
+              className={`text-[10px] px-3 py-1 rounded-full border font-bold uppercase tracking-widest ${getDisplayStatusColorClass(order.status)}`}
+            >
+              {getDisplayStatusLabel(order.status)}
+            </span>
+          </div>
         </div>
 
         {statusUpdateError && (
@@ -277,7 +281,7 @@ export default function OrderCard({
                     : `${actualRevenue.toLocaleString()}đ`}
                 </p>
               )}
-              {order.discountValue && order.discountValue > 0 && (
+              {order.discountValue > 0 && (
                 <p className="text-[10px] text-green-600 font-bold italic">
                   Tiết kiệm: {order.discountValue.toLocaleString()}đ
                 </p>

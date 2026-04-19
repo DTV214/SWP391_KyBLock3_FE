@@ -131,6 +131,13 @@ const toBoolean = (value: unknown, fallback = false): boolean => {
   return fallback;
 };
 
+const toOptionalString = (value: unknown): string => {
+  if (typeof value !== "string") {
+    return "";
+  }
+  return value.trim();
+};
+
 const unwrapApiData = <T>(response: unknown): T => {
   if (
     response &&
@@ -222,7 +229,7 @@ const normalizeOrderResponse = (order: Partial<OrderResponse>): OrderResponse =>
     customerEmail: order.customerEmail ?? "",
     customerAddress: order.customerAddress ?? "",
     note: order.note ?? "",
-    promotionCode: order.promotionCode ?? "",
+    promotionCode: toOptionalString(order.promotionCode),
     shippedDate: order.shippedDate ?? null,
     isQuotation: order.isQuotation == null ? null : toNumber(order.isQuotation),
     requireVatInvoice,
@@ -409,6 +416,22 @@ export const downloadInvoice = async (
   );
 };
 
+/**
+ * Download VAT invoice PDF.
+ * GET /api/orders/{orderId}/invoice-vat
+ */
+export const downloadVatInvoice = async (
+  orderId: number,
+  token?: string,
+): Promise<void> => {
+  return downloadPdfByUrl(
+    API_ENDPOINTS.ORDERS.INVOICE_VAT(orderId),
+    orderId,
+    token,
+    "HoaDonVAT",
+  );
+};
+
 const downloadPdfByUrl = async (
   requestUrl: string,
   orderId: number,
@@ -460,4 +483,5 @@ export const orderService = {
   allocateOrderStock,
   cancelOrder,
   downloadInvoice,
+  downloadVatInvoice,
 };

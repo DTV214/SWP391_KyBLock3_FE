@@ -20,6 +20,7 @@ import {
   type StockMovement,
 } from "@/feature/admin/services/stockMovementService";
 import OrderPaymentHistory from "./OrderPaymentHistory";
+import VatOrderBadge from "./VatOrderBadge";
 
 interface OrderDetailModalProps {
   order: OrderResponse;
@@ -53,7 +54,9 @@ export default function OrderDetailModal({
     productId: 0,
     productName: "",
   });
-  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
+  const [downloadingInvoiceType, setDownloadingInvoiceType] = useState<
+    "regular" | "vat" | null
+  >(null);
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
   const [stockMovementsLoading, setStockMovementsLoading] = useState(false);
 
@@ -156,16 +159,20 @@ export default function OrderDetailModal({
     setIsEditing(false);
   };
 
-  const handleDownloadInvoice = async () => {
+  const handleDownloadInvoice = async (invoiceType: "regular" | "vat") => {
     try {
-      setIsDownloadingInvoice(true);
+      setDownloadingInvoiceType(invoiceType);
       const token = localStorage.getItem("token") || undefined;
-      await orderService.downloadInvoice(displayOrder.orderId, token);
+      if (invoiceType === "vat") {
+        await orderService.downloadVatInvoice(displayOrder.orderId, token);
+      } else {
+        await orderService.downloadInvoice(displayOrder.orderId, token);
+      }
     } catch (error) {
       console.error("Error downloading invoice:", error);
       alert("Không thể tải hóa đơn. Vui lòng thử lại!");
     } finally {
-      setIsDownloadingInvoice(false);
+      setDownloadingInvoiceType(null);
     }
   };
 
@@ -211,11 +218,14 @@ export default function OrderDetailModal({
               <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
                 Trạng thái đơn hàng
               </p>
-              <p
-                className={`text-sm px-4 py-1.5 rounded-full border font-bold inline-block mt-2 shadow-sm ${getStatusColorClass(displayOrder.status)}`}
-              >
-                {translateOrderStatus(displayOrder.status)}
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {displayOrder.requireVatInvoice && <VatOrderBadge />}
+                <p
+                  className={`text-sm px-4 py-1.5 rounded-full border font-bold inline-block shadow-sm ${getStatusColorClass(displayOrder.status)}`}
+                >
+                  {translateOrderStatus(displayOrder.status)}
+                </p>
+              </div>
             </div>
             {displayOrder.promotionCode && (
               <div className="ml-auto text-right">
@@ -565,20 +575,14 @@ export default function OrderDetailModal({
                   {displayOrder.totalPrice.toLocaleString("vi-VN")}đ
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 font-medium">Giảm giá</span>
-                <span
-                  className={
-                    displayOrder.discountValue > 0
-                      ? "font-black text-green-700"
-                      : "font-bold text-gray-800"
-                  }
-                >
-                  {displayOrder.discountValue > 0
-                    ? `-${displayOrder.discountValue.toLocaleString("vi-VN")}đ`
-                    : "0đ"}
-                </span>
-              </div>
+              {displayOrder.discountValue > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 font-medium">Giảm giá</span>
+                  <span className="font-black text-green-700">
+                    -{displayOrder.discountValue.toLocaleString("vi-VN")}đ
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 font-medium">
                   Thành tiền sau giảm
@@ -630,19 +634,37 @@ export default function OrderDetailModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="sticky bottom-0 bg-white/90 backdrop-blur-md border-t border-gray-100 p-6 flex justify-end gap-3 z-10">
+        <div className="sticky bottom-0 bg-white/90 backdrop-blur-md border-t border-gray-100 p-6 flex flex-wrap justify-end gap-3 z-10">
           <button
-            onClick={handleDownloadInvoice}
-            disabled={isDownloadingInvoice}
+            onClick={() => handleDownloadInvoice("regular")}
+            disabled={downloadingInvoiceType !== null}
             className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
           >
-            {isDownloadingInvoice ? (
+            {downloadingInvoiceType === "regular" ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <FileDown className="w-4 h-4" />
             )}
-            {displayOrder.requireVatInvoice ? "Tải hóa đơn VAT" : "Tải hóa đơn"}
+            {downloadingInvoiceType === "regular"
+              ? "Đang tải..."
+              : "Tải hóa đơn thường"}
           </button>
+          {displayOrder.requireVatInvoice && (
+            <button
+              onClick={() => handleDownloadInvoice("vat")}
+              disabled={downloadingInvoiceType !== null}
+              className="px-6 py-3 bg-tet-primary text-white rounded-full hover:bg-[#A30D25] disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
+            >
+              {downloadingInvoiceType === "vat" ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileDown className="w-4 h-4" />
+              )}
+              {downloadingInvoiceType === "vat"
+                ? "Đang tải..."
+                : "Tải hóa đơn VAT"}
+            </button>
+          )}
           <button
             onClick={onClose}
             className="px-8 py-3 bg-gray-900 text-white rounded-full hover:bg-black transition-all font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5"

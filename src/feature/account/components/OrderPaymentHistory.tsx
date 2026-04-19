@@ -104,6 +104,12 @@ export default function OrderPaymentHistory({
               payment.finalPayableAmount > 0
                 ? payment.finalPayableAmount
                 : payment.amount;
+            const baseAmount =
+              payment.baseAmount > 0
+                ? payment.baseAmount
+                : Math.max(payableAmount - payment.vatAmount, 0);
+            const shouldShowVatBreakdown =
+              payment.requireVatInvoice && payment.vatAmount > 0;
 
             return (
               <div
@@ -141,10 +147,10 @@ export default function OrderPaymentHistory({
                   <p className="font-bold text-lg">
                     {payableAmount.toLocaleString("vi-VN")}đ
                   </p>
-                  {(payment.vatAmount > 0 || payment.baseAmount !== payableAmount) && (
+                  {shouldShowVatBreakdown && (
                     <div className="mt-1 text-[11px] opacity-75">
                       <p>
-                        Trước VAT: {payment.baseAmount.toLocaleString("vi-VN")}đ
+                        Trước VAT: {baseAmount.toLocaleString("vi-VN")}đ
                       </p>
                       <p>VAT: {payment.vatAmount.toLocaleString("vi-VN")}đ</p>
                     </div>

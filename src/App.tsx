@@ -256,6 +256,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/checkout/success"
+                element={
+                  <ProtectedRoute>
+                    <PaymentSuccess />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/payment-failure" element={<PaymentFailure />} />
               <Route path="/payments/vnpay-return" element={<VNPayReturn />} />
