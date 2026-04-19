@@ -66,7 +66,7 @@ export default function ChatOrderCard({
 
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-gray-800">
-                {firstItem?.productName || "Don hang"}
+                {firstItem?.productName || "Đơn hàng"}
               </p>
               <p className="text-xs text-gray-500">
                 {order.items.length} sản phẩm
@@ -80,7 +80,7 @@ export default function ChatOrderCard({
           <div className="flex items-center justify-between text-xs text-gray-500">
             <span>{formatOrderDate(order.orderDateTime)}</span>
             <span className="font-bold text-tet-primary">
-              {order.finalPrice.toLocaleString("vi-VN")}d
+              {order.finalPayableAmount.toLocaleString("vi-VN")}đ
             </span>
           </div>
 

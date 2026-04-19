@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import {
   AlertTriangle,
   Calendar,
@@ -262,8 +262,13 @@ export default function OrderCard({
           <div className="w-full md:w-auto flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 border-t md:border-0 pt-4 md:pt-0">
             <div>
               <p className="text-xl font-black text-tet-primary">
-                {order.finalPrice.toLocaleString()}đ
+                {order.finalPayableAmount.toLocaleString()}đ
               </p>
+              {order.requireVatInvoice && (
+                <p className="text-[10px] text-blue-600 font-bold italic">
+                  Đã bao gồm VAT: {order.vatAmount.toLocaleString()}đ
+                </p>
+              )}
               {isAdmin && (
                 <p className="text-[10px] text-emerald-600 font-bold italic">
                   Doanh thu thực nhận:{" "}
@@ -400,3 +405,4 @@ export default function OrderCard({
     </>
   );
 }
+

@@ -29,7 +29,6 @@ export default function OrderPaymentHistory({
   const [isRetrying, setIsRetrying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // XỬ LÝ THANH TOÁN LẠI CHỈ BẰNG VNPAY
   const handleRetryPayment = async () => {
     if (!orderId) {
       setError("Không tìm thấy mã đơn hàng");
@@ -41,14 +40,9 @@ export default function OrderPaymentHistory({
       setError(null);
 
       const token = localStorage.getItem("token") || undefined;
-      // Gọi thẳng API tạo thanh toán VNPay
-      const response = await createPayment(
-        { orderId, paymentMethod: "VNPAY" },
-        token,
-      );
+      const response = await createPayment({ orderId, paymentMethod: "VNPAY" }, token);
 
       if (response && response.paymentUrl) {
-        // Chuyển hướng sang cổng VNPay
         window.location.href = response.paymentUrl;
       } else {
         setError("Lỗi khi tạo thanh toán. Vui lòng thử lại!");
@@ -74,7 +68,6 @@ export default function OrderPaymentHistory({
         <h3 className="text-lg font-serif font-bold text-tet-primary">
           Lịch sử giao dịch
         </h3>
-        {/* Nút thanh toán lại (Chỉ hiện khi đơn hàng PENDING và là Khách hàng) */}
         {orderStatus === "PENDING" && orderId && !isAdmin && (
           <button
             onClick={handleRetryPayment}
@@ -83,8 +76,7 @@ export default function OrderPaymentHistory({
           >
             {isRetrying ? (
               <>
-                <Loader2 size={16} className="animate-spin" /> Đang chuyển
-                hướng...
+                <Loader2 size={16} className="animate-spin" /> Đang chuyển hướng...
               </>
             ) : (
               <>
@@ -107,48 +99,70 @@ export default function OrderPaymentHistory({
         </div>
       ) : payments.length > 0 ? (
         <div className="space-y-3">
-          {payments.map((payment) => (
-            <div
-              key={payment.paymentId}
-              className={`p-4 rounded-2xl border flex items-center justify-between ${getPaymentStatusColorClass(payment.status)}`}
-            >
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">
-                    {getPaymentStatusIcon(payment.status)}
-                  </span>
-                  <div>
-                    <p className="font-bold text-sm">{payment.paymentMethod}</p>
-                    <p className="text-xs opacity-75">
-                      {translatePaymentStatus(payment.status)}
-                      {payment.createdDate &&
-                        ` • ${formatOrderDate(payment.createdDate)}`}
-                    </p>
-                    {payment.transactionNo && (
-                      <p className="text-xs opacity-75 mt-1 font-mono">
-                        Mã GD: {payment.transactionNo}
+          {payments.map((payment) => {
+            const payableAmount =
+              payment.finalPayableAmount > 0
+                ? payment.finalPayableAmount
+                : payment.amount;
+
+            return (
+              <div
+                key={payment.paymentId}
+                className={`p-4 rounded-2xl border flex items-center justify-between ${getPaymentStatusColorClass(payment.status)}`}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">
+                      {getPaymentStatusIcon(payment.status)}
+                    </span>
+                    <div>
+                      <p className="font-bold text-sm">
+                        {payment.paymentMethod || "VNPAY"}
                       </p>
-                    )}
+                      <p className="text-xs opacity-75">
+                        {translatePaymentStatus(payment.status)}
+                        {payment.createdDate &&
+                          ` • ${formatOrderDate(payment.createdDate)}`}
+                      </p>
+                      {payment.requireVatInvoice && (
+                        <p className="text-[11px] opacity-75 mt-1">
+                          Giao dịch có VAT
+                        </p>
+                      )}
+                      {payment.transactionNo && (
+                        <p className="text-xs opacity-75 mt-1 font-mono">
+                          Mã GD: {payment.transactionNo}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
+                <div className="text-right">
+                  <p className="font-bold text-lg">
+                    {payableAmount.toLocaleString("vi-VN")}đ
+                  </p>
+                  {(payment.vatAmount > 0 || payment.baseAmount !== payableAmount) && (
+                    <div className="mt-1 text-[11px] opacity-75">
+                      <p>
+                        Trước VAT: {payment.baseAmount.toLocaleString("vi-VN")}đ
+                      </p>
+                      <p>VAT: {payment.vatAmount.toLocaleString("vi-VN")}đ</p>
+                    </div>
+                  )}
+                  {payment.transactionNo && (
+                    <button
+                      className="text-xs opacity-75 hover:opacity-100 transition-all ml-auto flex items-center gap-1 mt-2 cursor-pointer"
+                      onClick={() => {
+                        navigator.clipboard.writeText(payment.transactionNo!);
+                      }}
+                    >
+                      <Copy size={12} /> Sao chép mã
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-lg">
-                  {payment.amount.toLocaleString("vi-VN")}đ
-                </p>
-                {payment.transactionNo && (
-                  <button
-                    className="text-xs opacity-75 hover:opacity-100 transition-all ml-auto flex items-center gap-1 mt-2 cursor-pointer"
-                    onClick={() => {
-                      navigator.clipboard.writeText(payment.transactionNo!);
-                    }}
-                  >
-                    <Copy size={12} /> Sao chép mã
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="p-8 bg-gray-50 rounded-2xl border border-gray-100 text-center">

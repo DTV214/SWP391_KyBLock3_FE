@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { X, Loader2, Edit2, Save, X as XIcon, Package } from "lucide-react";
 import {
@@ -425,9 +425,9 @@ export default function OrderDetailModal({
                       </p>
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
-                          {(item.amount / item.quantity).toLocaleString(
-                            "vi-VN",
-                          )}
+                          {(
+                            item.quantity > 0 ? item.amount / item.quantity : item.price
+                          ).toLocaleString("vi-VN")}
                           đ <span className="text-xs">x</span>{" "}
                           <span className="font-bold text-gray-800">
                             {item.quantity}
@@ -497,6 +497,48 @@ export default function OrderDetailModal({
             </div>
           </section>
 
+          {displayOrder.requireVatInvoice && (
+            <section className="space-y-4">
+              <h3 className="text-xl font-serif font-bold text-tet-primary px-1">
+                Thông tin hóa đơn VAT
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-white border border-gray-100 shadow-sm rounded-3xl">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                    Tên công ty
+                  </p>
+                  <p className="text-sm font-bold text-gray-800 mt-1">
+                    {displayOrder.vatCompanyName || "Không có"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                    Mã số thuế
+                  </p>
+                  <p className="text-sm font-bold text-gray-800 mt-1">
+                    {displayOrder.vatCompanyTaxCode || "Không có"}
+                  </p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                    Địa chỉ công ty
+                  </p>
+                  <p className="text-sm font-bold text-gray-800 mt-1">
+                    {displayOrder.vatCompanyAddress || "Không có"}
+                  </p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                    Email nhận hóa đơn
+                  </p>
+                  <p className="text-sm font-bold text-gray-800 mt-1">
+                    {displayOrder.vatInvoiceEmail || "Không có"}
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Price Summary Section */}
           <section className="p-6 bg-linear-to-br from-[#FBF5E8] to-white rounded-3xl border border-tet-secondary/20 shadow-sm">
             <h3 className="text-lg font-serif font-bold text-tet-primary mb-4">
@@ -504,28 +546,48 @@ export default function OrderDetailModal({
             </h3>
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600 font-medium">Tạm tính</span>
+                <span className="text-gray-600 font-medium">Tổng tiền hàng</span>
                 <span className="font-bold text-gray-800">
                   {displayOrder.totalPrice.toLocaleString("vi-VN")}đ
                 </span>
               </div>
-              {displayOrder.discountValue && displayOrder.discountValue > 0 && (
-                <div className="flex justify-between text-sm bg-green-50 px-3 py-2 rounded-lg border border-green-100">
-                  <span className="text-green-700 font-bold">
-                    Giảm giá ({displayOrder.promotionCode})
-                  </span>
-                  <span className="font-black text-green-700">
-                    -{displayOrder.discountValue.toLocaleString("vi-VN")}đ
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600 font-medium">Giảm giá</span>
+                <span
+                  className={
+                    displayOrder.discountValue > 0
+                      ? "font-black text-green-700"
+                      : "font-bold text-gray-800"
+                  }
+                >
+                  {displayOrder.discountValue > 0
+                    ? `-${displayOrder.discountValue.toLocaleString("vi-VN")}đ`
+                    : "0đ"}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600 font-medium">
+                  Thành tiền sau giảm
+                </span>
+                <span className="font-bold text-gray-800">
+                  {displayOrder.finalPrice.toLocaleString("vi-VN")}đ
+                </span>
+              </div>
+              {displayOrder.requireVatInvoice && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 font-medium">VAT (8%)</span>
+                  <span className="font-bold text-gray-800">
+                    {displayOrder.vatAmount.toLocaleString("vi-VN")}đ
                   </span>
                 </div>
               )}
               <div className="border-t border-gray-200 my-4" />
               <div className="flex justify-between items-end">
                 <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">
-                  Tổng cộng
+                  Tổng thanh toán
                 </span>
                 <span className="text-3xl font-black text-tet-primary">
-                  {displayOrder.finalPrice.toLocaleString("vi-VN")}đ
+                  {displayOrder.finalPayableAmount.toLocaleString("vi-VN")}đ
                 </span>
               </div>
               {isAdmin && (
@@ -678,3 +740,4 @@ export default function OrderDetailModal({
     </motion.div>
   );
 }
+

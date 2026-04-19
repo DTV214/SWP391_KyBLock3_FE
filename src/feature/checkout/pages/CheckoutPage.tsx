@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, AlertCircle, Ticket } from "lucide-react";
 import {
   cartService,
@@ -29,6 +30,11 @@ interface FormData {
   province: string;
   district: string;
   ward: string;
+  requireVatInvoice: boolean;
+  vatCompanyName: string;
+  vatCompanyTaxCode: string;
+  vatCompanyAddress: string;
+  vatInvoiceEmail: string;
 }
 
 export default function CheckoutPage() {
@@ -56,7 +62,14 @@ export default function CheckoutPage() {
     province: "",
     district: "",
     ward: "",
+    requireVatInvoice: false,
+    vatCompanyName: "",
+    vatCompanyTaxCode: "",
+    vatCompanyAddress: "",
+    vatInvoiceEmail: "",
   });
+
+  const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
 
   // Load cart items on mount
   useEffect(() => {
@@ -133,12 +146,20 @@ export default function CheckoutPage() {
       }
     }
 
-    const finalPrice = totalPrice - discountValue;
+    const finalPrice = Math.max(totalPrice - discountValue, 0);
+    const vatRate = formData.requireVatInvoice ? 0.08 : 0;
+    const vatAmount = formData.requireVatInvoice
+      ? Math.round(finalPrice * vatRate)
+      : 0;
+    const finalPayableAmount = finalPrice + vatAmount;
 
     return {
       totalPrice,
       discountValue,
       finalPrice,
+      vatRate,
+      vatAmount,
+      finalPayableAmount,
       itemCount: cartItems.reduce((sum, item) => sum + item.quantity, 0),
     };
   };
@@ -162,6 +183,22 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (formData.requireVatInvoice) {
+      if (
+        !formData.vatCompanyName.trim() ||
+        !formData.vatCompanyTaxCode.trim() ||
+        !formData.vatCompanyAddress.trim() ||
+        !formData.vatInvoiceEmail.trim()
+      ) {
+        setError("Vui lòng điền đầy đủ thông tin hóa đơn VAT");
+        return;
+      }
+      if (!isValidEmail(formData.vatInvoiceEmail.trim())) {
+        setError("Email nhận hóa đơn VAT không hợp lệ");
+        return;
+      }
+    }
+
     try {
       setIsSubmitting(true);
       setError(null);
@@ -177,12 +214,25 @@ export default function CheckoutPage() {
       console.log("📝 Creating order...");
       const orderResponse = await orderService.createOrder(
         {
-          customerName: formData.customerName,
-          customerPhone: formData.customerPhone,
-          customerEmail: formData.customerEmail,
-          customerAddress: formData.customerAddress,
-          note: formData.note,
-          promotionCode: formData.promotionCode,
+          customerName: formData.customerName.trim(),
+          customerPhone: formData.customerPhone.trim(),
+          customerEmail: formData.customerEmail.trim(),
+          customerAddress: formData.customerAddress.trim(),
+          note: formData.note.trim() || null,
+          promotionCode: formData.promotionCode.trim() || null,
+          requireVatInvoice: formData.requireVatInvoice,
+          vatCompanyName: formData.requireVatInvoice
+            ? formData.vatCompanyName.trim()
+            : null,
+          vatCompanyTaxCode: formData.requireVatInvoice
+            ? formData.vatCompanyTaxCode.trim()
+            : null,
+          vatCompanyAddress: formData.requireVatInvoice
+            ? formData.vatCompanyAddress.trim()
+            : null,
+          vatInvoiceEmail: formData.requireVatInvoice
+            ? formData.vatInvoiceEmail.trim()
+            : null,
         },
         token,
       );
@@ -200,10 +250,10 @@ export default function CheckoutPage() {
       console.log("✅ Payment created:", paymentResponse);
 
       // Step 3: Redirect to payment URL
-      if (paymentResponse.paymentUrl || paymentResponse.paymentLink) {
-        const paymentUrl =
-          paymentResponse.paymentUrl || paymentResponse.paymentLink;
-        console.log("🔗 Redirecting to payment URL:", paymentUrl);
+      const paymentUrl =
+        paymentResponse.paymentUrl ?? paymentResponse.paymentLink ?? "";
+
+      if (paymentUrl) {
         window.location.href = paymentUrl;
       } else {
         // If no payment URL, show success page
@@ -227,7 +277,8 @@ export default function CheckoutPage() {
     }
   };
 
-  const { totalPrice, discountValue, finalPrice } = calculateTotals();
+  const { totalPrice, discountValue, finalPrice, vatAmount, finalPayableAmount } =
+    calculateTotals();
 
   if (isLoading) {
     return (
@@ -342,7 +393,108 @@ export default function CheckoutPage() {
                 </div>
               </section>
 
-              {/* 3. Phương thức giao hàng & Thanh toán */}
+              {/* 3. Hóa đơn VAT */}
+              <section className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+                <h3 className="text-xl font-serif font-bold text-tet-primary">
+                  Hóa đơn VAT
+                </h3>
+                <div className="flex items-start gap-3 rounded-2xl border border-gray-200 p-4 bg-gray-50/50">
+                  <Checkbox
+                    id="requireVatInvoice"
+                    checked={formData.requireVatInvoice}
+                    onCheckedChange={(checked) => {
+                      const shouldRequireVat = checked === true;
+                      setFormData((prev) => ({
+                        ...prev,
+                        requireVatInvoice: shouldRequireVat,
+                        vatCompanyName: shouldRequireVat ? prev.vatCompanyName : "",
+                        vatCompanyTaxCode: shouldRequireVat
+                          ? prev.vatCompanyTaxCode
+                          : "",
+                        vatCompanyAddress: shouldRequireVat
+                          ? prev.vatCompanyAddress
+                          : "",
+                        vatInvoiceEmail: shouldRequireVat
+                          ? prev.vatInvoiceEmail
+                          : "",
+                      }));
+                    }}
+                    className="mt-0.5 border-gray-400 data-[state=checked]:bg-tet-primary data-[state=checked]:border-tet-primary"
+                  />
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="requireVatInvoice"
+                      className="font-bold text-sm cursor-pointer"
+                    >
+                      Xuất hóa đơn VAT (8%)
+                    </Label>
+                    <p className="text-xs text-gray-500">
+                      Khi bật tùy chọn này, hệ thống sẽ tính thêm VAT 8% trên
+                      thành tiền sau giảm giá.
+                    </p>
+                  </div>
+                </div>
+
+                {formData.requireVatInvoice && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                        Tên công ty *
+                      </Label>
+                      <Input
+                        name="vatCompanyName"
+                        value={formData.vatCompanyName}
+                        onChange={handleInputChange}
+                        placeholder="CONG TY TNHH ABC"
+                        className="rounded-xl border-gray-200"
+                        required={formData.requireVatInvoice}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                        Mã số thuế *
+                      </Label>
+                      <Input
+                        name="vatCompanyTaxCode"
+                        value={formData.vatCompanyTaxCode}
+                        onChange={handleInputChange}
+                        placeholder="0319999999"
+                        className="rounded-xl border-gray-200"
+                        required={formData.requireVatInvoice}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                        Email nhận hóa đơn *
+                      </Label>
+                      <Input
+                        name="vatInvoiceEmail"
+                        type="email"
+                        value={formData.vatInvoiceEmail}
+                        onChange={handleInputChange}
+                        placeholder="ketoan@abc.com"
+                        className="rounded-xl border-gray-200"
+                        required={formData.requireVatInvoice}
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                        Địa chỉ công ty *
+                      </Label>
+                      <Input
+                        name="vatCompanyAddress"
+                        value={formData.vatCompanyAddress}
+                        onChange={handleInputChange}
+                        placeholder="123 Le Loi, Quan 1, TP.HCM"
+                        className="rounded-xl border-gray-200"
+                        required={formData.requireVatInvoice}
+                      />
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              {/* 4. Phương thức giao hàng & Thanh toán */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
                   <h3 className="text-lg font-serif font-bold text-tet-primary">
@@ -508,27 +660,41 @@ export default function CheckoutPage() {
                     )}
                     <div className="space-y-3 pt-6 border-t border-gray-100">
                       <div className="flex justify-between text-sm text-gray-500 font-medium">
-                        <span>Tạm tính</span>
+                        <span>Tổng tiền hàng</span>
                         <span>{totalPrice.toLocaleString("vi-VN")}đ</span>
                       </div>
                       <div className="flex justify-between text-sm text-gray-500 font-medium">
-                        <span>Phí vận chuyển</span>
-                        <span>0đ</span>
+                        <span>Giảm giá</span>
+                        <span
+                          className={
+                            discountValue > 0
+                              ? "text-green-600 font-bold"
+                              : "text-gray-500"
+                          }
+                        >
+                          {discountValue > 0
+                            ? `-${discountValue.toLocaleString("vi-VN")}đ`
+                            : "0đ"}
+                        </span>
                       </div>
-                      {discountValue > 0 && (
-                        <div className="flex justify-between text-sm text-green-600 font-bold">
-                          <span>Giảm giá</span>
-                          <span>-{discountValue.toLocaleString("vi-VN")}đ</span>
+                      <div className="flex justify-between text-sm text-gray-500 font-medium">
+                        <span>Thành tiền sau giảm</span>
+                        <span>{finalPrice.toLocaleString("vi-VN")}đ</span>
+                      </div>
+                      {formData.requireVatInvoice && (
+                        <div className="flex justify-between text-sm text-gray-500 font-medium">
+                          <span>VAT (8%)</span>
+                          <span>{vatAmount.toLocaleString("vi-VN")}đ</span>
                         </div>
                       )}
                       <Separator className="bg-gray-100" />
                       <div className="flex justify-between items-center pt-2">
                         <span className="text-lg font-serif font-bold text-tet-primary uppercase">
-                          Tổng cộng
+                          Tổng thanh toán
                         </span>
                         <div className="text-right">
                           <p className="text-2xl font-black text-tet-primary italic">
-                            {finalPrice.toLocaleString("vi-VN")}đ
+                            {finalPayableAmount.toLocaleString("vi-VN")}đ
                           </p>
                           {discountValue > 0 && (
                             <p className="text-[10px] text-green-600 font-bold tracking-tighter italic">
@@ -596,3 +762,4 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
