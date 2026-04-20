@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RevenueChart from "../components/RevenueChart";
 import CustomerEfficiencyWidget from "../components/CustomerEfficiencyWidget";
@@ -24,10 +24,18 @@ import adminDashboardService, { type DashboardSummary } from "../services/adminD
 
 export default function AdminOverview() {
   const navigate = useNavigate();
+  const revenueChartSectionRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [actualRevenueTotal, setActualRevenueTotal] = useState<number | null>(null);
+
+  const handleScrollToRevenueChart = () => {
+    revenueChartSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,7 +104,11 @@ export default function AdminOverview() {
       trend: "up",
       icon: <DollarSign size={24} />,
       color: "from-amber-500 to-orange-600",
+<<<<<<< HEAD
       valueClassName: "text-[clamp(1.05rem,1.6vw,1.7rem)] leading-tight break-words",
+=======
+      onClick: handleScrollToRevenueChart,
+>>>>>>> f0873d2ce92aebbc9a1e3f6010824ef2adae4b69
     },
     {
       label: "Tổng doanh thu thực nhận",
@@ -108,7 +120,11 @@ export default function AdminOverview() {
       trend: "up",
       icon: <DollarSign size={24} />,
       color: "from-green-500 to-emerald-600",
+<<<<<<< HEAD
       valueClassName: "text-[clamp(1.05rem,1.6vw,1.7rem)] leading-tight break-words",
+=======
+      onClick: handleScrollToRevenueChart,
+>>>>>>> f0873d2ce92aebbc9a1e3f6010824ef2adae4b69
     },
     {
       label: "Tổng Lợi nhuận",
@@ -122,7 +138,11 @@ export default function AdminOverview() {
       trend: "up",
       icon: <Wallet size={24} />,
       color: "from-teal-500 to-cyan-600",
+<<<<<<< HEAD
       valueClassName: "text-[clamp(1.05rem,1.6vw,1.7rem)] leading-tight break-words",
+=======
+      onClick: handleScrollToRevenueChart,
+>>>>>>> f0873d2ce92aebbc9a1e3f6010824ef2adae4b69
     },
     {
       label: "Đơn hàng",
@@ -131,7 +151,11 @@ export default function AdminOverview() {
       trend: "up",
       icon: <ShoppingCart size={24} />,
       color: "from-blue-500 to-cyan-600",
+<<<<<<< HEAD
       valueClassName: "text-[clamp(1.35rem,1.9vw,1.9rem)] leading-tight",
+=======
+      onClick: () => navigate("/admin/orders"),
+>>>>>>> f0873d2ce92aebbc9a1e3f6010824ef2adae4b69
     },
     {
       label: "Sản phẩm",
@@ -140,7 +164,11 @@ export default function AdminOverview() {
       trend: "up",
       icon: <Package size={24} />,
       color: "from-purple-500 to-pink-600",
+<<<<<<< HEAD
       valueClassName: "text-[clamp(1.35rem,1.9vw,1.9rem)] leading-tight",
+=======
+      onClick: () => navigate("/admin/products"),
+>>>>>>> f0873d2ce92aebbc9a1e3f6010824ef2adae4b69
     },
     {
       label: "Khách hàng mới",
@@ -152,6 +180,9 @@ export default function AdminOverview() {
       valueClassName: "text-[clamp(1.35rem,1.9vw,1.9rem)] leading-tight",
     },
   ];
+
+  const revenueStats = stats.slice(0, 3);
+  const businessStats = stats.slice(3);
 
   const quickActions = [
     { label: "Thêm sản phẩm", icon: <Package size={20} />, path: "/admin/products" },
@@ -174,6 +205,7 @@ export default function AdminOverview() {
       </div>
 
       {/* Stats Cards */}
+<<<<<<< HEAD
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -213,6 +245,90 @@ export default function AdminOverview() {
             </p>
           </div>
         ))}
+=======
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {revenueStats.map((stat, index) => (
+            <button
+              type="button"
+              key={`revenue-${index}`}
+              onClick={stat.onClick}
+              className={`bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0 text-left w-full ${
+                stat.onClick ? "cursor-pointer" : "cursor-default"
+              }`}
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div
+                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-white shadow-lg`}
+                >
+                  {stat.icon}
+                </div>
+                <span
+                  className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
+                    stat.trend === "up"
+                      ? "bg-green-50 text-green-600"
+                      : "bg-red-50 text-red-600"
+                  }`}
+                >
+                  {stat.trend === "up" ? (
+                    <ArrowUp size={12} />
+                  ) : (
+                    <ArrowDown size={12} />
+                  )}
+                  {stat.change}
+                </span>
+              </div>
+              <div className="mb-1 overflow-x-auto">
+                <p className="text-lg xl:text-xl 2xl:text-2xl font-bold text-tet-primary whitespace-nowrap leading-tight min-w-max">
+                  {stat.value}
+                </p>
+              </div>
+              <p className="text-xs text-gray-500">{stat.label}</p>
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {businessStats.map((stat, index) => (
+            <button
+              type="button"
+              key={`business-${index}`}
+              onClick={stat.onClick}
+              className={`bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0 text-left w-full ${
+                stat.onClick ? "cursor-pointer" : "cursor-default"
+              }`}
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div
+                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-white shadow-lg`}
+                >
+                  {stat.icon}
+                </div>
+                <span
+                  className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
+                    stat.trend === "up"
+                      ? "bg-green-50 text-green-600"
+                      : "bg-red-50 text-red-600"
+                  }`}
+                >
+                  {stat.trend === "up" ? (
+                    <ArrowUp size={12} />
+                  ) : (
+                    <ArrowDown size={12} />
+                  )}
+                  {stat.change}
+                </span>
+              </div>
+              <div className="mb-1 overflow-x-auto">
+                <p className="text-lg xl:text-xl 2xl:text-2xl font-bold text-tet-primary whitespace-nowrap leading-tight min-w-max">
+                  {stat.value}
+                </p>
+              </div>
+              <p className="text-xs text-gray-500">{stat.label}</p>
+            </button>
+          ))}
+        </div>
+>>>>>>> f0873d2ce92aebbc9a1e3f6010824ef2adae4b69
       </div>
 
       {/* Quick Actions */}
@@ -241,7 +357,7 @@ export default function AdminOverview() {
       {/* PO Insights Banner */}
       <DashboardInsightsContainer />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div ref={revenueChartSectionRef} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <RevenueChart />
         </div>
