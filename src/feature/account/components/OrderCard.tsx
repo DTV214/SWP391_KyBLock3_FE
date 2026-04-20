@@ -273,17 +273,17 @@ export default function OrderCard({
                   Đã bao gồm VAT: {order.vatAmount.toLocaleString()}đ
                 </p>
               )}
-              {isAdmin && (
-                <p className="text-[10px] text-emerald-600 font-bold italic">
-                  Doanh thu thực nhận:{" "}
-                  {actualRevenue == null
-                    ? "Chưa có dữ liệu"
-                    : `${actualRevenue.toLocaleString()}đ`}
-                </p>
-              )}
               {order.discountValue > 0 && (
                 <p className="text-[10px] text-green-600 font-bold italic">
                   Tiết kiệm: {order.discountValue.toLocaleString()}đ
+                </p>
+              )}
+              {isAdmin && (
+                <p className="text-[10px] text-emerald-600 font-bold italic">
+                  Lợi nhuận:{" "}
+                  {actualRevenue == null
+                    ? "Chưa có dữ liệu"
+                    : `${actualRevenue.toLocaleString()}đ`}
                 </p>
               )}
             </div>
@@ -409,4 +409,3 @@ export default function OrderCard({
     </>
   );
 }
-

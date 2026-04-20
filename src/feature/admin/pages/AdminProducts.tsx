@@ -560,7 +560,7 @@ export default function AdminProducts() {
   };
 
   const formatMoney = (value: number) =>
-    `${(Number(value) || 0).toLocaleString("vi-VN")}đ`;
+    `${Math.trunc(Number(value) || 0).toLocaleString("vi-VN")}đ`;
 
   const formatDateTime = (value?: string) => {
     if (!value) return "-";
@@ -611,12 +611,12 @@ export default function AdminProducts() {
       <td className={`${cellPadding} text-sm text-gray-600`}>{getCategoryName(product.categoryid)}</td>
       <td className={cellPadding}>
         <span className="text-sm font-bold text-tet-accent">
-          {product.price ? product.price.toLocaleString() : "0"}đ
+          {formatMoney(product.price ?? 0)}
         </span>
       </td>
       <td className={cellPadding}>
         <span className="text-sm text-gray-600">
-          {product.importPrice ? product.importPrice.toLocaleString() : "0"}đ
+          {formatMoney(product.importPrice ?? 0)}
         </span>
       </td>
       {showSalesStats && (
@@ -1252,14 +1252,14 @@ export default function AdminProducts() {
                 <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm text-gray-500 mb-1">Giá</p>
                   <p className="font-bold text-tet-accent text-lg">
-                    {viewingProduct.price ? viewingProduct.price.toLocaleString() : "0"}đ
+                    {formatMoney(viewingProduct.price ?? 0)}
                   </p>
                 </div>
 
                 <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm text-gray-500 mb-1">Giá nhập</p>
                   <p className="font-bold text-gray-700 text-lg">
-                    {viewingProduct.importPrice ? viewingProduct.importPrice.toLocaleString() : "0"}đ
+                    {formatMoney(viewingProduct.importPrice ?? 0)}
                   </p>
                 </div>
 

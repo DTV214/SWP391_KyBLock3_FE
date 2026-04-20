@@ -43,6 +43,7 @@ const numberFormatter = new Intl.NumberFormat("vi-VN");
 const currencyFormatter = new Intl.NumberFormat("vi-VN", {
   style: "currency",
   currency: "VND",
+  maximumFractionDigits: 0,
 });
 
 const toDateInputValue = (date: Date): string => {
@@ -111,13 +112,9 @@ const getMetricValue = (
   metric: MetricKey,
 ): number => item[metric];
 
-const formatCompactNumber = (value: number): string => {
+const formatFullNumber = (value: number): string => {
   const sign = value < 0 ? "-" : "";
   const absolute = Math.abs(value);
-
-  if (absolute >= 1000000000) return `${sign}${(absolute / 1000000000).toFixed(1)} Tỷ`;
-  if (absolute >= 1000000) return `${sign}${(absolute / 1000000).toFixed(0)} Tr`;
-  if (absolute >= 1000) return `${sign}${(absolute / 1000).toFixed(0)} K`;
   return `${sign}${numberFormatter.format(absolute)}`;
 };
 
@@ -252,13 +249,13 @@ function DetailsList({
               <div>
                 <p className="font-semibold text-gray-500">Doanh thu</p>
                 <p className="mt-0.5 truncate font-bold text-gray-800">
-                  {formatCompactNumber(row.revenue)}
+                  {currencyFormatter.format(row.revenue)}
                 </p>
               </div>
               <div>
                 <p className="font-semibold text-gray-500">Lợi nhuận</p>
                 <p className="mt-0.5 truncate font-bold text-gray-800">
-                  {formatCompactNumber(row.profit)}
+                  {currencyFormatter.format(row.profit)}
                 </p>
               </div>
               <div>
@@ -389,7 +386,7 @@ function PerformanceHorizontalChart({
                   tickFormatter={(value: number) =>
                     metric === "quantitySold"
                       ? numberFormatter.format(value)
-                      : formatCompactNumber(value)
+                      : formatFullNumber(value)
                   }
                 />
                 <YAxis

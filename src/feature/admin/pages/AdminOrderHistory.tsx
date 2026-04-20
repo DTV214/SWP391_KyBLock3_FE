@@ -39,11 +39,17 @@ const PAID_STATUSES = [
 const VAT_SEGMENT_COLORS = ["#C8102E", "#0EA5E9"];
 
 export default function AdminOrderHistory() {
-  const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(
+    null,
+  );
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [orderToCancel, setOrderToCancel] = useState<OrderResponse | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<OrderResponse | null>(
+    null,
+  );
   const [successModalOpen, setSuccessModalOpen] = useState(false);
-  const [cancelledOrder, setCancelledOrder] = useState<OrderResponse | null>(null);
+  const [cancelledOrder, setCancelledOrder] = useState<OrderResponse | null>(
+    null,
+  );
   const [detailError, setDetailError] = useState<string | null>(null);
 
   const {
@@ -142,7 +148,9 @@ export default function AdminOrderHistory() {
         setSelectedOrder(updatedOrder);
       }
     } catch (err: any) {
-      throw new Error(err.message || "Kh\u00f4ng th\u1ec3 h\u1ee7y \u0111\u01a1n h\u00e0ng");
+      throw new Error(
+        err.message || "Kh\u00f4ng th\u1ec3 h\u1ee7y \u0111\u01a1n h\u00e0ng",
+      );
     }
   };
 
@@ -157,7 +165,7 @@ export default function AdminOrderHistory() {
   // Chỉ tính từ đơn hàng đã thanh toán và áp dụng các filter
   const calculateRevenueStats = () => {
     const paidOrders = filteredOrders.filter((order) =>
-      PAID_STATUSES.includes(order.status)
+      PAID_STATUSES.includes(order.status),
     );
 
     if (paidOrders.length === 0) {
@@ -172,19 +180,19 @@ export default function AdminOrderHistory() {
     // Tổng doanh thu từ totalPrice (tổng tiền đơn hàng)
     const sumTotalPrice = paidOrders.reduce(
       (sum, order) => sum + (order.totalPrice || 0),
-      0
+      0,
     );
 
     // Tổng doanh thu thực nhận từ finalPrice (đã trừ voucher)
     const sumFinalPrice = paidOrders.reduce(
       (sum, order) => sum + (order.finalPrice || 0),
-      0
+      0,
     );
 
     // Tổng lợi nhuận từ actualRevenue
     const sumProfit = paidOrders.reduce(
       (sum, order) => sum + (order.actualRevenue || 0),
-      0
+      0,
     );
 
     return {
@@ -199,8 +207,12 @@ export default function AdminOrderHistory() {
     calculateRevenueStats();
 
   const vatSegmentData = useMemo(() => {
-    const businessOrders = filteredOrders.filter((order) => order.requireVatInvoice);
-    const retailOrders = filteredOrders.filter((order) => !order.requireVatInvoice);
+    const businessOrders = filteredOrders.filter(
+      (order) => order.requireVatInvoice,
+    );
+    const retailOrders = filteredOrders.filter(
+      (order) => !order.requireVatInvoice,
+    );
 
     const retailRevenue = retailOrders.reduce(
       (sum, order) => sum + (order.finalPrice || 0),
@@ -277,12 +289,10 @@ export default function AdminOrderHistory() {
           <p className="text-sm font-semibold text-tet-primary">
             {"📊 Thống kê Doanh thu"}
           </p>
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* Tổng doanh thu */}
             <div className="flex flex-col gap-1">
-              <p className="text-xs font-medium text-gray-600">
-                {"Tổng doanh thu"}
-              </p>
+              <p className="text-xs font-medium text-gray-600">{"Doanh thu"}</p>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-blue-600">
                   {totalRevenue.toLocaleString("vi-VN", {
@@ -314,9 +324,7 @@ export default function AdminOrderHistory() {
 
             {/* Lợi nhuận trung bình */}
             <div className="flex flex-col gap-1">
-              <p className="text-xs font-medium text-gray-600">
-                {"Lợi nhuận"}
-              </p>
+              <p className="text-xs font-medium text-gray-600">{"Lợi nhuận"}</p>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-amber-600">
                   {averageProfit.toLocaleString("vi-VN", {
@@ -331,7 +339,9 @@ export default function AdminOrderHistory() {
           </div>
 
           <p className="text-xs text-gray-500">
-            {"Tính từ "}{paidOrderCount}{" đơn hàng đã thanh toán"}
+            {"Tính từ "}
+            {paidOrderCount}
+            {" đơn hàng đã thanh toán"}
           </p>
         </div>
       </div>
@@ -342,7 +352,7 @@ export default function AdminOrderHistory() {
             VAT theo nhóm khách hàng
           </h3>
           <p className="text-xs text-gray-500">
-            Theo bộ lọc hiện tại: {vatSegmentData.totalCount} đơn hàng, tổng VAT {" "}
+            Theo bộ lọc hiện tại: {vatSegmentData.totalCount} đơn hàng, tổng VAT{" "}
             {vatSegmentData.totalVatAmount.toLocaleString("vi-VN", {
               style: "currency",
               currency: "VND",
@@ -353,7 +363,9 @@ export default function AdminOrderHistory() {
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <div className="h-[280px]">
-            <p className="text-xs font-semibold text-gray-600 mb-2">Tỷ trọng số đơn</p>
+            <p className="text-xs font-semibold text-gray-600 mb-2">
+              Tỷ trọng số đơn
+            </p>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -365,12 +377,16 @@ export default function AdminOrderHistory() {
                   innerRadius={55}
                   outerRadius={95}
                   paddingAngle={4}
-                  label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}
+                  label={({ percent }) =>
+                    `${((percent ?? 0) * 100).toFixed(0)}%`
+                  }
                 >
                   {vatSegmentData.pieData.map((_, index) => (
                     <Cell
                       key={`vat-segment-${index}`}
-                      fill={VAT_SEGMENT_COLORS[index % VAT_SEGMENT_COLORS.length]}
+                      fill={
+                        VAT_SEGMENT_COLORS[index % VAT_SEGMENT_COLORS.length]
+                      }
                     />
                   ))}
                 </Pie>
@@ -380,11 +396,25 @@ export default function AdminOrderHistory() {
           </div>
 
           <div className="h-[280px]">
-            <p className="text-xs font-semibold text-gray-600 mb-2">Doanh thu theo nhóm</p>
+            <p className="text-xs font-semibold text-gray-600 mb-2">
+              Doanh thu theo nhóm
+            </p>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={vatSegmentData.revenueData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+              <BarChart
+                data={vatSegmentData.revenueData}
+                margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#f0f0f0"
+                />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12 }}
+                />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
@@ -400,9 +430,7 @@ export default function AdminOrderHistory() {
                 <Tooltip
                   formatter={(value, name) => {
                     const numericValue =
-                      typeof value === "number"
-                        ? value
-                        : Number(value ?? 0);
+                      typeof value === "number" ? value : Number(value ?? 0);
                     const label =
                       name === "revenue"
                         ? "Doanh thu"
