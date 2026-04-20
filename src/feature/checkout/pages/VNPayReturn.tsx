@@ -66,8 +66,10 @@ export default function VNPayReturn() {
   // Show loading state while verifying
   if (paymentStatus === "pending") {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        Đang xác thực thanh toán...
+      <div className="flex min-h-screen items-center justify-center bg-[#FBF5E8] px-4">
+        <div className="rounded-2xl border border-[#EDE5B5] bg-white px-6 py-5 text-center font-semibold text-tet-primary shadow-lg">
+          Đang xác thực thanh toán...
+        </div>
       </div>
     );
   }
