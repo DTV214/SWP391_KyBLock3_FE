@@ -182,11 +182,8 @@ export default function AdminOverview() {
       trend: "up",
       icon: <DollarSign size={24} />,
       color: "from-amber-500 to-orange-600",
-<<<<<<< HEAD
       valueClassName: "text-[clamp(1.05rem,1.6vw,1.7rem)] leading-tight break-words",
-=======
       onClick: handleScrollToRevenueChart,
->>>>>>> f0873d2ce92aebbc9a1e3f6010824ef2adae4b69
     },
     {
       label: "Tổng doanh thu thực nhận",
@@ -198,11 +195,8 @@ export default function AdminOverview() {
       trend: "up",
       icon: <DollarSign size={24} />,
       color: "from-green-500 to-emerald-600",
-<<<<<<< HEAD
       valueClassName: "text-[clamp(1.05rem,1.6vw,1.7rem)] leading-tight break-words",
-=======
       onClick: handleScrollToRevenueChart,
->>>>>>> f0873d2ce92aebbc9a1e3f6010824ef2adae4b69
     },
     {
       label: "Tổng Lợi nhuận",
@@ -216,11 +210,8 @@ export default function AdminOverview() {
       trend: "up",
       icon: <Wallet size={24} />,
       color: "from-teal-500 to-cyan-600",
-<<<<<<< HEAD
       valueClassName: "text-[clamp(1.05rem,1.6vw,1.7rem)] leading-tight break-words",
-=======
       onClick: handleScrollToRevenueChart,
->>>>>>> f0873d2ce92aebbc9a1e3f6010824ef2adae4b69
     },
     {
       label: "Đơn hàng",
@@ -229,11 +220,8 @@ export default function AdminOverview() {
       trend: "up",
       icon: <ShoppingCart size={24} />,
       color: "from-blue-500 to-cyan-600",
-<<<<<<< HEAD
       valueClassName: "text-[clamp(1.35rem,1.9vw,1.9rem)] leading-tight",
-=======
       onClick: () => navigate("/admin/orders"),
->>>>>>> f0873d2ce92aebbc9a1e3f6010824ef2adae4b69
     },
     {
       label: "Sản phẩm",
@@ -242,11 +230,8 @@ export default function AdminOverview() {
       trend: "up",
       icon: <Package size={24} />,
       color: "from-purple-500 to-pink-600",
-<<<<<<< HEAD
       valueClassName: "text-[clamp(1.35rem,1.9vw,1.9rem)] leading-tight",
-=======
       onClick: () => navigate("/admin/products"),
->>>>>>> f0873d2ce92aebbc9a1e3f6010824ef2adae4b69
     },
     {
       label: "Khách hàng mới",
@@ -283,47 +268,6 @@ export default function AdminOverview() {
       </div>
 
       {/* Stats Cards */}
-<<<<<<< HEAD
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {stats.map((stat, index) => (
-          <div
-            key={index}
-            className="bg-white min-h-[170px] p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col"
-          >
-            <div className="flex justify-between items-start gap-3 mb-4">
-              <div
-                className={`w-12 h-12 shrink-0 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-white shadow-lg`}
-              >
-                {stat.icon}
-              </div>
-              <span
-                className={`shrink-0 flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full ${
-                  stat.trend === "up"
-                    ? "bg-green-50 text-green-600"
-                    : "bg-red-50 text-red-600"
-                }`}
-              >
-                {stat.trend === "up" ? (
-                  <ArrowUp size={12} />
-                ) : (
-                  <ArrowDown size={12} />
-                )}
-                {stat.change}
-              </span>
-            </div>
-
-            <div className="min-h-[64px] flex-1">
-              <p className={`font-bold text-tet-primary mb-2 max-w-full ${stat.valueClassName}`}>
-                {stat.value}
-              </p>
-            </div>
-
-            <p className="text-xs font-medium text-gray-500 leading-5 break-words min-h-[2.5rem]">
-              {stat.label}
-            </p>
-          </div>
-        ))}
-=======
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {revenueStats.map((stat, index) => (
@@ -402,7 +346,6 @@ export default function AdminOverview() {
             </button>
           ))}
         </div>
->>>>>>> f0873d2ce92aebbc9a1e3f6010824ef2adae4b69
       </div>
 
       {/* Quick Actions */}
