@@ -585,25 +585,25 @@ export interface HighlightProduct {
   totalRevenue: number;
 }
 
-export interface SeasonalTrendCategory {
+export interface EventTrendCategory {
   categoryId: number;
   categoryName: string;
   totalSold: number;
   percentage: number;
 }
 
-export interface SeasonalTrendProduct {
+export interface EventTrendProduct {
   productId: number;
   productName: string;
   imageUrl: string | null;
   totalSold: number;
 }
 
-export interface SeasonalTrendResponse {
+export interface EventTrendResponse {
   requestedMonth: number;
-  referenceYear: number;
-  topCategories: SeasonalTrendCategory[];
-  topProducts: SeasonalTrendProduct[];
+  dataYear: number;
+  topCategories: EventTrendCategory[];
+  topProducts: EventTrendProduct[];
 }
 
 export interface CancellationStats {
@@ -633,11 +633,11 @@ export const getDashboardInsights = async (startDate?: string, endDate?: string)
   return response.data;
 };
 
-const normalizeSeasonalTrendResponse = (raw: any): SeasonalTrendResponse => {
+const normalizeEventTrendResponse = (raw: any): EventTrendResponse => {
   const root = raw?.data ?? raw?.Data ?? raw ?? {};
   const payload =
     root?.requestedMonth != null ||
-    root?.referenceYear != null ||
+    root?.dataYear != null ||
     Array.isArray(root?.topCategories) ||
     Array.isArray(root?.topProducts)
       ? root
@@ -657,7 +657,7 @@ const normalizeSeasonalTrendResponse = (raw: any): SeasonalTrendResponse => {
 
   return {
     requestedMonth: toNumber(payload?.requestedMonth ?? payload?.RequestedMonth),
-    referenceYear: toNumber(payload?.referenceYear ?? payload?.ReferenceYear),
+    dataYear: toNumber(payload?.dataYear ?? payload?.DataYear),
     topCategories: topCategoriesSource.map((item: any) => ({
       categoryId: toNumber(item?.categoryId ?? item?.CategoryId),
       categoryName: String(item?.categoryName ?? item?.CategoryName ?? ""),
@@ -673,12 +673,11 @@ const normalizeSeasonalTrendResponse = (raw: any): SeasonalTrendResponse => {
   };
 };
 
-export const getSeasonalTrend = async (
+export const getEventTrend = async (
   month: number,
-  year: number,
-): Promise<SeasonalTrendResponse> => {
-  const response = await axiosClient.get(API_ENDPOINTS.STATISTICS.SEASONAL_TREND(month, year));
-  return normalizeSeasonalTrendResponse(response);
+): Promise<EventTrendResponse> => {
+  const response = await axiosClient.get(API_ENDPOINTS.STATISTICS.EVENT_TREND(month));
+  return normalizeEventTrendResponse(response);
 };
 
 const adminDashboardService = {
@@ -696,7 +695,7 @@ const adminDashboardService = {
   getAbandonedCarts,
   getCustomerOrderStatistics,
   getDashboardInsights,
-  getSeasonalTrend,
+  getEventTrend,
 };
 
 export default adminDashboardService;

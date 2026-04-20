@@ -12,13 +12,13 @@ interface ViteEnv {
 const ENV_BASE_URL = (import.meta as unknown as { env: ViteEnv }).env
   ?.VITE_API_BASE_URL;
 // Fallback to current production server if env is not set
-const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5002/api").replace(/\/+$/, "");
+// const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5002/api").replace(/\/+$/, "");
 // const ROOT_URL = BASE_URL.replace(/\/api$/i, "");
 
-// const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(
-//   /\/+$/,
-//   "",
-// );
+const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(
+  /\/+$/,
+  "",
+);
 // const BASE_URL = (ENV_BASE_URL?.trim() || "http://localhost:5280/api").replace(/\/+$/, "");
 // Change .env for local/deploy without touching this file.
 export const API_ENDPOINTS = {
@@ -394,8 +394,8 @@ export const API_ENDPOINTS = {
   STATISTICS: {
     PRODUCT: (productId: string | number) =>
       `${BASE_URL}/statistics/product/${productId}`,
-    SEASONAL_TREND: (month: number, year: number) =>
-      `${BASE_URL}/statistics/seasonal-trend?month=${encodeURIComponent(String(month))}&year=${encodeURIComponent(String(year))}`,
+    EVENT_TREND: (month: number) =>
+      `${BASE_URL}/statistics/event-trend?month=${encodeURIComponent(String(month))}`,
   },
   // Feedbacks endpoints
   FEEDBACKS: {

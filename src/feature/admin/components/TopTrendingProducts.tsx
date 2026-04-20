@@ -15,9 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import adminDashboardService, {
-  type SeasonalTrendResponse,
-} from "../services/adminDashboardService";
+import adminDashboardService, { type EventTrendResponse } from "../services/adminDashboardService";
 
 const CATEGORY_COLORS = [
   "#C8102E",
@@ -46,12 +44,6 @@ const resolveImageUrl = (value: string | null | undefined): string => {
   }
   return trimmed;
 };
-
-const buildYearOptions = (currentYear: number) =>
-  [currentYear - 2, currentYear - 1, currentYear, currentYear + 1].map((year) => ({
-    value: String(year),
-    label: String(year),
-  }));
 
 const renderPieLabel = ({
   percent,
@@ -82,38 +74,31 @@ const renderPieLabel = ({
 };
 
 export default function TopTrendingProducts() {
-  const now = useMemo(() => new Date(), []);
-  const yearOptions = useMemo(() => buildYearOptions(now.getFullYear()), [now]);
-
-  const [selectedMonth, setSelectedMonth] = useState(() => String(now.getMonth() + 1));
-  const [selectedYear, setSelectedYear] = useState(() => String(now.getFullYear()));
-  const [data, setData] = useState<SeasonalTrendResponse | null>(null);
+  const currentMonth = useMemo(() => new Date().getMonth() + 1, []);
+  const [selectedMonth, setSelectedMonth] = useState(() => String(currentMonth));
+  const [data, setData] = useState<EventTrendResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchSeasonalTrend = async () => {
+    const fetchEventTrend = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const response = await adminDashboardService.getSeasonalTrend(
-          Number(selectedMonth),
-          Number(selectedYear),
-        );
-
+        const response = await adminDashboardService.getEventTrend(Number(selectedMonth));
         setData(response);
       } catch (err) {
-        console.error("Failed to load seasonal trend:", err);
-        setError("Không thể tải dữ liệu xu hướng mùa vụ.");
+        console.error("Failed to load event trend:", err);
+        setError("Không thể tải dữ liệu xu hướng sự kiện.");
         setData(null);
       } finally {
         setLoading(false);
       }
     };
 
-    void fetchSeasonalTrend();
-  }, [selectedMonth, selectedYear]);
+    void fetchEventTrend();
+  }, [selectedMonth]);
 
   const topCategories = data?.topCategories ?? [];
   const topProducts = (data?.topProducts ?? []).slice(0, 10);
@@ -165,62 +150,36 @@ export default function TopTrendingProducts() {
           </div>
           <div>
             <h3 className="text-lg font-serif font-bold text-tet-primary">
-              Dashboard Xu Hướng Mùa Vụ
+              Dashboard Xu Hướng Sự Kiện
             </h3>
             <p className="mt-1 text-sm text-gray-500">
-              Phân tích lịch sử bán chạy theo tháng để hỗ trợ nhập hàng đúng thời điểm.
+              Phân tích xu hướng bán chạy theo sự kiện của từng tháng để hỗ trợ nhập hàng hợp lý.
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-gray-600">Tháng</span>
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-[150px] rounded-xl border-gray-200 bg-white shadow-none">
-                <SelectValue placeholder="Chọn tháng" />
-              </SelectTrigger>
-              <SelectContent
-                position="popper"
-                sideOffset={8}
-                className="z-[70] w-[150px] rounded-xl border border-gray-200 bg-white shadow-lg"
-              >
-                {MONTH_OPTIONS.map((option) => (
-                  <SelectItem
-                    key={option.value}
-                    value={option.value}
-                    className="rounded-lg px-3 py-2 text-sm text-gray-700"
-                  >
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
-
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-gray-600">Năm</span>
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-[140px] rounded-xl border-gray-200 bg-white shadow-none">
-                <SelectValue placeholder="Chọn năm" />
-              </SelectTrigger>
-              <SelectContent
-                position="popper"
-                sideOffset={8}
-                className="z-[70] w-[140px] rounded-xl border border-gray-200 bg-white shadow-lg"
-              >
-                {yearOptions.map((option) => (
-                  <SelectItem
-                    key={option.value}
-                    value={option.value}
-                    className="rounded-lg px-3 py-2 text-sm text-gray-700"
-                  >
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-gray-600">Tháng</span>
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-[160px] rounded-xl border-gray-200 bg-white shadow-none">
+              <SelectValue placeholder="Chọn tháng" />
+            </SelectTrigger>
+            <SelectContent
+              position="popper"
+              sideOffset={8}
+              className="z-[70] w-[160px] rounded-xl border border-gray-200 bg-white shadow-lg"
+            >
+              {MONTH_OPTIONS.map((option) => (
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="rounded-lg px-3 py-2 text-sm text-gray-700"
+                >
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -228,8 +187,8 @@ export default function TopTrendingProducts() {
         <p className="flex items-center gap-2 text-sm font-semibold text-tet-primary">
           <CalendarDays size={16} />
           {data
-            ? `Hiển thị dữ liệu lịch sử của Tháng ${data.requestedMonth} Năm ${data.referenceYear}`
-            : `Đang chuẩn bị dữ liệu lịch sử cho Tháng ${selectedMonth} Năm ${selectedYear}`}
+            ? `Đang hiển thị dữ liệu xu hướng sự kiện của Tháng ${data.requestedMonth} năm ${data.dataYear}`
+            : `Đang chuẩn bị dữ liệu xu hướng sự kiện của Tháng ${selectedMonth}`}
         </p>
       </div>
 
@@ -242,7 +201,7 @@ export default function TopTrendingProducts() {
             <div>
               <h4 className="text-base font-semibold text-tet-primary">Thị phần danh mục</h4>
               <p className="text-sm text-gray-500">
-                Nhóm danh mục đang chiếm tỷ trọng bán ra cao nhất trong tháng này.
+                Nhóm danh mục đang chiếm tỷ trọng bán ra cao nhất trong tháng được chọn.
               </p>
             </div>
           </div>
@@ -262,7 +221,7 @@ export default function TopTrendingProducts() {
 
             {!loading && !error && topCategories.length === 0 && (
               <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 text-center text-sm text-gray-500">
-                Chưa có dữ liệu danh mục cho kỳ lựa chọn này.
+                Chưa có dữ liệu danh mục cho tháng này.
               </div>
             )}
 
@@ -324,7 +283,7 @@ export default function TopTrendingProducts() {
             <div>
               <h4 className="text-base font-semibold text-tet-primary">Top 10 sản phẩm bán chạy</h4>
               <p className="text-sm text-gray-500">
-                Bảng xếp hạng sản phẩm nổi bật để Admin tham khảo nhập hàng.
+                Bảng xếp hạng sản phẩm nổi bật để Admin tham khảo nhập hàng theo tháng sự kiện.
               </p>
             </div>
           </div>
