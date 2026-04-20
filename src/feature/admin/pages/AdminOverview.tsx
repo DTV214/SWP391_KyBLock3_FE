@@ -1,5 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import RevenueChart from "../components/RevenueChart";
 import CustomerEfficiencyWidget from "../components/CustomerEfficiencyWidget";
 import { DashboardInsightsContainer } from "../components/insights/DashboardInsightsContainer";
@@ -19,6 +28,7 @@ import {
   Tag,
   Settings,
   Loader2,
+  X,
 } from "lucide-react";
 import adminDashboardService, { type DashboardSummary } from "../services/adminDashboardService";
 
@@ -29,6 +39,13 @@ export default function AdminOverview() {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [actualRevenueTotal, setActualRevenueTotal] = useState<number | null>(null);
+  const [isNewCustomersModalOpen, setIsNewCustomersModalOpen] = useState(false);
+  const [newCustomersPeriod, setNewCustomersPeriod] = useState<"day" | "month" | "year">("day");
+  const [newCustomersStartDate, setNewCustomersStartDate] = useState("");
+  const [newCustomersEndDate, setNewCustomersEndDate] = useState("");
+  const [newCustomersLoading, setNewCustomersLoading] = useState(false);
+  const [newCustomersError, setNewCustomersError] = useState<string | null>(null);
+  const [newCustomersSummary, setNewCustomersSummary] = useState<DashboardSummary["newAccounts"] | null>(null);
 
   const handleScrollToRevenueChart = () => {
     revenueChartSectionRef.current?.scrollIntoView({
@@ -68,6 +85,67 @@ export default function AdminOverview() {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (data?.newAccounts) {
+      setNewCustomersSummary(data.newAccounts);
+      const period = data.newAccounts.period === "month" || data.newAccounts.period === "year"
+        ? data.newAccounts.period
+        : "day";
+      setNewCustomersPeriod(period);
+    }
+  }, [data?.newAccounts]);
+
+  const handleApplyNewCustomersFilter = async () => {
+    try {
+      if (newCustomersStartDate && newCustomersEndDate && newCustomersStartDate > newCustomersEndDate) {
+        setNewCustomersError("Ngày bắt đầu không được lớn hơn ngày kết thúc.");
+        return;
+      }
+
+      setNewCustomersLoading(true);
+      setNewCustomersError(null);
+
+      const summary = await adminDashboardService.getDashboardSummary(
+        newCustomersPeriod,
+        newCustomersStartDate || undefined,
+        newCustomersEndDate || undefined,
+      );
+
+      setNewCustomersSummary(summary.newAccounts ?? {
+        period: newCustomersPeriod,
+        data: [],
+        totalCount: 0,
+      });
+    } catch (err) {
+      console.error("Failed to load new customers data:", err);
+      setNewCustomersError("Không thể tải dữ liệu khách hàng mới theo bộ lọc đã chọn.");
+    } finally {
+      setNewCustomersLoading(false);
+    }
+  };
+
+  const newCustomersChartData = useMemo(() => {
+    if (!newCustomersSummary?.data) {
+      return [];
+    }
+
+    return newCustomersSummary.data.map((item) => {
+      const parsedDate = new Date(item.date);
+      const label = Number.isNaN(parsedDate.getTime())
+        ? item.date
+        : parsedDate.toLocaleDateString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+          });
+
+      return {
+        date: item.date,
+        label,
+        count: item.count,
+      };
+    });
+  }, [newCustomersSummary?.data]);
 
   if (loading) {
     return (
@@ -157,6 +235,7 @@ export default function AdminOverview() {
       trend: "up",
       icon: <Users size={24} />,
       color: "from-orange-500 to-red-600",
+      onClick: () => setIsNewCustomersModalOpen(true),
     },
   ];
 
@@ -191,9 +270,7 @@ export default function AdminOverview() {
               type="button"
               key={`revenue-${index}`}
               onClick={stat.onClick}
-              className={`bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0 text-left w-full ${
-                stat.onClick ? "cursor-pointer" : "cursor-default"
-              }`}
+              className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0 text-left w-full cursor-pointer"
             >
               <div className="flex justify-between items-start mb-4">
                 <div
@@ -232,9 +309,7 @@ export default function AdminOverview() {
               type="button"
               key={`business-${index}`}
               onClick={stat.onClick}
-              className={`bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0 text-left w-full ${
-                stat.onClick ? "cursor-pointer" : "cursor-default"
-              }`}
+              className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0 text-left w-full cursor-pointer"
             >
               <div className="flex justify-between items-start mb-4">
                 <div
@@ -324,6 +399,127 @@ export default function AdminOverview() {
           </div>
         </div>
       </section>
+
+      {isNewCustomersModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Đóng popup"
+            className="absolute inset-0 bg-black/45"
+            onClick={() => setIsNewCustomersModalOpen(false)}
+          />
+
+          <section className="relative w-full max-w-5xl max-h-[90vh] overflow-auto bg-white rounded-3xl shadow-2xl border border-gray-100 p-6">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-tet-primary">
+                  Biểu đồ khách hàng mới
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Tổng khách mới: {newCustomersSummary?.totalCount ?? 0} khách | Kỳ: {newCustomersSummary?.period ?? newCustomersPeriod}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsNewCustomersModalOpen(false)}
+                className="h-10 w-10 rounded-full border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-500"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+              <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+                Kỳ
+                <select
+                  value={newCustomersPeriod}
+                  onChange={(e) => setNewCustomersPeriod(e.target.value as "day" | "month" | "year")}
+                  className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
+                >
+                  <option value="day">Theo ngày</option>
+                  <option value="month">Theo tháng</option>
+                  <option value="year">Theo năm</option>
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+                Từ ngày
+                <input
+                  type="date"
+                  value={newCustomersStartDate}
+                  onChange={(e) => setNewCustomersStartDate(e.target.value)}
+                  className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+                Đến ngày
+                <input
+                  type="date"
+                  value={newCustomersEndDate}
+                  onChange={(e) => setNewCustomersEndDate(e.target.value)}
+                  className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={handleApplyNewCustomersFilter}
+                disabled={newCustomersLoading}
+                className="h-10 mt-[22px] rounded-xl bg-tet-primary text-white text-sm font-bold hover:opacity-95 disabled:opacity-60"
+              >
+                {newCustomersLoading ? "Đang tải..." : "Áp dụng"}
+              </button>
+            </div>
+
+            {newCustomersError && (
+              <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-600">
+                {newCustomersError}
+              </div>
+            )}
+
+            <div className="h-[360px]">
+              {newCustomersLoading ? (
+                <div className="h-full flex items-center justify-center rounded-2xl bg-gray-50 text-gray-500 text-sm gap-2">
+                  <Loader2 className="animate-spin" size={18} />
+                  Đang tải dữ liệu khách hàng mới...
+                </div>
+              ) : newCustomersChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={newCustomersChartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="newCustomersGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#F97316" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="#F97316" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#6b7280", fontSize: 12 }} />
+                    <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: "#6b7280", fontSize: 12 }} />
+                    <Tooltip
+                      formatter={(value) => [`${value} khách`, "Khách mới"]}
+                      labelFormatter={(label) => `Ngày: ${label}`}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="count"
+                      stroke="#F97316"
+                      strokeWidth={3}
+                      fill="url(#newCustomersGradient)"
+                      activeDot={{ r: 5, fill: "#F97316" }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center rounded-2xl bg-gray-50 text-gray-500 text-sm">
+                  Chưa có dữ liệu khách hàng mới trong khoảng thời gian này.
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
