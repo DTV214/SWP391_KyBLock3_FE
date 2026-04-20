@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RevenueChart from "../components/RevenueChart";
 import CustomerEfficiencyWidget from "../components/CustomerEfficiencyWidget";
@@ -24,10 +24,18 @@ import adminDashboardService, { type DashboardSummary } from "../services/adminD
 
 export default function AdminOverview() {
   const navigate = useNavigate();
+  const revenueChartSectionRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [actualRevenueTotal, setActualRevenueTotal] = useState<number | null>(null);
+
+  const handleScrollToRevenueChart = () => {
+    revenueChartSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,6 +104,7 @@ export default function AdminOverview() {
       trend: "up",
       icon: <DollarSign size={24} />,
       color: "from-amber-500 to-orange-600",
+      onClick: handleScrollToRevenueChart,
     },
     {
       label: "Tổng doanh thu thực nhận",
@@ -107,6 +116,7 @@ export default function AdminOverview() {
       trend: "up",
       icon: <DollarSign size={24} />,
       color: "from-green-500 to-emerald-600",
+      onClick: handleScrollToRevenueChart,
     },
     {
       label: "Tổng Lợi nhuận",
@@ -120,6 +130,7 @@ export default function AdminOverview() {
       trend: "up",
       icon: <Wallet size={24} />,
       color: "from-teal-500 to-cyan-600",
+      onClick: handleScrollToRevenueChart,
     },
     {
       label: "Đơn hàng",
@@ -128,6 +139,7 @@ export default function AdminOverview() {
       trend: "up",
       icon: <ShoppingCart size={24} />,
       color: "from-blue-500 to-cyan-600",
+      onClick: () => navigate("/admin/orders"),
     },
     {
       label: "Sản phẩm",
@@ -136,6 +148,7 @@ export default function AdminOverview() {
       trend: "up",
       icon: <Package size={24} />,
       color: "from-purple-500 to-pink-600",
+      onClick: () => navigate("/admin/products"),
     },
     {
       label: "Khách hàng mới",
@@ -174,9 +187,13 @@ export default function AdminOverview() {
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {revenueStats.map((stat, index) => (
-            <div
+            <button
+              type="button"
               key={`revenue-${index}`}
-              className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0"
+              onClick={stat.onClick}
+              className={`bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0 text-left w-full ${
+                stat.onClick ? "cursor-pointer" : "cursor-default"
+              }`}
             >
               <div className="flex justify-between items-start mb-4">
                 <div
@@ -205,15 +222,19 @@ export default function AdminOverview() {
                 </p>
               </div>
               <p className="text-xs text-gray-500">{stat.label}</p>
-            </div>
+            </button>
           ))}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {businessStats.map((stat, index) => (
-            <div
+            <button
+              type="button"
               key={`business-${index}`}
-              className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0"
+              onClick={stat.onClick}
+              className={`bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0 text-left w-full ${
+                stat.onClick ? "cursor-pointer" : "cursor-default"
+              }`}
             >
               <div className="flex justify-between items-start mb-4">
                 <div
@@ -242,7 +263,7 @@ export default function AdminOverview() {
                 </p>
               </div>
               <p className="text-xs text-gray-500">{stat.label}</p>
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -273,7 +294,7 @@ export default function AdminOverview() {
       {/* PO Insights Banner */}
       <DashboardInsightsContainer />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div ref={revenueChartSectionRef} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <RevenueChart />
         </div>
