@@ -7,7 +7,13 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { CalendarDays, Loader2, Package, PieChart as PieChartIcon, Sparkles } from "lucide-react";
+import {
+  CalendarDays,
+  Loader2,
+  Package,
+  PieChart as PieChartIcon,
+  Sparkles,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -15,7 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import adminDashboardService, { type EventTrendResponse } from "../services/adminDashboardService";
+import adminDashboardService, {
+  type EventTrendResponse,
+} from "../services/adminDashboardService";
 
 const CATEGORY_COLORS = [
   "#C8102E",
@@ -37,11 +45,14 @@ const formatNumber = (value: number): string => value.toLocaleString("vi-VN");
 
 const resolveImageUrl = (value: string | null | undefined): string => {
   if (!value) return "";
+
   const trimmed = value.trim();
   const markdownLinkMatch = trimmed.match(/\((https?:\/\/[^)]+)\)$/i);
+
   if (markdownLinkMatch?.[1]) {
     return markdownLinkMatch[1];
   }
+
   return trimmed;
 };
 
@@ -79,29 +90,60 @@ export default function TopTrendingProducts() {
   const [data, setData] = useState<EventTrendResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
+    let isActive = true;
+
     const fetchEventTrend = async () => {
       try {
         setLoading(true);
         setError(null);
 
         const response = await adminDashboardService.getEventTrend(Number(selectedMonth));
+        if (!isActive) {
+          return;
+        }
+
         setData(response);
+        setBrokenImages({});
       } catch (err) {
+        if (!isActive) {
+          return;
+        }
+
         console.error("Failed to load event trend:", err);
         setError("Không thể tải dữ liệu xu hướng sự kiện.");
         setData(null);
       } finally {
-        setLoading(false);
+        if (isActive) {
+          setLoading(false);
+        }
       }
     };
 
     void fetchEventTrend();
+
+    return () => {
+      isActive = false;
+    };
   }, [selectedMonth]);
 
-  const topCategories = data?.topCategories ?? [];
-  const topProducts = (data?.topProducts ?? []).slice(0, 10);
+  const topCategories = useMemo(
+    () =>
+      [...(data?.topCategories ?? [])]
+        .filter((category) => category.categoryName.trim() && category.totalSold > 0)
+        .sort((left, right) => right.totalSold - left.totalSold),
+    [data?.topCategories],
+  );
+  const topProducts = useMemo(
+    () =>
+      [...(data?.topProducts ?? [])]
+        .filter((product) => product.productName.trim() && product.totalSold > 0)
+        .sort((left, right) => right.totalSold - left.totalSold)
+        .slice(0, 10),
+    [data?.topProducts],
+  );
   const maxProductSold = useMemo(
     () => Math.max(...topProducts.map((product) => product.totalSold), 0),
     [topProducts],
@@ -110,12 +152,17 @@ export default function TopTrendingProducts() {
     () => topCategories.reduce((sum, category) => sum + category.totalSold, 0),
     [topCategories],
   );
+  const hasCategoryData = totalCategorySold > 0;
+  const hasProductData = topProducts.length > 0;
+  const displayedMonth = data?.requestedMonth || Number(selectedMonth);
+  const displayedYear = data?.dataYear || null;
 
   const categoryTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
 
     const item = payload[0]?.payload;
     const color = payload[0]?.color;
+
     if (!item) return null;
 
     return (
@@ -186,9 +233,15 @@ export default function TopTrendingProducts() {
       <div className="mb-6 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-rose-50 px-4 py-3">
         <p className="flex items-center gap-2 text-sm font-semibold text-tet-primary">
           <CalendarDays size={16} />
-          {data
-            ? `Đang hiển thị dữ liệu xu hướng sự kiện của Tháng ${data.requestedMonth} năm ${data.dataYear}`
-            : `Đang chuẩn bị dữ liệu xu hướng sự kiện của Tháng ${selectedMonth}`}
+          {data ? (
+            displayedYear ? (
+              `Đang hiển thị dữ liệu xu hướng sự kiện của Tháng ${displayedMonth} năm ${displayedYear}`
+            ) : (
+              `Đang hiển thị dữ liệu xu hướng sự kiện của Tháng ${displayedMonth}`
+            )
+          ) : (
+            `Đang chuẩn bị dữ liệu xu hướng sự kiện của Tháng ${selectedMonth}`
+          )}
         </p>
       </div>
 
@@ -219,13 +272,13 @@ export default function TopTrendingProducts() {
               </div>
             )}
 
-            {!loading && !error && topCategories.length === 0 && (
+            {!loading && !error && !hasCategoryData && (
               <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 text-center text-sm text-gray-500">
                 Chưa có dữ liệu danh mục cho tháng này.
               </div>
             )}
 
-            {!error && topCategories.length > 0 && (
+            {!error && hasCategoryData && (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -302,7 +355,7 @@ export default function TopTrendingProducts() {
               </div>
             )}
 
-            {!loading && !error && topProducts.length === 0 && (
+            {!loading && !error && !hasProductData && (
               <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
                 Không có sản phẩm bán chạy để hiển thị.
               </div>
@@ -311,12 +364,14 @@ export default function TopTrendingProducts() {
             {!loading &&
               !error &&
               topProducts.map((product, index) => {
+                const productKey = `${product.productId}-${product.productName}`;
                 const imageUrl = resolveImageUrl(product.imageUrl);
                 const ratio = maxProductSold > 0 ? (product.totalSold / maxProductSold) * 100 : 0;
+                const shouldShowImage = Boolean(imageUrl) && !brokenImages[productKey];
 
                 return (
                   <div
-                    key={product.productId}
+                    key={productKey}
                     className="rounded-2xl border border-white bg-white p-4 shadow-sm"
                   >
                     <div className="flex items-center gap-4">
@@ -325,13 +380,17 @@ export default function TopTrendingProducts() {
                       </div>
 
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-100">
-                        {imageUrl ? (
+                        {shouldShowImage ? (
                           <img
                             src={imageUrl}
                             alt={product.productName}
                             className="h-full w-full object-cover"
-                            onError={(event) => {
-                              event.currentTarget.style.display = "none";
+                            onError={() => {
+                              setBrokenImages((current) =>
+                                current[productKey]
+                                  ? current
+                                  : { ...current, [productKey]: true },
+                              );
                             }}
                           />
                         ) : (
@@ -352,7 +411,7 @@ export default function TopTrendingProducts() {
                         <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-gray-100">
                           <div
                             className="h-full rounded-full bg-gradient-to-r from-rose-500 via-orange-400 to-amber-400"
-                            style={{ width: `${Math.max(ratio, 8)}%` }}
+                            style={{ width: ratio > 0 ? `${Math.max(ratio, 8)}%` : "0%" }}
                           />
                         </div>
                       </div>

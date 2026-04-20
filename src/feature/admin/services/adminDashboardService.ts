@@ -633,15 +633,58 @@ export const getDashboardInsights = async (startDate?: string, endDate?: string)
   return response.data;
 };
 
-const normalizeEventTrendResponse = (raw: any): EventTrendResponse => {
-  const root = raw?.data ?? raw?.Data ?? raw ?? {};
-  const payload =
-    root?.requestedMonth != null ||
-    root?.dataYear != null ||
-    Array.isArray(root?.topCategories) ||
-    Array.isArray(root?.topProducts)
-      ? root
-      : (root?.data ?? root?.Data ?? root);
+const hasEventTrendShape = (value: any): boolean => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  return (
+    value?.requestedMonth != null ||
+    value?.RequestedMonth != null ||
+    value?.dataYear != null ||
+    value?.DataYear != null ||
+    Array.isArray(value?.topCategories) ||
+    Array.isArray(value?.TopCategories) ||
+    Array.isArray(value?.topProducts) ||
+    Array.isArray(value?.TopProducts)
+  );
+};
+
+const unwrapEventTrendPayload = (raw: any): any => {
+  let current = raw ?? {};
+  const visited = new Set<any>();
+
+  while (current && typeof current === "object" && !visited.has(current)) {
+    if (hasEventTrendShape(current)) {
+      return current;
+    }
+
+    visited.add(current);
+
+    const nestedCandidate = [
+      current?.data,
+      current?.Data,
+      current?.result,
+      current?.Result,
+      current?.payload,
+      current?.Payload,
+    ].find((candidate) => candidate && typeof candidate === "object");
+
+    if (!nestedCandidate) {
+      break;
+    }
+
+    current = nestedCandidate;
+  }
+
+  return current ?? {};
+};
+
+const normalizeEventTrendResponse = (
+  raw: any,
+  requestedMonth: number,
+): EventTrendResponse => {
+  const payload = unwrapEventTrendPayload(raw);
 
   const topCategoriesSource = Array.isArray(payload?.topCategories)
     ? payload.topCategories
@@ -656,18 +699,21 @@ const normalizeEventTrendResponse = (raw: any): EventTrendResponse => {
       : [];
 
   return {
-    requestedMonth: toNumber(payload?.requestedMonth ?? payload?.RequestedMonth),
+    requestedMonth:
+      toNumber(payload?.requestedMonth ?? payload?.RequestedMonth) || requestedMonth,
     dataYear: toNumber(payload?.dataYear ?? payload?.DataYear),
     topCategories: topCategoriesSource.map((item: any) => ({
       categoryId: toNumber(item?.categoryId ?? item?.CategoryId),
-      categoryName: String(item?.categoryName ?? item?.CategoryName ?? ""),
+      categoryName: String(item?.categoryName ?? item?.CategoryName ?? "").trim(),
       totalSold: toNumber(item?.totalSold ?? item?.TotalSold),
       percentage: toNumber(item?.percentage ?? item?.Percentage),
     })),
     topProducts: topProductsSource.map((item: any) => ({
       productId: toNumber(item?.productId ?? item?.ProductId),
-      productName: String(item?.productName ?? item?.ProductName ?? ""),
-      imageUrl: item?.imageUrl ?? item?.ImageUrl ?? null,
+      productName: String(item?.productName ?? item?.ProductName ?? "").trim(),
+      imageUrl: typeof (item?.imageUrl ?? item?.ImageUrl) === "string"
+        ? String(item?.imageUrl ?? item?.ImageUrl).trim()
+        : null,
       totalSold: toNumber(item?.totalSold ?? item?.TotalSold),
     })),
   };
@@ -677,7 +723,7 @@ export const getEventTrend = async (
   month: number,
 ): Promise<EventTrendResponse> => {
   const response = await axiosClient.get(API_ENDPOINTS.STATISTICS.EVENT_TREND(month));
-  return normalizeEventTrendResponse(response);
+  return normalizeEventTrendResponse(response, month);
 };
 
 const adminDashboardService = {
