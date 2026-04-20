@@ -147,6 +147,9 @@ export default function AdminOverview() {
     },
   ];
 
+  const revenueStats = stats.slice(0, 3);
+  const businessStats = stats.slice(3);
+
   const quickActions = [
     { label: "Thêm sản phẩm", icon: <Package size={20} />, path: "/admin/products" },
     { label: "Tạo giỏ mẫu", icon: <Gift size={20} />, path: "/admin/templates" },
@@ -168,39 +171,80 @@ export default function AdminOverview() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-        {stats.map((stat, index) => (
-          <div
-            key={index}
-            className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div
-                className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-white shadow-lg`}
-              >
-                {stat.icon}
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {revenueStats.map((stat, index) => (
+            <div
+              key={`revenue-${index}`}
+              className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div
+                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-white shadow-lg`}
+                >
+                  {stat.icon}
+                </div>
+                <span
+                  className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
+                    stat.trend === "up"
+                      ? "bg-green-50 text-green-600"
+                      : "bg-red-50 text-red-600"
+                  }`}
+                >
+                  {stat.trend === "up" ? (
+                    <ArrowUp size={12} />
+                  ) : (
+                    <ArrowDown size={12} />
+                  )}
+                  {stat.change}
+                </span>
               </div>
-              <span
-                className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
-                  stat.trend === "up"
-                    ? "bg-green-50 text-green-600"
-                    : "bg-red-50 text-red-600"
-                }`}
-              >
-                {stat.trend === "up" ? (
-                  <ArrowUp size={12} />
-                ) : (
-                  <ArrowDown size={12} />
-                )}
-                {stat.change}
-              </span>
+              <div className="mb-1 overflow-x-auto">
+                <p className="text-lg xl:text-xl 2xl:text-2xl font-bold text-tet-primary whitespace-nowrap leading-tight min-w-max">
+                  {stat.value}
+                </p>
+              </div>
+              <p className="text-xs text-gray-500">{stat.label}</p>
             </div>
-            <p className="text-2xl font-bold text-tet-primary mb-1">
-              {stat.value}
-            </p>
-            <p className="text-xs text-gray-500">{stat.label}</p>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {businessStats.map((stat, index) => (
+            <div
+              key={`business-${index}`}
+              className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div
+                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-white shadow-lg`}
+                >
+                  {stat.icon}
+                </div>
+                <span
+                  className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
+                    stat.trend === "up"
+                      ? "bg-green-50 text-green-600"
+                      : "bg-red-50 text-red-600"
+                  }`}
+                >
+                  {stat.trend === "up" ? (
+                    <ArrowUp size={12} />
+                  ) : (
+                    <ArrowDown size={12} />
+                  )}
+                  {stat.change}
+                </span>
+              </div>
+              <div className="mb-1 overflow-x-auto">
+                <p className="text-lg xl:text-xl 2xl:text-2xl font-bold text-tet-primary whitespace-nowrap leading-tight min-w-max">
+                  {stat.value}
+                </p>
+              </div>
+              <p className="text-xs text-gray-500">{stat.label}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Quick Actions */}
