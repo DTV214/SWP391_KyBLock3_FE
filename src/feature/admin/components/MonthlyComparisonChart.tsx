@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Bar,
-  BarChart,
+  Area,
+  AreaChart,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
@@ -394,11 +394,20 @@ export default function MonthlyComparisonChart() {
 
         {!error && (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
+            <AreaChart
               data={chartData}
               margin={{ top: 10, right: 16, left: 8, bottom: 8 }}
-              barCategoryGap={18}
             >
+              <defs>
+                <linearGradient id="baseDensityGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={BASE_COLOR} stopOpacity={0.35} />
+                  <stop offset="95%" stopColor={BASE_COLOR} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="compareDensityGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={COMPARE_COLOR} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={COMPARE_COLOR} stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
               <XAxis
                 dataKey="label"
@@ -418,19 +427,25 @@ export default function MonthlyComparisonChart() {
                 width={72}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Bar
+              <Area
+                type="monotone"
                 dataKey="baseValue"
-                fill={BASE_COLOR}
-                radius={[6, 6, 0, 0]}
-                maxBarSize={26}
+                stroke={BASE_COLOR}
+                strokeWidth={3}
+                fill="url(#baseDensityGradient)"
+                fillOpacity={1}
+                activeDot={{ r: 5, strokeWidth: 0, fill: BASE_COLOR }}
               />
-              <Bar
+              <Area
+                type="monotone"
                 dataKey="compareValue"
-                fill={COMPARE_COLOR}
-                radius={[6, 6, 0, 0]}
-                maxBarSize={26}
+                stroke={COMPARE_COLOR}
+                strokeWidth={3}
+                fill="url(#compareDensityGradient)"
+                fillOpacity={1}
+                activeDot={{ r: 5, strokeWidth: 0, fill: COMPARE_COLOR }}
               />
-            </BarChart>
+            </AreaChart>
           </ResponsiveContainer>
         )}
       </div>
