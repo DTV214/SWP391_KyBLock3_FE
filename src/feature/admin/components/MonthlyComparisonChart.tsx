@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -10,85 +10,63 @@ import {
 } from "recharts";
 import { Loader2, TrendingUp } from "lucide-react";
 import adminDashboardService, {
-  type RevenueDataPoint,
+  type MonthlyComparisonResponse,
+  type YearlyComparisonResponse,
 } from "../services/adminDashboardService";
 
-type PeriodTab = "day" | "month" | "year";
+type CompareMode = "month" | "year";
+type MetricTab = "orderRevenue" | "actualRevenue";
 
 type ChartRow = {
   label: string;
-  revenue: number;
-  profit: number;
+  baseValue: number;
+  compareValue: number;
 };
 
-const REVENUE_COLOR = "#C8102E";
-const PROFIT_COLOR = "#2563EB";
+const BASE_COLOR = "#C8102E";
+const COMPARE_COLOR = "#2563EB";
 
-const toDateInputValue = (date: Date): string =>
-  date.toISOString().split("T")[0];
+const toMonthInputValue = (year: number, month: number): string =>
+  `${year}-${String(month).padStart(2, "0")}`;
 
-const toMonthInputValue = (date: Date): string =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-const resolveRange = (period: PeriodTab): { startDate: string; endDate: string } => {
-  const now = new Date();
-  const endDate = toDateInputValue(now);
-
-  if (period === "day") {
-    const start = new Date(now);
-    start.setDate(now.getDate() - 30);
-    return { startDate: toDateInputValue(start), endDate };
-  }
-
-  if (period === "month") {
-    const start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-    return { startDate: toDateInputValue(start), endDate };
-  }
-
-  const start = new Date(now.getFullYear() - 4, 0, 1);
-  return { startDate: toDateInputValue(start), endDate };
-};
-
-const getDefaultFilters = () => {
-  const now = new Date();
-  const dayStart = new Date(now);
-  dayStart.setDate(now.getDate() - 30);
-
-  const monthStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-
-  return {
-    dayStart: toDateInputValue(dayStart),
-    dayEnd: toDateInputValue(now),
-    monthStart: toMonthInputValue(monthStart),
-    monthEnd: toMonthInputValue(now),
-    yearStart: String(now.getFullYear() - 4),
-    yearEnd: String(now.getFullYear()),
-  };
-};
-
-const monthValueToDateRange = (value: string): { startDate: string; endDate: string } | null => {
+const parseMonthInputValue = (
+  value: string,
+): { year: number; month: number } | null => {
   const match = /^(\d{4})-(\d{2})$/.exec(value);
   if (!match) return null;
 
   const year = Number(match[1]);
   const month = Number(match[2]);
-  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
-    return null;
-  }
+  if (!Number.isFinite(year) || !Number.isFinite(month)) return null;
+  if (month < 1 || month > 12) return null;
 
-  const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
-  const endDateDate = new Date(year, month, 0);
-  const endDate = toDateInputValue(endDateDate);
-
-  return { startDate, endDate };
+  return { year, month };
 };
 
-const yearValueToDateRange = (value: string): { startDate: string; endDate: string } | null => {
+const parseYear = (value: string): number | null => {
   const year = Number(value);
-  if (!Number.isInteger(year) || year < 1900 || year > 3000) return null;
+  if (!Number.isInteger(year)) return null;
+  if (year < 1900 || year > 3000) return null;
+  return year;
+};
+
+const getDefaultMonthRange = (): { base: string; compare: string } => {
+  const now = new Date();
+  const baseYear = now.getFullYear();
+  const baseMonth = now.getMonth() + 1;
+  const previous = new Date(baseYear, baseMonth - 2, 1);
+
   return {
-    startDate: `${year}-01-01`,
-    endDate: `${year}-12-31`,
+    base: toMonthInputValue(baseYear, baseMonth),
+    compare: toMonthInputValue(previous.getFullYear(), previous.getMonth() + 1),
+  };
+};
+
+const getDefaultYears = (): { baseYear: string; compareYear: string } => {
+  const current = new Date().getFullYear();
+  return {
+    baseYear: String(current),
+    compareYear: String(current - 1),
   };
 };
 
@@ -106,64 +84,66 @@ const toCurrency = (value: number): string =>
     currency: "VND",
   }).format(value);
 
-const mergeRows = (
-  revenueData: RevenueDataPoint[],
-  profitData: RevenueDataPoint[],
+const buildMonthRows = (
+  payload: MonthlyComparisonResponse,
 ): ChartRow[] => {
-  const merged = new Map<string, ChartRow>();
+  const baseMap = new Map<number, number>(
+    payload.baseMonth.data.map((item) => [item.day, item.value]),
+  );
+  const compareMap = new Map<number, number>(
+    payload.compareMonth.data.map((item) => [item.day, item.value]),
+  );
 
-  revenueData.forEach((item) => {
-    merged.set(item.date, {
-      label: item.date,
-      revenue: item.revenue,
-      profit: 0,
-    });
-  });
+  const dayAxis = payload.xAxisDays.length
+    ? payload.xAxisDays
+    : Array.from(
+        { length: Math.max(payload.baseMonth.daysInMonth, payload.compareMonth.daysInMonth, 31) },
+        (_, index) => index + 1,
+      );
 
-  profitData.forEach((item) => {
-    const existing = merged.get(item.date);
-    if (existing) {
-      existing.profit = item.revenue;
-      return;
-    }
-
-    merged.set(item.date, {
-      label: item.date,
-      revenue: 0,
-      profit: item.revenue,
-    });
-  });
-
-  return Array.from(merged.values());
+  return dayAxis.map((day) => ({
+    label: String(day),
+    baseValue: baseMap.get(day) ?? 0,
+    compareValue: compareMap.get(day) ?? 0,
+  }));
 };
 
-const formatXAxisLabel = (label: string, period: PeriodTab): string => {
-  if (period === "year") return label;
+const buildYearRows = (payload: YearlyComparisonResponse): ChartRow[] => {
+  const baseMap = new Map<number, number>(
+    payload.baseYear.data.map((item) => [item.month, item.value]),
+  );
+  const compareMap = new Map<number, number>(
+    payload.compareYear.data.map((item) => [item.month, item.value]),
+  );
 
-  const date = new Date(label);
-  if (Number.isNaN(date.getTime())) return label;
+  const monthAxis = payload.xAxisMonths.length
+    ? payload.xAxisMonths
+    : Array.from({ length: 12 }, (_, index) => index + 1);
 
-  if (period === "month") {
-    return `${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
-  }
-
-  return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`;
+  return monthAxis.map((month) => ({
+    label: String(month),
+    baseValue: baseMap.get(month) ?? 0,
+    compareValue: compareMap.get(month) ?? 0,
+  }));
 };
 
 export default function MonthlyComparisonChart() {
-  const defaults = getDefaultFilters();
+  const monthDefaults = useMemo(getDefaultMonthRange, []);
+  const yearDefaults = useMemo(getDefaultYears, []);
 
-  const [periodTab, setPeriodTab] = useState<PeriodTab>("day");
-  const [dayStart, setDayStart] = useState(defaults.dayStart);
-  const [dayEnd, setDayEnd] = useState(defaults.dayEnd);
-  const [monthStart, setMonthStart] = useState(defaults.monthStart);
-  const [monthEnd, setMonthEnd] = useState(defaults.monthEnd);
-  const [yearStart, setYearStart] = useState(defaults.yearStart);
-  const [yearEnd, setYearEnd] = useState(defaults.yearEnd);
-  const [applyTick, setApplyTick] = useState(0);
+  const [compareMode, setCompareMode] = useState<CompareMode>("month");
+  const [metricTab, setMetricTab] = useState<MetricTab>("orderRevenue");
+  const [baseMonthInput, setBaseMonthInput] = useState(monthDefaults.base);
+  const [compareMonthInput, setCompareMonthInput] = useState(monthDefaults.compare);
+  const [baseYearInput, setBaseYearInput] = useState(yearDefaults.baseYear);
+  const [compareYearInput, setCompareYearInput] = useState(yearDefaults.compareYear);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [chartData, setChartData] = useState<ChartRow[]>([]);
+  const [baseLabel, setBaseLabel] = useState("");
+  const [compareLabel, setCompareLabel] = useState("");
+  const [baseTotal, setBaseTotal] = useState(0);
+  const [compareTotal, setCompareTotal] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
@@ -171,51 +151,68 @@ export default function MonthlyComparisonChart() {
         setLoading(true);
         setError(null);
 
-        let startDate = "";
-        let endDate = "";
+        if (compareMode === "month") {
+          const base = parseMonthInputValue(baseMonthInput);
+          const compare = parseMonthInputValue(compareMonthInput);
 
-        if (periodTab === "day") {
-          if (!dayStart || !dayEnd || dayStart > dayEnd) {
-            setError("Khoảng ngày không hợp lệ.");
-            setChartData([]);
-            setLoading(false);
-            return;
-          }
-          startDate = dayStart;
-          endDate = dayEnd;
-        } else if (periodTab === "month") {
-          const startMonth = monthValueToDateRange(monthStart);
-          const endMonth = monthValueToDateRange(monthEnd);
-          if (!startMonth || !endMonth || startMonth.startDate > endMonth.endDate) {
+          if (!base || !compare) {
             setError("Khoảng tháng không hợp lệ.");
             setChartData([]);
             setLoading(false);
             return;
           }
-          startDate = startMonth.startDate;
-          endDate = endMonth.endDate;
+
+          const response =
+            metricTab === "orderRevenue"
+              ? await adminDashboardService.getMonthlyOrderRevenueComparison(
+                  base.year,
+                  base.month,
+                  compare.year,
+                  compare.month,
+                )
+              : await adminDashboardService.getMonthlyActualRevenueComparison(
+                  base.year,
+                  base.month,
+                  compare.year,
+                  compare.month,
+                );
+
+          setChartData(buildMonthRows(response));
+          setBaseLabel(response.baseMonth.label || baseMonthInput);
+          setCompareLabel(response.compareMonth.label || compareMonthInput);
+          setBaseTotal(response.baseMonth.total ?? 0);
+          setCompareTotal(response.compareMonth.total ?? 0);
         } else {
-          const startYear = yearValueToDateRange(yearStart);
-          const endYear = yearValueToDateRange(yearEnd);
-          if (!startYear || !endYear || startYear.startDate > endYear.endDate) {
+          const baseYear = parseYear(baseYearInput);
+          const compareYear = parseYear(compareYearInput);
+
+          if (!baseYear || !compareYear) {
             setError("Khoảng năm không hợp lệ.");
             setChartData([]);
             setLoading(false);
             return;
           }
-          startDate = startYear.startDate;
-          endDate = endYear.endDate;
+
+          const response =
+            metricTab === "orderRevenue"
+              ? await adminDashboardService.getYearlyOrderRevenueComparison(
+                  baseYear,
+                  compareYear,
+                )
+              : await adminDashboardService.getYearlyActualRevenueComparison(
+                  baseYear,
+                  compareYear,
+                );
+
+          setChartData(buildYearRows(response));
+          setBaseLabel(response.baseYear.label || String(baseYear));
+          setCompareLabel(response.compareYear.label || String(compareYear));
+          setBaseTotal(response.baseYear.total ?? 0);
+          setCompareTotal(response.compareYear.total ?? 0);
         }
-
-        const [revenueRes, profitRes] = await Promise.all([
-          adminDashboardService.getRevenue(periodTab, startDate, endDate),
-          adminDashboardService.getActualRevenue(periodTab, startDate, endDate),
-        ]);
-
-        setChartData(mergeRows(revenueRes.data || [], profitRes.data || []));
       } catch (err) {
-        console.error("Failed to load monthly comparison:", err);
-        setError("Không thể tải biểu đồ so sánh doanh thu và lợi nhuận.");
+        console.error("Failed to load comparison chart:", err);
+        setError("Không thể tải biểu đồ so sánh.");
         setChartData([]);
       } finally {
         setLoading(false);
@@ -223,51 +220,37 @@ export default function MonthlyComparisonChart() {
     };
 
     void loadData();
-  }, [periodTab, applyTick]);
-
-  useEffect(() => {
-    const defaultRange = resolveRange(periodTab);
-    if (periodTab === "day") {
-      setDayStart(defaultRange.startDate);
-      setDayEnd(defaultRange.endDate);
-    }
-  }, [periodTab]);
-
-  const handleApplyFilter = () => {
-    setApplyTick((prev) => prev + 1);
-  };
-
-  const totalRevenue = chartData.reduce((sum, item) => sum + item.revenue, 0);
-  const totalProfit = chartData.reduce((sum, item) => sum + item.profit, 0);
+  }, [compareMode, metricTab, baseMonthInput, compareMonthInput, baseYearInput, compareYearInput]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload || payload.length < 2) return null;
-    const revenue = Number(payload.find((item: any) => item.dataKey === "revenue")?.value ?? 0);
-    const profit = Number(payload.find((item: any) => item.dataKey === "profit")?.value ?? 0);
+    const leftValue = Number(payload.find((item: any) => item.dataKey === "baseValue")?.value ?? 0);
+    const rightValue = Number(payload.find((item: any) => item.dataKey === "compareValue")?.value ?? 0);
+    const pointLabel = compareMode === "year" ? `Tháng ${label}` : `Ngày ${label}`;
 
     return (
       <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-100 min-w-[190px]">
-        <p className="text-gray-500 mb-2 font-medium">{formatXAxisLabel(label, periodTab)}</p>
+        <p className="text-gray-500 mb-2 font-medium">{pointLabel}</p>
         <div className="space-y-1 text-sm">
           <p className="flex items-center justify-between gap-4">
             <span className="flex items-center gap-2">
               <span
                 className="inline-block h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: REVENUE_COLOR }}
+                style={{ backgroundColor: BASE_COLOR }}
               />
-              Doanh thu
+              {baseLabel}
             </span>
-            <span className="font-semibold text-gray-800">{toCurrency(revenue)}</span>
+            <span className="font-semibold text-gray-800">{toCurrency(leftValue)}</span>
           </p>
           <p className="flex items-center justify-between gap-4">
             <span className="flex items-center gap-2">
               <span
                 className="inline-block h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: PROFIT_COLOR }}
+                style={{ backgroundColor: COMPARE_COLOR }}
               />
-              Lợi nhuận
+              {compareLabel}
             </span>
-            <span className="font-semibold text-gray-800">{toCurrency(profit)}</span>
+            <span className="font-semibold text-gray-800">{toCurrency(rightValue)}</span>
           </p>
         </div>
       </div>
@@ -285,122 +268,91 @@ export default function MonthlyComparisonChart() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col lg:flex-row gap-2 lg:items-end">
           <div className="flex bg-gray-100 p-1 rounded-xl">
             <button
-              onClick={() => setPeriodTab("day")}
+              onClick={() => setCompareMode("month")}
               className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
-                periodTab === "day"
+                compareMode === "month"
                   ? "bg-white text-tet-primary shadow-sm"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              Ngày
+              So sánh tháng
             </button>
             <button
-              onClick={() => setPeriodTab("month")}
+              onClick={() => setCompareMode("year")}
               className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
-                periodTab === "month"
+                compareMode === "year"
                   ? "bg-white text-tet-primary shadow-sm"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              Tháng
-            </button>
-            <button
-              onClick={() => setPeriodTab("year")}
-              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
-                periodTab === "year"
-                  ? "bg-white text-tet-primary shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Năm
+              So sánh năm
             </button>
           </div>
 
-          {periodTab === "day" && (
-            <div className="flex flex-col sm:flex-row gap-2">
-              <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
-                Từ ngày
-                <input
-                  type="date"
-                  value={dayStart}
-                  onChange={(event) => setDayStart(event.target.value)}
-                  className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
-                Đến ngày
-                <input
-                  type="date"
-                  value={dayEnd}
-                  onChange={(event) => setDayEnd(event.target.value)}
-                  className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
-                />
-              </label>
-            </div>
-          )}
+          <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+            Chỉ số
+            <select
+              value={metricTab}
+              onChange={(event) => setMetricTab(event.target.value as MetricTab)}
+              className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
+            >
+              <option value="orderRevenue">Doanh thu</option>
+              <option value="actualRevenue">Lợi nhuận</option>
+            </select>
+          </label>
 
-          {periodTab === "month" && (
-            <div className="flex flex-col sm:flex-row gap-2">
+          {compareMode === "month" ? (
+            <>
               <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
-                Từ tháng
+                Tháng 1
                 <input
                   type="month"
-                  value={monthStart}
-                  onChange={(event) => setMonthStart(event.target.value)}
+                  value={baseMonthInput}
+                  onChange={(event) => setBaseMonthInput(event.target.value)}
                   className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
-                Đến tháng
+                Tháng 2
                 <input
                   type="month"
-                  value={monthEnd}
-                  onChange={(event) => setMonthEnd(event.target.value)}
+                  value={compareMonthInput}
+                  onChange={(event) => setCompareMonthInput(event.target.value)}
                   className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
                 />
               </label>
-            </div>
-          )}
-
-          {periodTab === "year" && (
-            <div className="flex flex-col sm:flex-row gap-2">
+            </>
+          ) : (
+            <>
               <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
-                Từ năm
+                Năm 1
                 <input
                   type="number"
                   min={1900}
                   max={3000}
                   step={1}
-                  value={yearStart}
-                  onChange={(event) => setYearStart(event.target.value)}
+                  value={baseYearInput}
+                  onChange={(event) => setBaseYearInput(event.target.value)}
                   className="h-10 w-[130px] rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
-                Đến năm
+                Năm 2
                 <input
                   type="number"
                   min={1900}
                   max={3000}
                   step={1}
-                  value={yearEnd}
-                  onChange={(event) => setYearEnd(event.target.value)}
+                  value={compareYearInput}
+                  onChange={(event) => setCompareYearInput(event.target.value)}
                   className="h-10 w-[130px] rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
                 />
               </label>
-            </div>
+            </>
           )}
-
-          <button
-            type="button"
-            onClick={handleApplyFilter}
-            className="h-10 mt-[22px] rounded-xl bg-tet-primary px-4 text-white text-sm font-bold hover:opacity-95"
-          >
-            Áp dụng
-          </button>
         </div>
       </div>
 
@@ -408,21 +360,21 @@ export default function MonthlyComparisonChart() {
         <div className="flex items-center gap-2">
           <span
             className="inline-block h-3 w-3 rounded-full"
-            style={{ backgroundColor: REVENUE_COLOR }}
+            style={{ backgroundColor: BASE_COLOR }}
           />
-          <span className="font-semibold text-gray-700">Doanh thu</span>
+          <span className="font-semibold text-gray-700">{baseLabel || "Mốc 1"}</span>
           <span className="text-gray-500">
-            ({toCurrency(totalRevenue)})
+            ({toCurrency(baseTotal)})
           </span>
         </div>
         <div className="flex items-center gap-2">
           <span
             className="inline-block h-3 w-3 rounded-full"
-            style={{ backgroundColor: PROFIT_COLOR }}
+            style={{ backgroundColor: COMPARE_COLOR }}
           />
-          <span className="font-semibold text-gray-700">Lợi nhuận</span>
+          <span className="font-semibold text-gray-700">{compareLabel || "Mốc 2"}</span>
           <span className="text-gray-500">
-            ({toCurrency(totalProfit)})
+            ({toCurrency(compareTotal)})
           </span>
         </div>
       </div>
@@ -450,7 +402,9 @@ export default function MonthlyComparisonChart() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
               <XAxis
                 dataKey="label"
-                tickFormatter={(value) => formatXAxisLabel(String(value), periodTab)}
+                tickFormatter={(value) =>
+                  compareMode === "year" ? `T${value}` : String(value)
+                }
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "#9ca3af", fontSize: 12 }}
@@ -465,14 +419,14 @@ export default function MonthlyComparisonChart() {
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar
-                dataKey="revenue"
-                fill={REVENUE_COLOR}
+                dataKey="baseValue"
+                fill={BASE_COLOR}
                 radius={[6, 6, 0, 0]}
                 maxBarSize={26}
               />
               <Bar
-                dataKey="profit"
-                fill={PROFIT_COLOR}
+                dataKey="compareValue"
+                fill={COMPARE_COLOR}
                 radius={[6, 6, 0, 0]}
                 maxBarSize={26}
               />
