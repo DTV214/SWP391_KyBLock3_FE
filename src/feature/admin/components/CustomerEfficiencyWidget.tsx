@@ -139,7 +139,7 @@ const CustomerEfficiencyWidget: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 animate-pulse">
+      <div className="h-full rounded-3xl border border-gray-100 bg-white p-6 animate-pulse shadow-sm">
         <div className="h-6 w-48 bg-gray-200 rounded mb-4"></div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
@@ -153,7 +153,7 @@ const CustomerEfficiencyWidget: React.FC = () => {
   return (
     <>
       <section 
-        className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow group relative overflow-hidden"
+        className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
         onClick={() => setIsModalOpen(true)}
       >
         <div className="absolute inset-0 bg-tet-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -167,7 +167,7 @@ const CustomerEfficiencyWidget: React.FC = () => {
           </span>
         </div>
 
-        <div className="space-y-4 relative">
+        <div className="relative space-y-4">
           {stats.length > 0 ? (
             stats.map(renderCustomerRow)
           ) : (

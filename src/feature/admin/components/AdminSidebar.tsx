@@ -133,10 +133,10 @@ export default function AdminSidebar() {
   return (
     <>
       <BackofficeChatRealtimeBridge />
-      <aside className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
-        <div className="bg-gradient-to-br from-tet-primary to-tet-accent p-6 text-white shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+      <aside className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/80 bg-white/95 shadow-[0_22px_50px_-32px_rgba(15,23,42,0.35)] ring-1 ring-black/5 backdrop-blur">
+        <div className="shrink-0 bg-gradient-to-br from-tet-primary to-tet-accent p-6 text-white md:p-7">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-white/20 backdrop-blur-sm">
               <LayoutDashboard size={24} />
             </div>
             <div>
@@ -146,15 +146,15 @@ export default function AdminSidebar() {
           </div>
         </div>
 
-        <nav className="p-3 flex-1 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 p-4 pt-3">
           {menuItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mb-1 ${
+                `mb-1.5 flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-medium transition-all ${
                   isActive
-                    ? "bg-tet-secondary text-tet-primary font-bold shadow-sm"
+                    ? "bg-tet-secondary text-tet-primary font-bold shadow-[0_14px_28px_-22px_rgba(122,22,14,0.55)]"
                     : "text-gray-600 hover:bg-gray-50 hover:text-tet-primary"
                 }`
               }
@@ -178,7 +178,7 @@ export default function AdminSidebar() {
 
           <NavLink
             to="/home"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mb-1 text-blue-600 hover:bg-blue-50"
+            className="mb-1 flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-medium text-blue-600 transition-all hover:bg-blue-50"
           >
             <Home size={18} />
             <span>Về trang chủ</span>
@@ -186,10 +186,12 @@ export default function AdminSidebar() {
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all"
+            className="w-full rounded-2xl px-4 py-3.5 text-left text-sm font-medium text-red-600 transition-all hover:bg-red-50"
           >
-            <LogOut size={18} />
-            <span>Đăng xuất</span>
+            <span className="flex items-center gap-3">
+              <LogOut size={18} />
+              <span>Đăng xuất</span>
+            </span>
           </button>
         </nav>
       </aside>

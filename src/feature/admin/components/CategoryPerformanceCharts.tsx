@@ -208,7 +208,7 @@ function DetailsList({
     METRIC_OPTIONS.find((option) => option.key === metric) ?? METRIC_OPTIONS[0];
 
   return (
-    <aside className="w-full lg:w-[340px] lg:shrink-0">
+    <aside className="w-full lg:w-[300px] lg:shrink-0 xl:w-[340px]">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-bold text-tet-primary">Chi tiết</p>

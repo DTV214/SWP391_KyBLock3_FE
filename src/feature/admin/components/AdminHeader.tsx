@@ -23,19 +23,22 @@ export default function AdminHeader() {
   const location = useLocation();
 
   return (
-    <header className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-5 text-white shadow-lg">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
+    <header className="relative overflow-hidden rounded-[1.9rem] border border-slate-700/30 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 p-5 text-white shadow-[0_24px_60px_-38px_rgba(15,23,42,0.8)] backdrop-blur supports-[backdrop-filter]:bg-slate-900/90 md:p-6">
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_62%)]" />
+      <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
             <ShieldCheck size={14} />
             Khu vực Admin
           </div>
-          <h1 className="text-xl font-bold md:text-2xl">{getPageTitle(location.pathname)}</h1>
+          <h1 className="text-[1.65rem] font-bold leading-tight md:text-[1.9rem]">
+            {getPageTitle(location.pathname)}
+          </h1>
         </div>
 
         <Link
           to="/home"
-          className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold transition-colors hover:bg-white/20"
+          className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-white/20"
         >
           <Home size={16} />
           Về trang chủ

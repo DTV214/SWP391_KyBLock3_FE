@@ -22,16 +22,16 @@ export const HighlightCard: React.FC<HighlightCardProps> = ({ title, value, subt
   const bgGradient = colorMap[colorScheme];
 
   return (
-    <div className={`p-4 rounded-2xl border ${bgGradient} bg-gradient-to-br shadow-sm hover:shadow-md transition-shadow`}>
-      <div className="flex justify-between items-start mb-2">
+    <div className={`flex h-full min-h-[150px] flex-col rounded-[1.5rem] border ${bgGradient} bg-gradient-to-br p-4 shadow-sm transition-shadow hover:shadow-md lg:p-5`}>
+      <div className="mb-3 flex items-start justify-between gap-3">
         <h3 className="font-semibold text-sm opacity-90">{title}</h3>
         <div className="p-2 bg-white rounded-lg bg-opacity-60 shadow-sm border border-white/50">
           <Icon size={18} />
         </div>
       </div>
-      <div className="mt-1">
-        <p className="text-xl font-bold truncate">{value}</p>
-        {subtitle && <p className="text-xs mt-1 opacity-80 truncate">{subtitle}</p>}
+      <div className="mt-auto min-w-0">
+        <p className="text-lg font-bold leading-tight break-words md:text-xl">{value}</p>
+        {subtitle && <p className="mt-2 text-xs leading-relaxed opacity-80 break-words">{subtitle}</p>}
       </div>
     </div>
   );

@@ -79,7 +79,7 @@ export const DashboardInsightsContainer: React.FC = () => {
   }, [filterType, customStart, customEnd]);
 
   return (
-    <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-6">
+    <section className="rounded-[2rem] border border-gray-100 bg-white p-5 shadow-sm xl:p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <h2 className="text-lg font-serif font-bold text-tet-primary flex items-center gap-2">
@@ -132,7 +132,7 @@ export const DashboardInsightsContainer: React.FC = () => {
 
       {/* Loading State */}
       {loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 7 }).map((_, i) => (
             <div key={i} className="h-28 bg-gray-100 animate-pulse rounded-2xl" />
           ))}
@@ -155,7 +155,7 @@ export const DashboardInsightsContainer: React.FC = () => {
 
       {/* Cards Grid */}
       {!loading && !error && data && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {data.topSpender && (
             <HighlightCard
               title="Khách V.I.P (Chi nhiều nhất)"

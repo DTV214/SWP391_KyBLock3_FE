@@ -5,6 +5,10 @@ import { ChevronRight } from "lucide-react";
 
 export default function AdminLayout() {
   const location = useLocation();
+  const isOverviewPage = location.pathname.includes("/admin/overview");
+  const shellClassName = isOverviewPage
+    ? "max-w-[1740px]"
+    : "max-w-[1560px]";
 
   const getBreadcrumbName = (path: string) => {
     if (path.includes("overview")) return "Tổng quan";
@@ -24,13 +28,13 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="bg-[#FBF5E8]/30 min-h-screen pb-20">
-      <div className="container mx-auto max-w-7xl px-4 md:px-6">
-        <div className="pt-6">
+    <div className="min-h-screen bg-[#FBF5E8]/30 pb-16 lg:pb-20">
+      <div className={`mx-auto w-full ${shellClassName} px-4 md:px-6 xl:px-8 2xl:px-10`}>
+        <div className="pt-4 md:pt-6">
           <AdminHeader />
         </div>
 
-        <nav className="flex items-center gap-2 py-6 text-sm font-medium text-gray-400">
+        <nav className="flex items-center gap-2 px-1 py-4 text-sm font-medium text-gray-400 md:py-5">
           <Link to="/home" className="hover:text-tet-primary transition-colors">
             Trang chủ
           </Link>
@@ -42,12 +46,14 @@ export default function AdminLayout() {
           </span>
         </nav>
 
-        <div className="flex flex-col lg:flex-row gap-8 items-start min-w-0">
-          <div className="w-full lg:w-[16rem] lg:min-w-[16rem] lg:max-w-[16rem] lg:shrink-0 lg:flex-none sticky top-28">
-            <AdminSidebar />
+        <div className="flex min-w-0 flex-col items-start gap-6 lg:flex-row xl:gap-8 2xl:gap-10">
+          <div className="w-full lg:w-[17.5rem] lg:min-w-[17.5rem] lg:max-w-[17.5rem] lg:shrink-0 lg:flex-none xl:w-[18rem] xl:min-w-[18rem] xl:max-w-[18rem]">
+            <div className="lg:sticky lg:top-[9.35rem]">
+              <AdminSidebar />
+            </div>
           </div>
 
-          <div className="flex-1 w-full min-w-0">
+          <div className="w-full min-w-0 flex-1">
             <Outlet />
           </div>
         </div>
