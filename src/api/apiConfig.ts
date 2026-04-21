@@ -397,6 +397,20 @@ export const API_ENDPOINTS = {
     EVENT_TREND: (month: number) =>
       `${BASE_URL}/statistics/event-trend?month=${encodeURIComponent(String(month))}`,
   },
+  ASSOCIATIONS: {
+    PRODUCT_ASSOCIATIONS: (
+      productId: string | number,
+      top: number = 10,
+      minSupport: number = 1,
+    ) => {
+      const params = [
+        `productId=${encodeURIComponent(String(productId))}`,
+        `top=${encodeURIComponent(String(top))}`,
+        `minSupport=${encodeURIComponent(String(minSupport))}`,
+      ];
+      return `${BASE_URL}/admin/associations/product-associations?${params.join("&")}`;
+    },
+  },
   // Feedbacks endpoints
   FEEDBACKS: {
     ADD_ORDER_FEEDBACK: (orderId: string | number) =>

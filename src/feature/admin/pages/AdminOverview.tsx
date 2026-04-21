@@ -24,6 +24,7 @@ import {
 import RevenueChart from "../components/RevenueChart";
 import CustomerEfficiencyWidget from "../components/CustomerEfficiencyWidget";
 import VatSegmentChart from "../components/VatSegmentChart";
+import ProductAssociationsWidget from "../components/ProductAssociationsWidget";
 import { DashboardInsightsContainer } from "../components/insights/DashboardInsightsContainer";
 import MonthlyComparisonChart from "../components/MonthlyComparisonChart";
 import CategoryPerformanceCharts from "../components/CategoryPerformanceCharts";
@@ -422,6 +423,8 @@ export default function AdminOverview() {
           subtitlePrefix="Toàn bộ đơn hàng hiện tại:"
         />
       )}
+
+      <ProductAssociationsWidget />
 
       <section className="rounded-[2rem] border border-blue-100 bg-gradient-to-br from-blue-50 to-purple-50 p-5 xl:p-6">
         <div className="flex items-center justify-between">

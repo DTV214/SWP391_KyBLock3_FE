@@ -606,6 +606,13 @@ export interface EventTrendResponse {
   topProducts: EventTrendProduct[];
 }
 
+export interface ProductAssociationItem {
+  productId: number;
+  productName: string;
+  coPurchaseCount: number;
+  supportPercentage: number;
+}
+
 export interface CancellationStats {
   cancelledOrders: number;
   validOrders: number;
@@ -726,6 +733,38 @@ export const getEventTrend = async (
   return normalizeEventTrendResponse(response, month);
 };
 
+export const getProductAssociations = async (
+  productId: number,
+  top: number = 10,
+  minSupport: number = 1,
+): Promise<ProductAssociationItem[]> => {
+  const response = await axiosClient.get(
+    API_ENDPOINTS.ASSOCIATIONS.PRODUCT_ASSOCIATIONS(productId, top, minSupport),
+  );
+  const payload: any = response;
+
+  const source = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.data)
+      ? payload.data
+      : Array.isArray(payload?.Data)
+        ? payload.Data
+        : Array.isArray(payload?.result)
+          ? payload.result
+          : Array.isArray(payload?.Result)
+            ? payload.Result
+            : [];
+
+  return source.map((item: any) => ({
+    productId: toNumber(item?.productId ?? item?.ProductId),
+    productName: String(item?.productName ?? item?.ProductName ?? "").trim(),
+    coPurchaseCount: toNumber(item?.coPurchaseCount ?? item?.CoPurchaseCount),
+    supportPercentage: toNumber(
+      item?.supportPercentage ?? item?.SupportPercentage,
+    ),
+  }));
+};
+
 const adminDashboardService = {
   getDashboardSummary,
   getRevenue,
@@ -742,6 +781,7 @@ const adminDashboardService = {
   getCustomerOrderStatistics,
   getDashboardInsights,
   getEventTrend,
+  getProductAssociations,
 };
 
 export default adminDashboardService;
