@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -11,12 +11,14 @@ import {
 import { Loader2, TrendingUp } from "lucide-react";
 import adminDashboardService, {
   type MonthlyComparisonResponse,
+  type YearlyComparisonResponse,
 } from "../services/adminDashboardService";
 
+type CompareMode = "month" | "year";
 type MetricTab = "orderRevenue" | "actualRevenue";
 
 type ChartRow = {
-  day: number;
+  label: string;
   baseValue: number;
   compareValue: number;
 };
@@ -41,6 +43,13 @@ const parseMonthInputValue = (
   return { year, month };
 };
 
+const parseYear = (value: string): number | null => {
+  const year = Number(value);
+  if (!Number.isInteger(year)) return null;
+  if (year < 1900 || year > 3000) return null;
+  return year;
+};
+
 const getDefaultMonthRange = (): { base: string; compare: string } => {
   const now = new Date();
   const baseYear = now.getFullYear();
@@ -50,6 +59,14 @@ const getDefaultMonthRange = (): { base: string; compare: string } => {
   return {
     base: toMonthInputValue(baseYear, baseMonth),
     compare: toMonthInputValue(previous.getFullYear(), previous.getMonth() + 1),
+  };
+};
+
+const getDefaultYears = (): { baseYear: string; compareYear: string } => {
+  const current = new Date().getFullYear();
+  return {
+    baseYear: String(current),
+    compareYear: String(current - 1),
   };
 };
 
@@ -67,7 +84,9 @@ const toCurrency = (value: number): string =>
     currency: "VND",
   }).format(value);
 
-const buildRows = (payload: MonthlyComparisonResponse): ChartRow[] => {
+const buildMonthRows = (
+  payload: MonthlyComparisonResponse,
+): ChartRow[] => {
   const baseMap = new Map<number, number>(
     payload.baseMonth.data.map((item) => [item.day, item.value]),
   );
@@ -83,60 +102,117 @@ const buildRows = (payload: MonthlyComparisonResponse): ChartRow[] => {
       );
 
   return dayAxis.map((day) => ({
-    day,
+    label: String(day),
     baseValue: baseMap.get(day) ?? 0,
     compareValue: compareMap.get(day) ?? 0,
   }));
 };
 
-export default function MonthlyComparisonChart() {
-  const defaults = useMemo(getDefaultMonthRange, []);
+const buildYearRows = (payload: YearlyComparisonResponse): ChartRow[] => {
+  const baseMap = new Map<number, number>(
+    payload.baseYear.data.map((item) => [item.month, item.value]),
+  );
+  const compareMap = new Map<number, number>(
+    payload.compareYear.data.map((item) => [item.month, item.value]),
+  );
 
+  const monthAxis = payload.xAxisMonths.length
+    ? payload.xAxisMonths
+    : Array.from({ length: 12 }, (_, index) => index + 1);
+
+  return monthAxis.map((month) => ({
+    label: String(month),
+    baseValue: baseMap.get(month) ?? 0,
+    compareValue: compareMap.get(month) ?? 0,
+  }));
+};
+
+export default function MonthlyComparisonChart() {
+  const monthDefaults = useMemo(getDefaultMonthRange, []);
+  const yearDefaults = useMemo(getDefaultYears, []);
+
+  const [compareMode, setCompareMode] = useState<CompareMode>("month");
   const [metricTab, setMetricTab] = useState<MetricTab>("orderRevenue");
-  const [baseMonthInput, setBaseMonthInput] = useState(defaults.base);
-  const [compareMonthInput, setCompareMonthInput] = useState(defaults.compare);
+  const [baseMonthInput, setBaseMonthInput] = useState(monthDefaults.base);
+  const [compareMonthInput, setCompareMonthInput] = useState(monthDefaults.compare);
+  const [baseYearInput, setBaseYearInput] = useState(yearDefaults.baseYear);
+  const [compareYearInput, setCompareYearInput] = useState(yearDefaults.compareYear);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [rawData, setRawData] = useState<MonthlyComparisonResponse | null>(null);
   const [chartData, setChartData] = useState<ChartRow[]>([]);
+  const [baseLabel, setBaseLabel] = useState("");
+  const [compareLabel, setCompareLabel] = useState("");
+  const [baseTotal, setBaseTotal] = useState(0);
+  const [compareTotal, setCompareTotal] = useState(0);
 
   useEffect(() => {
-    const base = parseMonthInputValue(baseMonthInput);
-    const compare = parseMonthInputValue(compareMonthInput);
-
-    if (!base || !compare) {
-      setError("Month format is invalid.");
-      setRawData(null);
-      setChartData([]);
-      return;
-    }
-
     const loadData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const response =
-          metricTab === "orderRevenue"
-            ? await adminDashboardService.getMonthlyOrderRevenueComparison(
-                base.year,
-                base.month,
-                compare.year,
-                compare.month,
-              )
-            : await adminDashboardService.getMonthlyActualRevenueComparison(
-                base.year,
-                base.month,
-                compare.year,
-                compare.month,
-              );
+        if (compareMode === "month") {
+          const base = parseMonthInputValue(baseMonthInput);
+          const compare = parseMonthInputValue(compareMonthInput);
 
-        setRawData(response);
-        setChartData(buildRows(response));
+          if (!base || !compare) {
+            setError("Khoảng tháng không hợp lệ.");
+            setChartData([]);
+            setLoading(false);
+            return;
+          }
+
+          const response =
+            metricTab === "orderRevenue"
+              ? await adminDashboardService.getMonthlyOrderRevenueComparison(
+                  base.year,
+                  base.month,
+                  compare.year,
+                  compare.month,
+                )
+              : await adminDashboardService.getMonthlyActualRevenueComparison(
+                  base.year,
+                  base.month,
+                  compare.year,
+                  compare.month,
+                );
+
+          setChartData(buildMonthRows(response));
+          setBaseLabel(response.baseMonth.label || baseMonthInput);
+          setCompareLabel(response.compareMonth.label || compareMonthInput);
+          setBaseTotal(response.baseMonth.total ?? 0);
+          setCompareTotal(response.compareMonth.total ?? 0);
+        } else {
+          const baseYear = parseYear(baseYearInput);
+          const compareYear = parseYear(compareYearInput);
+
+          if (!baseYear || !compareYear) {
+            setError("Khoảng năm không hợp lệ.");
+            setChartData([]);
+            setLoading(false);
+            return;
+          }
+
+          const response =
+            metricTab === "orderRevenue"
+              ? await adminDashboardService.getYearlyOrderRevenueComparison(
+                  baseYear,
+                  compareYear,
+                )
+              : await adminDashboardService.getYearlyActualRevenueComparison(
+                  baseYear,
+                  compareYear,
+                );
+
+          setChartData(buildYearRows(response));
+          setBaseLabel(response.baseYear.label || String(baseYear));
+          setCompareLabel(response.compareYear.label || String(compareYear));
+          setBaseTotal(response.baseYear.total ?? 0);
+          setCompareTotal(response.compareYear.total ?? 0);
+        }
       } catch (err) {
-        console.error("Failed to load monthly comparison:", err);
-        setError("Unable to load comparison chart.");
-        setRawData(null);
+        console.error("Failed to load comparison chart:", err);
+        setError("Không thể tải biểu đồ so sánh.");
         setChartData([]);
       } finally {
         setLoading(false);
@@ -144,24 +220,17 @@ export default function MonthlyComparisonChart() {
     };
 
     void loadData();
-  }, [metricTab, baseMonthInput, compareMonthInput]);
-
-  const title =
-    metricTab === "orderRevenue"
-      ? "So sánh doanh thu theo tháng"
-      : "So sánh lợi nhuận theo tháng";
-
-  const baseLabel = rawData?.baseMonth.label || "Base month";
-  const compareLabel = rawData?.compareMonth.label || "Compare month";
+  }, [compareMode, metricTab, baseMonthInput, compareMonthInput, baseYearInput, compareYearInput]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload || payload.length < 2) return null;
-    const baseValue = Number(payload[0]?.value ?? 0);
-    const compareValue = Number(payload[1]?.value ?? 0);
+    const leftValue = Number(payload.find((item: any) => item.dataKey === "baseValue")?.value ?? 0);
+    const rightValue = Number(payload.find((item: any) => item.dataKey === "compareValue")?.value ?? 0);
+    const pointLabel = compareMode === "year" ? `Tháng ${label}` : `Ngày ${label}`;
 
     return (
       <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-100 min-w-[190px]">
-        <p className="text-gray-500 mb-2 font-medium">Day {label}</p>
+        <p className="text-gray-500 mb-2 font-medium">{pointLabel}</p>
         <div className="space-y-1 text-sm">
           <p className="flex items-center justify-between gap-4">
             <span className="flex items-center gap-2">
@@ -171,7 +240,7 @@ export default function MonthlyComparisonChart() {
               />
               {baseLabel}
             </span>
-            <span className="font-semibold text-gray-800">{toCurrency(baseValue)}</span>
+            <span className="font-semibold text-gray-800">{toCurrency(leftValue)}</span>
           </p>
           <p className="flex items-center justify-between gap-4">
             <span className="flex items-center gap-2">
@@ -181,7 +250,7 @@ export default function MonthlyComparisonChart() {
               />
               {compareLabel}
             </span>
-            <span className="font-semibold text-gray-800">{toCurrency(compareValue)}</span>
+            <span className="font-semibold text-gray-800">{toCurrency(rightValue)}</span>
           </p>
         </div>
       </div>
@@ -194,75 +263,96 @@ export default function MonthlyComparisonChart() {
         <div className="flex items-center gap-2">
           <TrendingUp className="text-tet-accent" size={24} />
           <div>
-            <h3 className="text-lg font-serif font-bold text-tet-primary">{title}</h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              2 lines show base month and compare month.
-            </p>
+            <h3 className="text-lg font-serif font-bold text-tet-primary">So sánh doanh thu và lợi nhuận</h3>
+            
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col lg:flex-row gap-2 lg:items-end">
           <div className="flex bg-gray-100 p-1 rounded-xl">
             <button
-              onClick={() => setMetricTab("orderRevenue")}
+              onClick={() => setCompareMode("month")}
               className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
-                metricTab === "orderRevenue"
+                compareMode === "month"
                   ? "bg-white text-tet-primary shadow-sm"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              Doanh thu
+              So sánh tháng
             </button>
             <button
-              onClick={() => setMetricTab("actualRevenue")}
+              onClick={() => setCompareMode("year")}
               className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
-                metricTab === "actualRevenue"
+                compareMode === "year"
                   ? "bg-white text-tet-primary shadow-sm"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              Lợi nhuận
+              So sánh năm
             </button>
           </div>
 
-          <label className="flex flex-col gap-1">
-            <span
-              className="text-xs font-semibold inline-flex items-center gap-2"
-              style={{ color: BASE_COLOR }}
+          <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+            Chỉ số
+            <select
+              value={metricTab}
+              onChange={(event) => setMetricTab(event.target.value as MetricTab)}
+              className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
             >
-              <span
-                className="inline-block h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: BASE_COLOR }}
-              />
-              {"Th\u00e1ng ch\u1ecdn"}
-            </span>
-            <input
-              type="month"
-              value={baseMonthInput}
-              onChange={(event) => setBaseMonthInput(event.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-tet-accent outline-none"
-              aria-label="Thang chon"
-            />
+              <option value="orderRevenue">Doanh thu</option>
+              <option value="actualRevenue">Lợi nhuận</option>
+            </select>
           </label>
-          <label className="flex flex-col gap-1">
-            <span
-              className="text-xs font-semibold inline-flex items-center gap-2"
-              style={{ color: COMPARE_COLOR }}
-            >
-              <span
-                className="inline-block h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: COMPARE_COLOR }}
-              />
-              {"Th\u00e1ng so s\u00e1nh"}
-            </span>
-            <input
-              type="month"
-              value={compareMonthInput}
-              onChange={(event) => setCompareMonthInput(event.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-tet-accent outline-none"
-              aria-label="Thang so sanh"
-            />
-          </label>
+
+          {compareMode === "month" ? (
+            <>
+              <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+                Tháng 1
+                <input
+                  type="month"
+                  value={baseMonthInput}
+                  onChange={(event) => setBaseMonthInput(event.target.value)}
+                  className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+                Tháng 2
+                <input
+                  type="month"
+                  value={compareMonthInput}
+                  onChange={(event) => setCompareMonthInput(event.target.value)}
+                  className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+                Năm 1
+                <input
+                  type="number"
+                  min={1900}
+                  max={3000}
+                  step={1}
+                  value={baseYearInput}
+                  onChange={(event) => setBaseYearInput(event.target.value)}
+                  className="h-10 w-[130px] rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+                Năm 2
+                <input
+                  type="number"
+                  min={1900}
+                  max={3000}
+                  step={1}
+                  value={compareYearInput}
+                  onChange={(event) => setCompareYearInput(event.target.value)}
+                  className="h-10 w-[130px] rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-tet-accent/30"
+                />
+              </label>
+            </>
+          )}
         </div>
       </div>
 
@@ -272,9 +362,9 @@ export default function MonthlyComparisonChart() {
             className="inline-block h-3 w-3 rounded-full"
             style={{ backgroundColor: BASE_COLOR }}
           />
-          <span className="font-semibold text-gray-700">{baseLabel}</span>
+          <span className="font-semibold text-gray-700">{baseLabel || "Mốc 1"}</span>
           <span className="text-gray-500">
-            ({toCurrency(rawData?.baseMonth.total ?? 0)})
+            ({toCurrency(baseTotal)})
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -282,9 +372,9 @@ export default function MonthlyComparisonChart() {
             className="inline-block h-3 w-3 rounded-full"
             style={{ backgroundColor: COMPARE_COLOR }}
           />
-          <span className="font-semibold text-gray-700">{compareLabel}</span>
+          <span className="font-semibold text-gray-700">{compareLabel || "Mốc 2"}</span>
           <span className="text-gray-500">
-            ({toCurrency(rawData?.compareMonth.total ?? 0)})
+            ({toCurrency(compareTotal)})
           </span>
         </div>
       </div>
@@ -304,10 +394,26 @@ export default function MonthlyComparisonChart() {
 
         {!error && (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 10, right: 16, left: 8, bottom: 8 }}>
+            <AreaChart
+              data={chartData}
+              margin={{ top: 10, right: 16, left: 8, bottom: 8 }}
+            >
+              <defs>
+                <linearGradient id="baseDensityGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={BASE_COLOR} stopOpacity={0.35} />
+                  <stop offset="95%" stopColor={BASE_COLOR} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="compareDensityGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={COMPARE_COLOR} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={COMPARE_COLOR} stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
               <XAxis
-                dataKey="day"
+                dataKey="label"
+                tickFormatter={(value) =>
+                  compareMode === "year" ? `T${value}` : String(value)
+                }
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "#9ca3af", fontSize: 12 }}
@@ -321,23 +427,25 @@ export default function MonthlyComparisonChart() {
                 width={72}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="baseValue"
                 stroke={BASE_COLOR}
                 strokeWidth={3}
-                dot={false}
-                activeDot={{ r: 5, fill: BASE_COLOR, strokeWidth: 0 }}
+                fill="url(#baseDensityGradient)"
+                fillOpacity={1}
+                activeDot={{ r: 5, strokeWidth: 0, fill: BASE_COLOR }}
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="compareValue"
                 stroke={COMPARE_COLOR}
                 strokeWidth={3}
-                dot={false}
-                activeDot={{ r: 5, fill: COMPARE_COLOR, strokeWidth: 0 }}
+                fill="url(#compareDensityGradient)"
+                fillOpacity={1}
+                activeDot={{ r: 5, strokeWidth: 0, fill: COMPARE_COLOR }}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         )}
       </div>

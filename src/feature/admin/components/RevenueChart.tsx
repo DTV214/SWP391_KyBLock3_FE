@@ -14,14 +14,52 @@ import adminDashboardService, {
 } from "../services/adminDashboardService";
 
 type FilterType = "week" | "month" | "year";
-type MetricType = "revenue" | "actualRevenue";
+
+interface CombinedRevenueDataPoint {
+  date: string;
+  revenue: number;
+  profit: number;
+  orderCount: number;
+}
 
 export default function RevenueChart() {
   const [filter, setFilter] = useState<FilterType>("week");
-  const [metric, setMetric] = useState<MetricType>("revenue");
-  const [data, setData] = useState<RevenueDataPoint[]>([]);
+  const [data, setData] = useState<CombinedRevenueDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const mergeRevenueData = (
+    revenuePoints: RevenueDataPoint[],
+    profitPoints: RevenueDataPoint[],
+  ): CombinedRevenueDataPoint[] => {
+    const merged = new Map<string, CombinedRevenueDataPoint>();
+
+    revenuePoints.forEach((item) => {
+      merged.set(item.date, {
+        date: item.date,
+        revenue: item.revenue,
+        profit: 0,
+        orderCount: item.orderCount,
+      });
+    });
+
+    profitPoints.forEach((item) => {
+      const current = merged.get(item.date);
+      if (current) {
+        current.profit = item.revenue;
+        current.orderCount = Math.max(current.orderCount, item.orderCount);
+      } else {
+        merged.set(item.date, {
+          date: item.date,
+          revenue: 0,
+          profit: item.revenue,
+          orderCount: item.orderCount,
+        });
+      }
+    });
+
+    return Array.from(merged.values());
+  };
 
   useEffect(() => {
     const fetchRevenue = async () => {
@@ -57,24 +95,24 @@ export default function RevenueChart() {
           endDate = end;
         }
 
-        const response = metric === "actualRevenue"
-          ? await adminDashboardService.getActualRevenue(period, startDate, endDate)
-          : await adminDashboardService.getRevenue(period, startDate, endDate);
-        setData(response.data || []);
+        const [revenueResponse, profitResponse] = await Promise.all([
+          adminDashboardService.getRevenue(period, startDate, endDate),
+          adminDashboardService.getActualRevenue(period, startDate, endDate),
+        ]);
+
+        setData(
+          mergeRevenueData(revenueResponse.data || [], profitResponse.data || []),
+        );
       } catch (err) {
         console.error("Failed to fetch revenue data:", err);
-        setError(
-          metric === "actualRevenue"
-            ? "Không thể tải biểu đồ doanh thu."
-            : "Không thể tải biểu đồ lợi nhuận.",
-        );
+        setError("Không thể tải biểu đồ doanh thu và lợi nhuận.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchRevenue();
-  }, [filter, metric]);
+  }, [filter]);
 
   // Format Y-axis ticks to abbreviated VND
   const formatYAxis = (tickItem: number) => {
@@ -87,16 +125,25 @@ export default function RevenueChart() {
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const value = payload[0].value;
       const orderCount = payload[0].payload.orderCount;
+      const revenueValue =
+        payload.find((item: any) => item.dataKey === "revenue")?.value ?? 0;
+      const profitValue =
+        payload.find((item: any) => item.dataKey === "profit")?.value ?? 0;
       return (
-        <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-100 min-w-[150px]">
+        <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-100 min-w-[180px]">
           <p className="text-gray-500 mb-1 font-medium">{label}</p>
-          <p className="font-bold text-tet-primary text-base">
-            {new Intl.NumberFormat("vi-VN", {
+          <p className="font-bold text-[#C8102E] text-sm">
+            Doanh thu: {new Intl.NumberFormat("vi-VN", {
               style: "currency",
               currency: "VND",
-            }).format(value)}
+            }).format(revenueValue)}
+          </p>
+          <p className="font-bold text-[#0EA5E9] text-sm mt-1">
+            Lợi nhuận: {new Intl.NumberFormat("vi-VN", {
+              style: "currency",
+              currency: "VND",
+            }).format(profitValue)}
           </p>
           <p className="text-xs text-gray-400 mt-1">{orderCount} đơn hàng</p>
         </div>
@@ -111,33 +158,19 @@ export default function RevenueChart() {
         <div className="flex items-center gap-2">
           <TrendingUp className="text-tet-accent" size={24} />
           <h3 className="text-lg font-serif font-bold text-tet-primary">
-            {metric === "actualRevenue"
-              ? "Biểu đồ lợi nhuận"
-              : "Biểu đồ doanh thu"}
+            Biểu đồ doanh thu và lợi nhuận
           </h3>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <div className="flex bg-gray-100 p-1 rounded-xl">
-            <button
-              onClick={() => setMetric("revenue")}
-              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
-                metric === "revenue"
-                  ? "bg-white text-tet-primary shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
+          <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#C8102E]" />
               Doanh thu
-            </button>
-            <button
-              onClick={() => setMetric("actualRevenue")}
-              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
-                metric === "actualRevenue"
-                  ? "bg-white text-tet-primary shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              lợi nhận
-            </button>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#0EA5E9]" />
+              Lợi nhuận
+            </span>
           </div>
 
           <div className="flex bg-gray-100 p-1 rounded-xl">
@@ -202,6 +235,10 @@ export default function RevenueChart() {
                   <stop offset="5%" stopColor="#C8102E" stopOpacity={0.3} />
                   <stop offset="95%" stopColor="#C8102E" stopOpacity={0} />
                 </linearGradient>
+                <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0} />
+                </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
               <XAxis 
@@ -227,6 +264,15 @@ export default function RevenueChart() {
                 fillOpacity={1}
                 fill="url(#colorRevenue)"
                 activeDot={{ r: 6, strokeWidth: 0, fill: '#C8102E' }}
+              />
+              <Area
+                type="monotone"
+                dataKey="profit"
+                stroke="#0EA5E9"
+                strokeWidth={3}
+                fillOpacity={1}
+                fill="url(#colorProfit)"
+                activeDot={{ r: 6, strokeWidth: 0, fill: "#0EA5E9" }}
               />
             </AreaChart>
           </ResponsiveContainer>

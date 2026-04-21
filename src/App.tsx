@@ -3,6 +3,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import Navbar from "./layouts/components/Navbar";
 import Footer from "./layouts/components/Footer";
@@ -109,173 +110,182 @@ const StaffRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
+  const AppContent = () => {
+    const location = useLocation();
+    const isAdminRoute = location.pathname.startsWith("/admin");
+
+    return (
+      <div className="min-h-screen flex flex-col bg-tet-bg font-sans">
+        {!isAdminRoute && <Navbar />}
+        <main className="flex-grow">
+          <Routes>
+            {/* --- PUBLIC ROUTES --- */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/home" element={<Navigate to="/" replace />} />
+
+            <Route path="/introduce" element={<IntroducePage />} />
+            <Route path="/blogs" element={<BlogPage />} />
+            <Route path="/blog/:id" element={<BlogDetailPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+
+            <Route path="/quotation" element={<QuotationIntroPage />} />
+            <Route
+              path="/quotation/create"
+              element={<QuotationCreatePage />}
+            />
+            <Route
+              path="/quotation/history"
+              element={<QuotationHistoryPage />}
+            />
+            <Route
+              path="/quotation/status/:id"
+              element={<QuotationStatusPage />}
+            />
+
+            <Route path="/products" element={<ProductPage />} />
+            <Route path="/custom-basket" element={<CustomBasketPage />} />
+            <Route path="/product/:id" element={<ProductDetailPage />} />
+
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <LoginPage />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <RegisterPage />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={
+                <PublicRoute>
+                  <ForgotPasswordPage />
+                </PublicRoute>
+              }
+            />
+
+            {/* --- CUSTOMER ACCOUNT ROUTES --- */}
+            <Route
+              path="/account"
+              element={
+                <ProtectedRoute>
+                  <AccountLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="overview" replace />} />
+              <Route path="overview" element={<AccountOverview />} />
+              <Route path="baskets" element={<MyBasketsPage />} />
+              <Route path="baskets/:id/edit" element={<EditBasket />} />
+              <Route path="profile" element={<AccountProfile />} />
+              <Route path="orders" element={<OrderHistory />} />
+              <Route path="orders/:orderId" element={<OrderHistory />} />
+              <Route path="addresses" element={<AccountAddresses />} />
+              <Route path="vouchers" element={<AccountVouchers />} />
+            </Route>
+
+            {/* --- STAFF ROUTES --- */}
+            <Route
+              path="/staff"
+              element={
+                <StaffRoute>
+                  <StaffLayout />
+                </StaffRoute>
+              }
+            >
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<StaffDashboardPage />} />
+              <Route path="quotations" element={<StaffQuotationsPage />} />
+              <Route
+                path="quotations/:id"
+                element={<StaffQuotationDetailPage />}
+              />
+              <Route path="chats" element={<AdminChatPage />} />
+              <Route path="orders" element={<StaffOrdersPage />} />
+              <Route path="orders/:orderId" element={<StaffOrdersPage />} />
+              <Route path="contacts" element={<AdminContactManagement />} />
+            </Route>
+
+            {/* --- ADMIN ROUTES --- */}
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              }
+            >
+              <Route index element={<Navigate to="overview" replace />} />
+              <Route path="overview" element={<AdminOverview />} />
+              <Route path="products" element={<AdminProducts />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="configs" element={<AdminConfigs />} />
+              <Route path="templates" element={<AdminTemplates />} />
+              <Route path="promotions" element={<AdminPromotions />} />
+              <Route path="orders" element={<AdminOrderHistory />} />
+              <Route path="orders/:orderId" element={<AdminOrderHistory />} />
+              <Route path="chats" element={<AdminChatPage />} />
+              <Route path="blogs" element={<AdminBlogs />} />
+              <Route path="inventory" element={<AdminInventory />} />
+              <Route path="accounts" element={<AdminAccounts />} />
+              <Route
+                path="store-locations"
+                element={<AdminStoreLocations />}
+              />
+              <Route path="contacts" element={<AdminContactManagement />} />
+              <Route
+                path="quotations"
+                element={<AdminApprovalQuotationsPage />}
+              />
+              <Route
+                path="quotations/:id"
+                element={<AdminApprovalQuotationDetailPage />}
+              />
+            </Route>
+
+            {/* --- CHECKOUT ROUTES --- */}
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <CheckoutPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/checkout/success"
+              element={
+                <ProtectedRoute>
+                  <PaymentSuccess />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/payment-failure" element={<PaymentFailure />} />
+            <Route path="/payments/vnpay-return" element={<VNPayReturn />} />
+          </Routes>
+        </main>
+
+        <Footer />
+        <BackToTop />
+        <ChatBot />
+        <CartSidebar />
+        <CustomerChatWidget />
+      </div>
+    );
+  };
+
   return (
     <CartProvider>
       <Router>
-        <div className="min-h-screen flex flex-col bg-tet-bg font-sans">
-          <Navbar />
-          <main className="flex-grow">
-            <Routes>
-              {/* --- PUBLIC ROUTES --- */}
-              <Route path="/" element={<HomePage />} />
-              <Route path="/home" element={<Navigate to="/" replace />} />
-
-              <Route path="/introduce" element={<IntroducePage />} />
-              <Route path="/blogs" element={<BlogPage />} />
-              <Route path="/blog/:id" element={<BlogDetailPage />} />
-              <Route path="/contact" element={<ContactPage />} />
-
-              <Route path="/quotation" element={<QuotationIntroPage />} />
-              <Route
-                path="/quotation/create"
-                element={<QuotationCreatePage />}
-              />
-              <Route
-                path="/quotation/history"
-                element={<QuotationHistoryPage />}
-              />
-              <Route
-                path="/quotation/status/:id"
-                element={<QuotationStatusPage />}
-              />
-
-              <Route path="/products" element={<ProductPage />} />
-              <Route path="/custom-basket" element={<CustomBasketPage />} />
-              <Route path="/product/:id" element={<ProductDetailPage />} />
-
-              <Route
-                path="/login"
-                element={
-                  <PublicRoute>
-                    <LoginPage />
-                  </PublicRoute>
-                }
-              />
-              <Route
-                path="/register"
-                element={
-                  <PublicRoute>
-                    <RegisterPage />
-                  </PublicRoute>
-                }
-              />
-              <Route
-                path="/forgot-password"
-                element={
-                  <PublicRoute>
-                    <ForgotPasswordPage />
-                  </PublicRoute>
-                }
-              />
-
-              {/* --- CUSTOMER ACCOUNT ROUTES --- */}
-              <Route
-                path="/account"
-                element={
-                  <ProtectedRoute>
-                    <AccountLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Navigate to="overview" replace />} />
-                <Route path="overview" element={<AccountOverview />} />
-                <Route path="baskets" element={<MyBasketsPage />} />
-                <Route path="baskets/:id/edit" element={<EditBasket />} />
-                <Route path="profile" element={<AccountProfile />} />
-                <Route path="orders" element={<OrderHistory />} />
-                <Route path="orders/:orderId" element={<OrderHistory />} />
-                <Route path="addresses" element={<AccountAddresses />} />
-                <Route path="vouchers" element={<AccountVouchers />} />
-              </Route>
-
-              {/* --- STAFF ROUTES --- */}
-              <Route
-                path="/staff"
-                element={
-                  <StaffRoute>
-                    <StaffLayout />
-                  </StaffRoute>
-                }
-              >
-                <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<StaffDashboardPage />} />
-                <Route path="quotations" element={<StaffQuotationsPage />} />
-                <Route
-                  path="quotations/:id"
-                  element={<StaffQuotationDetailPage />}
-                />
-                <Route path="chats" element={<AdminChatPage />} />
-                <Route path="orders" element={<StaffOrdersPage />} />
-                <Route path="orders/:orderId" element={<StaffOrdersPage />} />
-                <Route path="contacts" element={<AdminContactManagement />} />
-              </Route>
-
-              {/* --- ADMIN ROUTES --- */}
-              <Route
-                path="/admin"
-                element={
-                  <AdminRoute>
-                    <AdminLayout />
-                  </AdminRoute>
-                }
-              >
-                <Route index element={<Navigate to="overview" replace />} />
-                <Route path="overview" element={<AdminOverview />} />
-                <Route path="products" element={<AdminProducts />} />
-                <Route path="categories" element={<AdminCategories />} />
-                <Route path="configs" element={<AdminConfigs />} />
-                <Route path="templates" element={<AdminTemplates />} />
-                <Route path="promotions" element={<AdminPromotions />} />
-                <Route path="orders" element={<AdminOrderHistory />} />
-                <Route path="orders/:orderId" element={<AdminOrderHistory />} />
-                <Route path="chats" element={<AdminChatPage />} />
-                <Route path="blogs" element={<AdminBlogs />} />
-                <Route path="inventory" element={<AdminInventory />} />
-                <Route path="accounts" element={<AdminAccounts />} />
-                <Route
-                  path="store-locations"
-                  element={<AdminStoreLocations />}
-                />
-                <Route path="contacts" element={<AdminContactManagement />} />
-                <Route
-                  path="quotations"
-                  element={<AdminApprovalQuotationsPage />}
-                />
-                <Route
-                  path="quotations/:id"
-                  element={<AdminApprovalQuotationDetailPage />}
-                />
-              </Route>
-
-              {/* --- CHECKOUT ROUTES --- */}
-              <Route
-                path="/checkout"
-                element={
-                  <ProtectedRoute>
-                    <CheckoutPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/checkout/success"
-                element={
-                  <ProtectedRoute>
-                    <PaymentSuccess />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/payment-success" element={<PaymentSuccess />} />
-              <Route path="/payment-failure" element={<PaymentFailure />} />
-              <Route path="/payments/vnpay-return" element={<VNPayReturn />} />
-            </Routes>
-          </main>
-
-          <Footer />
-          <BackToTop />
-          <ChatBot />
-          <CartSidebar />
-          <CustomerChatWidget />
-        </div>
+        <AppContent />
       </Router>
     </CartProvider>
   );
