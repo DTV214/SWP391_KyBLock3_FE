@@ -13,7 +13,6 @@ import RevenueChart from "../components/RevenueChart";
 import CustomerEfficiencyWidget from "../components/CustomerEfficiencyWidget";
 import { DashboardInsightsContainer } from "../components/insights/DashboardInsightsContainer";
 import MonthlyComparisonChart from "../components/MonthlyComparisonChart";
-import YearlyComparisonBarChart from "../components/YearlyComparisonBarChart";
 import CategoryPerformanceCharts from "../components/CategoryPerformanceCharts";
 import TopTrendingProducts from "../components/TopTrendingProducts";
 import {
@@ -22,8 +21,6 @@ import {
   Users,
   DollarSign,
   Wallet,
-  ArrowUp,
-  ArrowDown,
   Gift,
   Tag,
   Settings,
@@ -178,8 +175,6 @@ export default function AdminOverview() {
         style: "currency",
         currency: "VND",
       }).format(data.revenue?.totalRevenueBeforeDiscount ?? 0),
-      change: "+0%",
-      trend: "up",
       icon: <DollarSign size={24} />,
       color: "from-amber-500 to-orange-600",
       valueClassName: "text-[clamp(1.05rem,1.6vw,1.7rem)] leading-tight break-words",
@@ -191,8 +186,6 @@ export default function AdminOverview() {
         style: "currency",
         currency: "VND",
       }).format(data.revenue?.totalRevenue ?? 0),
-      change: "+0%",
-      trend: "up",
       icon: <DollarSign size={24} />,
       color: "from-green-500 to-emerald-600",
       valueClassName: "text-[clamp(1.05rem,1.6vw,1.7rem)] leading-tight break-words",
@@ -206,8 +199,6 @@ export default function AdminOverview() {
             style: "currency",
             currency: "VND",
           }).format(actualRevenueTotal),
-      change: "+0%",
-      trend: "up",
       icon: <Wallet size={24} />,
       color: "from-teal-500 to-cyan-600",
       valueClassName: "text-[clamp(1.05rem,1.6vw,1.7rem)] leading-tight break-words",
@@ -216,8 +207,7 @@ export default function AdminOverview() {
     {
       label: "Đơn hàng",
       value: (data.orders?.total ?? 0).toString(),
-      change: "+0%",
-      trend: "up",
+      description: "Số đơn hàng đã đặt",
       icon: <ShoppingCart size={24} />,
       color: "from-blue-500 to-cyan-600",
       valueClassName: "text-[clamp(1.35rem,1.9vw,1.9rem)] leading-tight",
@@ -226,8 +216,7 @@ export default function AdminOverview() {
     {
       label: "Sản phẩm",
       value: (data.totalProducts ?? 0).toString(),
-      change: "+0%",
-      trend: "up",
+      description: "Số sản phẩm trong hệ thống",
       icon: <Package size={24} />,
       color: "from-purple-500 to-pink-600",
       valueClassName: "text-[clamp(1.35rem,1.9vw,1.9rem)] leading-tight",
@@ -236,8 +225,7 @@ export default function AdminOverview() {
     {
       label: "Khách hàng mới",
       value: (data.newAccounts?.totalCount ?? 0).toString(),
-      change: "+0%",
-      trend: "up",
+      description: "Số khách hàng mới trong năm",
       icon: <Users size={24} />,
       color: "from-orange-500 to-red-600",
       onClick: () => setIsNewCustomersModalOpen(true),
@@ -277,26 +265,12 @@ export default function AdminOverview() {
               onClick={stat.onClick}
               className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0 text-left w-full cursor-pointer"
             >
-              <div className="flex justify-between items-start mb-4">
+              <div className="mb-4">
                 <div
                   className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-white shadow-lg`}
                 >
                   {stat.icon}
                 </div>
-                <span
-                  className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
-                    stat.trend === "up"
-                      ? "bg-green-50 text-green-600"
-                      : "bg-red-50 text-red-600"
-                  }`}
-                >
-                  {stat.trend === "up" ? (
-                    <ArrowUp size={12} />
-                  ) : (
-                    <ArrowDown size={12} />
-                  )}
-                  {stat.change}
-                </span>
               </div>
               <div className="mb-1 overflow-x-auto">
                 <p className="text-lg xl:text-xl 2xl:text-2xl font-bold text-tet-primary whitespace-nowrap leading-tight min-w-max">
@@ -304,6 +278,9 @@ export default function AdminOverview() {
                 </p>
               </div>
               <p className="text-xs text-gray-500">{stat.label}</p>
+              {stat.description ? (
+                <p className="text-xs text-gray-400 mt-1">{stat.description}</p>
+              ) : null}
             </button>
           ))}
         </div>
@@ -316,26 +293,12 @@ export default function AdminOverview() {
               onClick={stat.onClick}
               className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-0 text-left w-full cursor-pointer"
             >
-              <div className="flex justify-between items-start mb-4">
+              <div className="mb-4">
                 <div
                   className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-white shadow-lg`}
                 >
                   {stat.icon}
                 </div>
-                <span
-                  className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
-                    stat.trend === "up"
-                      ? "bg-green-50 text-green-600"
-                      : "bg-red-50 text-red-600"
-                  }`}
-                >
-                  {stat.trend === "up" ? (
-                    <ArrowUp size={12} />
-                  ) : (
-                    <ArrowDown size={12} />
-                  )}
-                  {stat.change}
-                </span>
               </div>
               <div className="mb-1 overflow-x-auto">
                 <p className="text-lg xl:text-xl 2xl:text-2xl font-bold text-tet-primary whitespace-nowrap leading-tight min-w-max">
@@ -343,6 +306,9 @@ export default function AdminOverview() {
                 </p>
               </div>
               <p className="text-xs text-gray-500">{stat.label}</p>
+              {stat.description ? (
+                <p className="text-xs text-gray-400 mt-1">{stat.description}</p>
+              ) : null}
             </button>
           ))}
         </div>
@@ -384,7 +350,6 @@ export default function AdminOverview() {
       </div>
 
       <MonthlyComparisonChart />
-      <YearlyComparisonBarChart />
       <TopTrendingProducts />
       <CategoryPerformanceCharts />
 

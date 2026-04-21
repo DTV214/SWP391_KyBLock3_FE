@@ -1,5 +1,6 @@
 ﻿import { Outlet, Link, useLocation } from "react-router-dom";
 import AdminSidebar from "../components/AdminSidebar";
+import AdminHeader from "../components/AdminHeader";
 import { ChevronRight } from "lucide-react";
 
 export default function AdminLayout() {
@@ -25,6 +26,10 @@ export default function AdminLayout() {
   return (
     <div className="bg-[#FBF5E8]/30 min-h-screen pb-20">
       <div className="container mx-auto max-w-7xl px-4 md:px-6">
+        <div className="pt-6">
+          <AdminHeader />
+        </div>
+
         <nav className="flex items-center gap-2 py-6 text-sm font-medium text-gray-400">
           <Link to="/home" className="hover:text-tet-primary transition-colors">
             Trang chủ
