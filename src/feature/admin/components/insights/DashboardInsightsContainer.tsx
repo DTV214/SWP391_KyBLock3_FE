@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Crown, ShoppingCart, Target, AlertTriangle, TrendingDown, DollarSign, Calendar, AlertCircle } from "lucide-react";
+import { Crown, ShoppingCart, Target, AlertTriangle, TrendingDown, DollarSign, Calendar, AlertCircle, UserX } from "lucide-react";
 import adminDashboardService from "../../services/adminDashboardService";
-import type { DashboardHighlights } from "../../services/adminDashboardService";
+import type { DashboardHighlights, CustomerOrderStatistics } from "../../services/adminDashboardService";
 import { HighlightCard } from "./HighlightCard";
+import { DashboardDetailModal, type DetailType } from "./DashboardDetailModal";
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -57,26 +58,66 @@ export const DashboardInsightsContainer: React.FC = () => {
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
 
+  // Modal states
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedDetailType, setSelectedDetailType] = useState<DetailType>("VIP");
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalData, setModalData] = useState<any[]>([]);
+  const [modalLoading, setModalLoading] = useState(false);
+
   useEffect(() => {
-    const { start, end } = getDateRange(filterType, customStart, customEnd);
     // Don't fetch if custom filter is selected but dates are empty
     if (filterType === "custom" && !customStart && !customEnd) return;
 
-    const fetchInsights = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await adminDashboardService.getDashboardInsights(start, end);
-        setData(res);
-      } catch (err) {
-        console.error("Error fetching dashboard insights:", err);
-        setError("Không thể tải dữ liệu phân tích. Vui lòng thử lại sau.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchInsights();
   }, [filterType, customStart, customEnd]);
+
+  const fetchInsights = async () => {
+    const { start, end } = getDateRange(filterType, customStart, customEnd);
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await adminDashboardService.getDashboardInsights(start, end);
+      setData(res);
+    } catch (err) {
+      console.error("Error fetching dashboard insights:", err);
+      setError("Không thể tải dữ liệu phân tích. Vui lòng thử lại sau.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCardClick = async (type: DetailType, title: string) => {
+    const { start, end } = getDateRange(filterType, customStart, customEnd);
+    setSelectedDetailType(type);
+    setModalTitle(title);
+    setIsDetailModalOpen(true);
+    setModalLoading(true);
+
+    try {
+      if (["VIP", "FREQUENT", "CANCELER"].includes(type)) {
+        const stats = await adminDashboardService.getCustomerOrderStatistics(start, end);
+        let sorted: CustomerOrderStatistics[] = [];
+        if (type === "VIP") sorted = [...stats].sort((a, b) => b.totalSpentAllTime - a.totalSpentAllTime);
+        else if (type === "FREQUENT") sorted = [...stats].sort((a, b) => b.totalOrders - a.totalOrders);
+        else if (type === "CANCELER") sorted = [...stats].sort((a, b) => b.cancelledOrders - a.cancelledOrders);
+        setModalData(sorted.slice(0, 10));
+      } else if (type === "BEST_SELLER") {
+        const summary = await adminDashboardService.getDashboardSummary("all", start, end);
+        setModalData(summary.topProducts || []);
+      } else if (type === "ABANDONED") {
+        const summary = await adminDashboardService.getDashboardSummary("all", start, end);
+        setModalData(summary.abandonedCarts?.carts || []);
+      } else if (type === "WORST_SELLER") {
+        // Mocking or needing specific endpoint. For now focus on Best Sellers.
+        setModalData([]);
+      }
+    } catch (err) {
+      console.error("Error fetching modal data:", err);
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
   return (
     <section className="rounded-[2rem] border border-gray-100 bg-white p-5 shadow-sm xl:p-6">
@@ -134,7 +175,7 @@ export const DashboardInsightsContainer: React.FC = () => {
       {loading && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-28 bg-gray-100 animate-pulse rounded-2xl" />
+            <div key={`insight-skeleton-${i}`} className="h-28 bg-gray-100 animate-pulse rounded-2xl" />
           ))}
         </div>
       )}
@@ -155,72 +196,102 @@ export const DashboardInsightsContainer: React.FC = () => {
 
       {/* Cards Grid */}
       {!loading && !error && data && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {data.topSpender && (
+        <div className="space-y-4">
+          {/* Row 1 — Hiệu suất kinh doanh */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {data.topSpender && (
+              <HighlightCard
+                title="Khách V.I.P (Chi nhiều nhất)"
+                value={formatCurrency(data.topSpender.totalValue)}
+                subtitle={`${data.topSpender.fullName} (${data.topSpender.orderCount} đơn)`}
+                icon={Crown}
+                colorScheme="yellow"
+                onClick={() => handleCardClick("VIP", "Danh sách Top 10 khách V.I.P")}
+              />
+            )}
+
+            {data.mostFrequentBuyer && (
+              <HighlightCard
+                title="Khách chăm mua nhất"
+                value={`${data.mostFrequentBuyer.orderCount} đơn`}
+                subtitle={data.mostFrequentBuyer.fullName}
+                icon={ShoppingCart}
+                colorScheme="blue"
+                onClick={() => handleCardClick("FREQUENT", "Top 10 khách hàng chăm mua")}
+              />
+            )}
+
+            {data.topSellingProduct && (
+              <HighlightCard
+                title="Sản phẩm đắt hàng nhất"
+                value={data.topSellingProduct.productName}
+                subtitle={`Bán được: ${data.topSellingProduct.totalQuantity} — Thu: ${formatCurrency(data.topSellingProduct.totalRevenue)}`}
+                icon={Target}
+                colorScheme="green"
+                onClick={() => handleCardClick("BEST_SELLER", "Top 10 sản phẩm bán chạy nhất")}
+              />
+            )}
+
             <HighlightCard
-              title="Khách V.I.P (Chi nhiều nhất)"
-              value={formatCurrency(data.topSpender.totalValue)}
-              subtitle={`${data.topSpender.fullName} (${data.topSpender.orderCount} đơn)`}
-              icon={Crown}
-              colorScheme="yellow"
-            />
-          )}
-
-          {data.mostFrequentBuyer && (
-            <HighlightCard
-              title="Khách chăm mua nhất"
-              value={`${data.mostFrequentBuyer.orderCount} đơn`}
-              subtitle={data.mostFrequentBuyer.fullName}
-              icon={ShoppingCart}
-              colorScheme="blue"
-            />
-          )}
-
-          {data.topSellingProduct && (
-            <HighlightCard
-              title="Sản phẩm đắt hàng nhất"
-              value={data.topSellingProduct.productName}
-              subtitle={`Bán được: ${data.topSellingProduct.totalQuantity} — Thu: ${formatCurrency(data.topSellingProduct.totalRevenue)}`}
-              icon={Target}
-              colorScheme="green"
-            />
-          )}
-
-          <HighlightCard
-            title="Tỷ lệ hủy đơn"
-            value={`${data.cancellationStats.cancellationRate}%`}
-            subtitle={`Hủy: ${data.cancellationStats.cancelledOrders} / Chốt: ${data.cancellationStats.validOrders}`}
-            icon={AlertTriangle}
-            colorScheme="red"
-          />
-
-          <HighlightCard
-            title="Giá trị trung bình / Đơn (AOV)"
-            value={formatCurrency(data.averageOrderValue)}
-            subtitle="Doanh thu / Tổng đơn thành công"
-            icon={DollarSign}
-            colorScheme="indigo"
-          />
-
-          {data.underperformingProduct && (
-            <HighlightCard
-              title="Sản phẩm bán ế (Cần xả)"
-              value={data.underperformingProduct.productName}
-              subtitle={`Chỉ bán được: ${data.underperformingProduct.totalQuantity} trong kỳ`}
-              icon={TrendingDown}
+              title="Tỷ lệ hủy đơn"
+              value={`${data.cancellationStats.cancellationRate}%`}
+              subtitle={`Hủy: ${data.cancellationStats.cancelledOrders} / Chốt: ${data.cancellationStats.validOrders}`}
+              icon={AlertTriangle}
               colorScheme="red"
             />
-          )}
+          </div>
 
-          <HighlightCard
-            title="Thất thoát Giỏ hàng"
-            value={formatCurrency(data.abandonedCartValue.totalLostValue)}
-            subtitle={`${data.abandonedCartValue.cartCount} giỏ hàng bị bỏ`}
-            icon={ShoppingCart}
-            colorScheme="yellow"
-          />
+          {/* Row 2 — Rủi ro & Cơ hội */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {data.topCanceler && (
+              <HighlightCard
+                title="Khách hay hủy đơn nhất"
+                value={`${data.topCanceler.totalValue} đơn hủy`}
+                subtitle={`${data.topCanceler.fullName}`}
+                icon={UserX}
+                colorScheme="red"
+                onClick={() => handleCardClick("CANCELER", "Top 10 khách hàng hay hủy đơn")}
+              />
+            )}
+
+            <HighlightCard
+              title="Giá trị trung bình / Đơn (AOV)"
+              value={formatCurrency(data.averageOrderValue)}
+              subtitle="Doanh thu / Tổng đơn thành công"
+              icon={DollarSign}
+              colorScheme="indigo"
+            />
+
+            {data.underperformingProduct && (
+              <HighlightCard
+                title="Sản phẩm bán ế (Cần xả)"
+                value={data.underperformingProduct.productName}
+                subtitle={`Chỉ bán được: ${data.underperformingProduct.totalQuantity} trong kỳ`}
+                icon={TrendingDown}
+                colorScheme="red"
+              />
+            )}
+
+            <HighlightCard
+              title="Thất thoát Giỏ hàng"
+              value={formatCurrency(data.abandonedCartValue.totalLostValue)}
+              subtitle={`${data.abandonedCartValue.cartCount} giỏ hàng bị bỏ`}
+              icon={ShoppingCart}
+              colorScheme="yellow"
+              onClick={() => handleCardClick("ABANDONED", "Danh sách giỏ hàng bị bỏ rơi")}
+            />
+          </div>
         </div>
       )}
+
+      <DashboardDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        type={selectedDetailType}
+        title={modalTitle}
+        data={modalData}
+        loading={modalLoading}
+      />
     </section>
   );
 };

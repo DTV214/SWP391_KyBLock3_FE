@@ -7,9 +7,10 @@ interface HighlightCardProps {
   subtitle?: string;
   icon: LucideIcon;
   colorScheme: "yellow" | "blue" | "red" | "green" | "purple" | "indigo";
+  onClick?: () => void;
 }
 
-export const HighlightCard: React.FC<HighlightCardProps> = ({ title, value, subtitle, icon: Icon, colorScheme }) => {
+export const HighlightCard: React.FC<HighlightCardProps> = ({ title, value, subtitle, icon: Icon, colorScheme, onClick }) => {
   const colorMap = {
     yellow: "from-amber-100 to-yellow-50 text-amber-700 border-amber-200",
     blue: "from-blue-100 to-blue-50 text-blue-700 border-blue-200",
@@ -22,7 +23,10 @@ export const HighlightCard: React.FC<HighlightCardProps> = ({ title, value, subt
   const bgGradient = colorMap[colorScheme];
 
   return (
-    <div className={`flex h-full min-h-[150px] flex-col rounded-[1.5rem] border ${bgGradient} bg-gradient-to-br p-4 shadow-sm transition-shadow hover:shadow-md lg:p-5`}>
+    <div 
+      onClick={onClick}
+      className={`flex h-full min-h-[150px] flex-col rounded-[1.5rem] border ${bgGradient} bg-gradient-to-br p-4 shadow-sm transition-all hover:shadow-md lg:p-5 ${onClick ? "cursor-pointer hover:scale-[1.02] active:scale-[0.98]" : ""}`}
+    >
       <div className="mb-3 flex items-start justify-between gap-3">
         <h3 className="font-semibold text-sm opacity-90">{title}</h3>
         <div className="p-2 bg-white rounded-lg bg-opacity-60 shadow-sm border border-white/50">

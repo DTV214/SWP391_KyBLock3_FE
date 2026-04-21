@@ -17,6 +17,7 @@ import {
   Settings,
   ShoppingCart,
   Tag,
+  TrendingUp,
   Users,
   Wallet,
   X,
@@ -29,9 +30,12 @@ import { DashboardInsightsContainer } from "../components/insights/DashboardInsi
 import MonthlyComparisonChart from "../components/MonthlyComparisonChart";
 import CategoryPerformanceCharts from "../components/CategoryPerformanceCharts";
 import TopTrendingProducts from "../components/TopTrendingProducts";
+import { CustomerCareInsights } from "../components/insights/CustomerCareInsights";
+import TopProductFinancials from "../components/TopProductFinancials";
 import { orderService, type OrderResponse } from "@/feature/checkout/services/orderService";
 import adminDashboardService, {
   type DashboardSummary,
+  type DashboardHighlights,
 } from "../services/adminDashboardService";
 
 export default function AdminOverview() {
@@ -41,6 +45,9 @@ export default function AdminOverview() {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [actualRevenueTotal, setActualRevenueTotal] = useState<number | null>(
+    null,
+  );
+  const [insightsData, setInsightsData] = useState<DashboardHighlights | null>(
     null,
   );
   const [isNewCustomersModalOpen, setIsNewCustomersModalOpen] = useState(false);
@@ -71,9 +78,10 @@ export default function AdminOverview() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [summaryResult, actualRevenueResult] = await Promise.allSettled([
+        const [summaryResult, actualRevenueResult, insightsResult] = await Promise.allSettled([
           adminDashboardService.getDashboardSummary(),
           adminDashboardService.getActualRevenue(),
+          adminDashboardService.getDashboardInsights(),
         ]);
 
         if (summaryResult.status !== "fulfilled") {
@@ -84,6 +92,10 @@ export default function AdminOverview() {
           setActualRevenueTotal(actualRevenueResult.value.totalRevenue);
         } else {
           setActualRevenueTotal(null);
+        }
+
+        if (insightsResult.status === "fulfilled") {
+          setInsightsData(insightsResult.value);
         }
 
         setData(summaryResult.value);
@@ -298,11 +310,19 @@ export default function AdminOverview() {
     {
       label: "Khách hàng mới",
       value: (data.newAccounts?.totalCount ?? 0).toString(),
-      description: "Số khách hàng mới trong năm",
+      description: "Số khách hàng mới trong kỳ",
       icon: <Users size={24} />,
       color: "from-orange-500 to-red-600",
       valueClassName: numberValueClassName,
       onClick: () => setIsNewCustomersModalOpen(true),
+    },
+    {
+      label: "Tỉ lệ chuyển đổi",
+      value: `${data.conversionRate ?? 0}%`,
+      description: `${data.accountsWithOrders ?? 0} / ${data.totalCustomerAccounts ?? 0} khách đã mua`,
+      icon: <TrendingUp size={24} />,
+      color: "from-violet-500 to-purple-600",
+      valueClassName: numberValueClassName,
     },
   ];
 
@@ -388,8 +408,6 @@ export default function AdminOverview() {
         </div>
       </section>
 
-      <DashboardInsightsContainer />
-
       <div
         ref={revenueChartSectionRef}
         className="grid grid-cols-1 gap-6 scroll-mt-40 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.95fr)] 2xl:grid-cols-[minmax(0,1.72fr)_minmax(360px,0.98fr)]"
@@ -402,8 +420,15 @@ export default function AdminOverview() {
         </div>
       </div>
 
+      <DashboardInsightsContainer />
+
+      {insightsData && (
+        <CustomerCareInsights data={insightsData} />
+      )}
+
       <MonthlyComparisonChart />
       <TopTrendingProducts />
+      <TopProductFinancials initialProducts={data?.topProducts || []} />
       <CategoryPerformanceCharts />
 
       {vatLoading ? (
@@ -441,6 +466,7 @@ export default function AdminOverview() {
           </div>
         </div>
       </section>
+
 
       {isNewCustomersModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Search, Edit, Trash2, Eye, Package, Gift, Image as ImageIcon } from "lucide-react";
 import { productService, type Product } from "../../../api/productService";
 import { categoryService, type Category } from "../../../api/categoryService";
@@ -51,10 +51,6 @@ export default function AdminProducts() {
   );
   const [productStatsLoading, setProductStatsLoading] = useState(false);
   const [productStatsError, setProductStatsError] = useState<string | null>(null);
-  const [productStatsById, setProductStatsById] = useState<
-    Record<number, ProductStatisticsData>
-  >({});
-  const [singleListStatsLoading, setSingleListStatsLoading] = useState(false);
 
   // Image file for upload
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -448,73 +444,6 @@ export default function AdminProducts() {
     const matchCategory = !filterCategory || product.categoryid?.toString() === filterCategory;
     return matchStatus && matchCategory;
   });
-  const filteredProductIds = filteredProducts
-    .map((product) => product.productid)
-    .filter((id): id is number => typeof id === "number");
-  const filteredProductIdsKey = filteredProductIds.join(",");
-
-  useEffect(() => {
-    if (mainTab !== "single") return;
-    if (filteredProductIds.length === 0) {
-      setSingleListStatsLoading(false);
-      return;
-    }
-
-    const missingIds = filteredProductIds.filter((id) => !productStatsById[id]);
-    if (missingIds.length === 0) {
-      setSingleListStatsLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    const loadMissingStats = async () => {
-      try {
-        setSingleListStatsLoading(true);
-        const entries = await Promise.all(
-          missingIds.map(async (id) => {
-            try {
-              const response: any = await axiosClient.get(
-                API_ENDPOINTS.STATISTICS.PRODUCT(id),
-              );
-              const payload = response?.data ?? response;
-              const data = payload?.data ?? payload;
-              return [id, normalizeProductStatistics(data)] as const;
-            } catch (err) {
-              console.error(`Error fetching list stats for product ${id}:`, err);
-              return [
-                id,
-                {
-                  totalGrossRevenue: 0,
-                  totalNetRevenue: 0,
-                  totalProfit: 0,
-                  totalQuantitySold: 0,
-                  orders: [],
-                } as ProductStatisticsData,
-              ] as const;
-            }
-          }),
-        );
-
-        if (cancelled) return;
-        setProductStatsById((prev) => {
-          const next = { ...prev };
-          entries.forEach(([id, stats]) => {
-            next[id] = stats;
-          });
-          return next;
-        });
-      } finally {
-        if (!cancelled) setSingleListStatsLoading(false);
-      }
-    };
-
-    void loadMissingStats();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [mainTab, filteredProductIdsKey, productStatsById]);
 
   // Displayed baskets based on sub-filter
   const displayedBaskets: Product[] =
@@ -571,9 +500,8 @@ export default function AdminProducts() {
 
   // ── Shared table row renderer ──────────────────────────────────────────────
   const renderProductRow = (product: Product, origin?: "admin" | "customer") => {
-    const showSalesStats = !origin;
-    const rowStats =
-      typeof product.productid === "number" ? productStatsById[product.productid] : undefined;
+    
+    
     const cellPadding = "px-4 py-3";
 
     return (
@@ -595,49 +523,22 @@ export default function AdminProducts() {
             )}
           </div>
           <div>
-            <p className="font-bold text-sm text-tet-primary">{product.productname || "Chưa đặt tên"}</p>
-            <p className="text-xs text-gray-500">ID: {product.productid}</p>
+            <p className="font-bold text-sm text-tet-primary">{product.productname || "Ch\u01b0a \u0111\u1eb7t t\u00ean"}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[10px] font-mono text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">ID: {product.productid}</span>
+              {product.sku && <span className="text-[10px] font-mono text-indigo-400 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">SKU: {product.sku}</span>}
+            </div>
             {origin && (
-              <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                 origin === "admin" ? "bg-indigo-100 text-indigo-700" : "bg-orange-100 text-orange-700"
               }`}>
-                {origin === "admin" ? "Admin/Staff" : "Khách"}
+                {origin === "admin" ? "Admin/Staff" : "Kh\u00e1ch"}
               </span>
             )}
           </div>
         </div>
       </td>
-      <td className={`${cellPadding} text-sm text-gray-600 font-mono`}>{product.sku || "-"}</td>
       <td className={`${cellPadding} text-sm text-gray-600`}>{getCategoryName(product.categoryid)}</td>
-      <td className={cellPadding}>
-        <span className="text-sm font-bold text-tet-accent">
-          {formatMoney(product.price ?? 0)}
-        </span>
-      </td>
-      <td className={cellPadding}>
-        <span className="text-sm text-gray-600">
-          {formatMoney(product.importPrice ?? 0)}
-        </span>
-      </td>
-      {showSalesStats && (
-        <td className={`${cellPadding} text-sm font-semibold text-emerald-700`}>
-          {rowStats ? formatMoney(rowStats.totalNetRevenue) : singleListStatsLoading ? "Đang tải..." : "-"}
-        </td>
-      )}
-      {showSalesStats && (
-        <td className={`${cellPadding} text-sm font-semibold text-amber-700`}>
-          {rowStats ? formatMoney(rowStats.totalProfit) : singleListStatsLoading ? "Đang tải..." : "-"}
-        </td>
-      )}
-      {showSalesStats && (
-        <td className={`${cellPadding} text-sm font-semibold text-blue-700`}>
-          {rowStats
-            ? rowStats.totalQuantitySold.toLocaleString("vi-VN")
-            : singleListStatsLoading
-            ? "Đang tải..."
-            : "-"}
-        </td>
-      )}
       <td className={`${cellPadding} text-sm text-gray-600`}>{product.unit || 0}g</td>
       <td className={cellPadding}>
         <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(product.status || "")}`}>
@@ -813,8 +714,8 @@ export default function AdminProducts() {
                 <table className="w-full min-w-[1200px]">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      {["Sản phẩm", "SKU", "Danh mục", "Giá", "Giá nhập", "Doanh thu", "Lợi nhuận", "Đã bán", "Khối lượng", "Trạng thái", "Thao tác"].map((h) => (
-                        <th key={h} className={`px-4 py-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap ${h === "Thao tác" ? "text-right sticky right-0 z-10 bg-gray-50 min-w-[130px] shadow-[-10px_0_14px_-12px_rgba(15,23,42,0.35)]" : "text-left"}`}>{h}</th>
+                      {["S\u1ea3n ph\u1ea9m", "Danh m\u1ee5c", "Kh\u1ed1i l\u01b0\u1ee3ng", "Tr\u1ea1ng th\u00e1i", "Thao t\u00e1c"].map((h) => (
+                         <th key={h} className={`px-4 py-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap ${h === "Thao t\u00e1c" ? "text-right sticky right-0 z-10 bg-gray-50 min-w-[130px] shadow-[-10px_0_14px_-12px_rgba(15,23,42,0.35)]" : "text-left"}`}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -884,8 +785,8 @@ export default function AdminProducts() {
                 <table className="w-full min-w-[980px]">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      {["Giỏ quà", "SKU", "Danh mục", "Giá", "Giá nhập", "Khối lượng", "Trạng thái", "Thao tác"].map((h) => (
-                        <th key={h} className={`px-4 py-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap ${h === "Thao tác" ? "text-right sticky right-0 z-10 bg-gray-50 min-w-[130px] shadow-[-10px_0_14px_-12px_rgba(15,23,42,0.35)]" : "text-left"}`}>{h}</th>
+                      {["Gi\u1ecf qu\u00e0", "Danh m\u1ee5c", "Kh\u1ed1i l\u01b0\u1ee3ng", "Tr\u1ea1ng th\u00e1i", "Thao t\u00e1c"].map((h) => (
+                        <th key={h} className={`px-4 py-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap ${h === "Thao t\u00e1c" ? "text-right sticky right-0 z-10 bg-gray-50 min-w-[130px] shadow-[-10px_0_14px_-12px_rgba(15,23,42,0.35)]" : "text-left"}`}>{h}</th>
                       ))}
                     </tr>
                   </thead>

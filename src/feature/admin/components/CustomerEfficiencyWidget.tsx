@@ -69,7 +69,6 @@ const CustomerEfficiencyWidget: React.FC = () => {
 
     fetchModalStats();
   }, [isModalOpen, filterType, customStartDate, customEndDate]);
-
   const filteredModalStats = useMemo(() => {
     return modalStats.filter((c) => {
       const searchLower = searchTerm.toLowerCase();
@@ -79,6 +78,12 @@ const CustomerEfficiencyWidget: React.FC = () => {
     });
   }, [modalStats, searchTerm]);
 
+  const getTier = (spent: number) => {
+    if (spent >= 5000000) return { label: "VIP", icon: "🥇", color: "bg-amber-100 text-amber-700 border-amber-200" };
+    if (spent >= 1000000) return { label: "Regular", icon: "🥈", color: "bg-blue-100 text-blue-700 border-blue-200" };
+    return { label: "New", icon: "🥉", color: "bg-gray-100 text-gray-700 border-gray-200" };
+  };
+
   // View template for customer row
   const renderCustomerRow = (customer: CustomerOrderStatistics) => (
     <div
@@ -86,13 +91,23 @@ const CustomerEfficiencyWidget: React.FC = () => {
       className="group flex items-center justify-between p-3 rounded-2xl hover:bg-tet-secondary/20 transition-all border border-transparent hover:border-tet-secondary bg-white"
     >
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-tet-secondary to-white flex items-center justify-center text-tet-accent font-bold border border-tet-secondary">
-          {customer.fullName?.charAt(0) || "U"}
+        <div className="relative">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-tet-secondary to-white flex items-center justify-center text-tet-accent font-bold border border-tet-secondary">
+            {customer.fullName?.charAt(0) || "U"}
+          </div>
+          <div className="absolute -bottom-1 -right-1 text-xs">
+            {getTier(customer.totalSpentAllTime).icon}
+          </div>
         </div>
         <div>
-          <p className="text-sm font-bold text-tet-primary group-hover:text-tet-accent transition-colors">
-            {customer.fullName || customer.email || "Khách hàng ẩn danh"}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-bold text-tet-primary group-hover:text-tet-accent transition-colors">
+              {customer.fullName || customer.email || "Khách hàng ẩn danh"}
+            </p>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded-full border font-bold uppercase tracking-tighter ${getTier(customer.totalSpentAllTime).color}`}>
+              {getTier(customer.totalSpentAllTime).label}
+            </span>
+          </div>
           <p className="text-[10px] text-gray-500 flex items-center gap-1">
             <Users size={10} />
             {customer.totalOrders} đơn đã đặt
@@ -160,7 +175,7 @@ const CustomerEfficiencyWidget: React.FC = () => {
         <div className="flex items-center justify-between mb-6 relative">
           <h3 className="text-lg font-serif font-bold text-tet-primary flex items-center gap-2">
             <TrendingUp className="text-tet-accent" size={20} />
-            Hiệu suất mua hàng
+            Khách hàng thân thiết
           </h3>
           <span className="text-xs text-tet-accent font-medium bg-tet-secondary/20 px-3 py-1.5 rounded-lg group-hover:bg-tet-accent group-hover:text-white transition-colors border border-tet-accent/20">
             Xem tất cả

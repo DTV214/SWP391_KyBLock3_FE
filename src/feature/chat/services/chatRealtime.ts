@@ -65,11 +65,10 @@ const resolveHubCandidates = (): string[] => {
 
   return [
     envHubUrl,
-    `${rootBase}/chatHub`,
-    `${rootBase}/chathub`,
     `${rootBase}/hubs/chat`,
-    `${apiBase}/chatHub`,
     `${apiBase}/hubs/chat`,
+    `${rootBase}/chathub`,
+    `${rootBase}/chatHub`,
   ].filter((value, index, array): value is string =>
     Boolean(value) && array.indexOf(value) === index,
   );

@@ -52,6 +52,9 @@ export interface DashboardSummary {
     totalCount: number;
   };
   // Metrics from summary endpoint
+  totalCustomerAccounts?: number;
+  accountsWithOrders?: number;
+  conversionRate?: number;
   totalProducts?: number;
   totalCustomers?: number;
   recentOrders?: Array<{
@@ -62,12 +65,7 @@ export interface DashboardSummary {
     statusColor: string;
     date: string;
   }>;
-  topProducts?: Array<{
-    name: string;
-    sold: number;
-    revenue: number;
-    image: string;
-  }>;
+  topProducts?: HighlightProduct[];
 }
 
 export const getDashboardSummary = async (period: string = "month", startDate?: string, endDate?: string): Promise<DashboardSummary> => {
@@ -130,6 +128,18 @@ export const getDashboardSummary = async (period: string = "month", startDate?: 
       ),
       totalRevenueBeforeDiscount,
     },
+    topProducts: Array.isArray(summaryRoot?.topProducts)
+      ? summaryRoot.topProducts.map((p: any) => ({
+          productId: toSafeNumber(p?.productId ?? p?.ProductId),
+          productName: String(p?.productName ?? p?.ProductName ?? ""),
+          imageUrl: p?.imageUrl ?? p?.ImageUrl,
+          totalQuantity: toSafeNumber(p?.totalQuantity ?? p?.TotalQuantity),
+          totalRevenue: toSafeNumber(p?.totalRevenue ?? p?.TotalRevenue),
+          price: toSafeNumber(p?.price ?? p?.Price),
+          importPrice: toSafeNumber(p?.importPrice ?? p?.ImportPrice),
+          totalProfit: toSafeNumber(p?.totalProfit ?? p?.TotalProfit),
+        }))
+      : [],
   };
 
   // Fallback: some backend builds do not include totalProducts in summary.
@@ -583,6 +593,9 @@ export interface HighlightProduct {
   imageUrl: string | null;
   totalQuantity: number;
   totalRevenue: number;
+  price: number;
+  importPrice: number;
+  totalProfit: number;
 }
 
 export interface EventTrendCategory {
@@ -624,6 +637,15 @@ export interface AbandonedCartValue {
   totalLostValue: number;
 }
 
+export interface InactiveCustomer {
+  accountId: number;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  lastOrderDate: string | null;
+  daysSinceLastOrder: number;
+}
+
 export interface DashboardHighlights {
   topSpender: HighlightCustomer | null;
   mostFrequentBuyer: HighlightCustomer | null;
@@ -633,6 +655,7 @@ export interface DashboardHighlights {
   cancellationStats: CancellationStats;
   averageOrderValue: number;
   abandonedCartValue: AbandonedCartValue;
+  inactiveCustomers: InactiveCustomer[];
 }
 
 export const getDashboardInsights = async (startDate?: string, endDate?: string): Promise<DashboardHighlights> => {
