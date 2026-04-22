@@ -308,11 +308,13 @@ export default function AdminTemplates() {
     } catch (error: any) {
       console.error('❌ Error creating template:', error);
       console.error('Error response:', error.response);
-      console.error('Error message:', error.response?.data?.message || error.message);
+      console.error('Error message:', error.response?.data?.msg || error.response?.data?.message || error.message);
+      console.error('Error details:', error.response?.data?.errors || error.response?.data);
       console.error('Error status:', error.response?.status);
       console.log('=== END CREATE TEMPLATE (FAILED) ===');
       
-      alert(error.response?.data?.message || error.message || 'Không thể tạo template');
+      const errMsg = error.response?.data?.msg || error.response?.data?.message || error.message || 'Không thể tạo template';
+      alert(errMsg);
     } finally {
       setCreating(false);
       console.log('=== END CREATE TEMPLATE ===');
@@ -353,9 +355,10 @@ export default function AdminTemplates() {
     } catch (error: any) {
       console.error('❌ Error removing template:', error);
       console.error('Error response:', error.response);
-      console.error('Error message:', error.response?.data?.message || error.message);
+      console.error('Error message:', error.response?.data?.msg || error.response?.data?.message || error.message);
       
-      alert(error.response?.data?.message || error.message || 'Không thể gỡ giỏ mẫu');
+      const errMsg = error.response?.data?.msg || error.response?.data?.message || error.message || 'Không thể gỡ giỏ mẫu';
+      alert(errMsg);
     } finally {
       console.log('=== END REMOVE TEMPLATE ===');
     }
@@ -380,9 +383,10 @@ export default function AdminTemplates() {
     } catch (error: any) {
       console.error('❌ Error deleting product:', error);
       console.error('Error response:', error.response);
-      console.error('Error message:', error.response?.data?.message || error.message);
+      console.error('Error message:', error.response?.data?.msg || error.response?.data?.message || error.message);
       
-      alert(error.response?.data?.message || error.message || 'Không thể xóa sản phẩm');
+      const errMsg = error.response?.data?.msg || error.response?.data?.message || error.message || 'Không thể xóa sản phẩm';
+      alert(errMsg);
     } finally {
       console.log('=== END DELETE PRODUCT ===');
     }
@@ -398,7 +402,8 @@ export default function AdminTemplates() {
       fetchTemplates();
     } catch (error: any) {
       console.error('❌ Error hard deleting template:', error);
-      alert(error.response?.data?.message || error.message || 'Không thể xóa vĩnh viễn template');
+      const errMsg = error.response?.data?.msg || error.response?.data?.message || error.message || 'Không thể xóa vĩnh viễn template';
+      alert(errMsg);
     }
   };
 
@@ -684,13 +689,15 @@ export default function AdminTemplates() {
       console.error('Error message:', error.message);
       console.error('Error response status:', error.response?.status);
       console.error('Error response data:', error.response?.data);
-      console.error('Error response message:', error.response?.data?.message);
+      console.error('Error response message (msg):', error.response?.data?.msg);
+      console.error('Error response message (message):', error.response?.data?.message);
       console.error('Error response errors:', error.response?.data?.errors);
       console.error('Full error object:', JSON.stringify(error.response?.data, null, 2));
       console.error('Error stack:', error.stack);
       console.error('===========================');
       
-      alert(error.response?.data?.message || error.message || 'Không thể cập nhật sản phẩm');
+      const errMsg = error.response?.data?.msg || error.response?.data?.message || error.message || 'Không thể cập nhật sản phẩm';
+      alert(errMsg);
     } finally {
       setSaving(false);
       console.log('=== END UPDATE PRODUCT ===');
