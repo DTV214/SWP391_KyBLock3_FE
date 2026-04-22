@@ -64,7 +64,7 @@ export default function AdminApprovalQuotationsPage() {
         setStatusCounts(counts);
       } catch (err) {
         console.error(err);
-        setError("Không thể tải danh sách quotation cho admin.");
+        setError("Không thể tải danh sách báo giá cho quản trị viên.");
       } finally {
         setLoading(false);
       }
@@ -102,9 +102,9 @@ export default function AdminApprovalQuotationsPage() {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm flex flex-col gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-tet-primary">Quotations</h1>
+          <h1 className="text-2xl font-bold text-tet-primary">Báo giá</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Danh sách quotation dành cho admin theo dõi, review phí và phê duyệt.
+            Danh sách báo giá dành cho quản trị viên theo dõi, rà soát phí và phê duyệt.
           </p>
         </div>
 
@@ -154,7 +154,7 @@ export default function AdminApprovalQuotationsPage() {
         </div>
       ) : rows.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-500 shadow-sm">
-          Không có quotation nào.
+          Không có báo giá nào.
         </div>
       ) : (
         <div className="space-y-3">
@@ -177,7 +177,7 @@ export default function AdminApprovalQuotationsPage() {
                     </span>
                   </div>
                   <p className="text-sm text-gray-700">
-                    Công ty: {item.company || "N/A"}
+                    Công ty: {item.company || "Không có"}
                   </p>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     <Calendar className="h-4 w-4" />
