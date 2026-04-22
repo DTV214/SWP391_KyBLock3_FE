@@ -40,6 +40,11 @@ const statusIndexMap: Record<string, number> = {
   CANCELLED: 0,
 };
 
+const formatMoney = (value?: number | null) => {
+  if (typeof value !== "number") return "Chưa có";
+  return `${value.toLocaleString("vi-VN")}đ`;
+};
+
 export default function QuotationStatusPage() {
   const { id } = useParams();
   const location = useLocation();
@@ -93,6 +98,7 @@ export default function QuotationStatusPage() {
   const currentStatus = detail?.status || state.status || "DRAFT";
   const currentIndex = statusIndexMap[currentStatus] ?? 0;
   const statusMeta = getQuotationStatusMeta(currentStatus);
+  const hasVatRequest = detail?.requireVatInvoice === true;
 
   const fallbackItems = useMemo(() => state.items || [], [state.items]);
 
@@ -166,6 +172,11 @@ export default function QuotationStatusPage() {
               <div className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${statusMeta.badgeClass}`}>
                 {statusMeta.label}
               </div>
+              {hasVatRequest && (
+                <div className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                  Có VAT
+                </div>
+              )}
             </div>
           </div>
 
@@ -264,6 +275,52 @@ export default function QuotationStatusPage() {
               </div>
             </div>
           </div>
+
+          {detail && (
+            <div className={`mt-6 grid gap-6 ${hasVatRequest ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
+              <div className="rounded-3xl border border-[#f1e1d6] bg-white p-6">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-[#7a160e]/70">Tổng thanh toán dự kiến</h3>
+                <div className="mt-4 space-y-3 text-sm text-[#7b5a4c]">
+                  <div className="flex justify-between gap-4">
+                    <span>Trước VAT</span>
+                    <span className="font-semibold text-[#4a0d06]">{formatMoney(detail.totalAfterDiscount)}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span>VAT dự kiến</span>
+                    <span className="font-semibold text-[#4a0d06]">{formatMoney(detail.vatAmountPreview)}</span>
+                  </div>
+                  <div className="flex justify-between gap-4 border-t border-[#f1e1d6] pt-3 text-[#7a160e]">
+                    <span>Thanh toán gồm VAT</span>
+                    <span className="font-bold">{formatMoney(detail.finalPayablePreview)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {hasVatRequest && (
+                <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-800/80">Thông tin VAT</h3>
+                  <div className="mt-4 space-y-3 text-sm text-amber-900">
+                    <div className="flex justify-between gap-4">
+                      <span>Công ty</span>
+                      <span className="font-semibold text-right">{detail.vatCompanyName || "-"}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span>Mã số thuế</span>
+                      <span className="font-semibold text-right">{detail.vatCompanyTaxCode || "-"}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span>Địa chỉ</span>
+                      <span className="font-semibold text-right">{detail.vatCompanyAddress || "-"}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span>Email hóa đơn</span>
+                      <span className="font-semibold text-right">{detail.vatInvoiceEmail || "-"}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {currentStatus === "DRAFT" && (
             <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">

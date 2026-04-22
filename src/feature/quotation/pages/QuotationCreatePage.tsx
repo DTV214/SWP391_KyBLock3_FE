@@ -15,7 +15,7 @@ import {
 import { categoryService, type Category } from "@/api/categoryService";
 import {
   quotationService,
-  type ManualQuotationRequest,
+  type QuotationCreateManualRequest,
   type QuotationProduct,
   type QuotationProductDetail,
 } from "@/feature/quotation/services/quotationService";
@@ -37,6 +37,8 @@ const PRICE_PRESETS: { label: string; range: PriceRange }[] = [
 
 const ITEMS_PER_PAGE = 10;
 const GIFT_BOX_CATEGORY_VALUE = "__gift_box__";
+const VAT_RATE_PREVIEW = 0.08;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function QuotationCreatePage() {
   const navigate = useNavigate();
@@ -66,6 +68,11 @@ export default function QuotationCreatePage() {
     phone: "",
     desiredPriceNote: "",
     note: "",
+    requireVatInvoice: false,
+    vatCompanyName: "",
+    vatCompanyTaxCode: "",
+    vatCompanyAddress: "",
+    vatInvoiceEmail: "",
   });
 
   const getDisplayProduct = (product: QuotationProduct): QuotationProductDetail => {
@@ -201,6 +208,10 @@ const filteredProducts = useMemo(() => {
     (sum, item) => sum + item.quantity * (item.product.price || 0),
     0,
   );
+  const vatAmountPreview = form.requireVatInvoice
+    ? Math.round(totalPrice * VAT_RATE_PREVIEW)
+    : 0;
+  const finalPayablePreview = totalPrice + vatAmountPreview;
 
   const handleAddItem = (product: QuotationProduct) => {
     const draftQty = Math.max(1, draftQuantities[product.productid] || 1);
@@ -257,13 +268,35 @@ const filteredProducts = useMemo(() => {
       return;
     }
 
-    const payload: ManualQuotationRequest = {
-      company: form.company,
-      address: form.address,
-      email: form.email,
-      phone: form.phone,
-      desiredPriceNote: form.desiredPriceNote,
-      note: form.note,
+    if (form.requireVatInvoice) {
+      if (
+        !form.vatCompanyName.trim() ||
+        !form.vatCompanyTaxCode.trim() ||
+        !form.vatCompanyAddress.trim() ||
+        !form.vatInvoiceEmail.trim()
+      ) {
+        setFormError("Vui lòng nhập đầy đủ thông tin xuất hóa đơn VAT.");
+        return;
+      }
+
+      if (!EMAIL_PATTERN.test(form.vatInvoiceEmail.trim())) {
+        setFormError("Email nhận hóa đơn VAT không hợp lệ.");
+        return;
+      }
+    }
+
+    const payload: QuotationCreateManualRequest = {
+      company: form.company.trim(),
+      address: form.address.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      desiredPriceNote: form.desiredPriceNote.trim(),
+      note: form.note.trim(),
+      requireVatInvoice: form.requireVatInvoice,
+      vatCompanyName: form.requireVatInvoice ? form.vatCompanyName.trim() : null,
+      vatCompanyTaxCode: form.requireVatInvoice ? form.vatCompanyTaxCode.trim() : null,
+      vatCompanyAddress: form.requireVatInvoice ? form.vatCompanyAddress.trim() : null,
+      vatInvoiceEmail: form.requireVatInvoice ? form.vatInvoiceEmail.trim() : null,
       items: items.map((item) => ({
         productId: item.product.productid,
         quantity: item.quantity,
@@ -725,7 +758,13 @@ const filteredProducts = useMemo(() => {
               <div className="mt-5 border-t border-[#f1e1d6] pt-4 text-sm text-[#7b5a4c]">
                 <div className="flex justify-between"><span>Tổng sản phẩm:</span><span className="font-semibold">{totalItems}</span></div>
                 <div className="flex justify-between"><span>Tổng số lượng:</span><span className="font-semibold">{totalQuantity}</span></div>
-                <div className="flex justify-between"><span>Ước tính:</span><span className="font-semibold">{totalPrice.toLocaleString("vi-VN")}đ</span></div>
+                <div className="flex justify-between"><span>Ước tính trước VAT:</span><span className="font-semibold">{totalPrice.toLocaleString("vi-VN")}đ</span></div>
+                {form.requireVatInvoice && (
+                  <>
+                    <div className="flex justify-between"><span>VAT tạm tính (8%):</span><span className="font-semibold">{vatAmountPreview.toLocaleString("vi-VN")}đ</span></div>
+                    <div className="mt-2 flex justify-between border-t border-[#f1e1d6] pt-2 text-[#7a160e]"><span>Tạm tính gồm VAT:</span><span className="font-bold">{finalPayablePreview.toLocaleString("vi-VN")}đ</span></div>
+                  </>
+                )}
               </div>
 
               <div className="mt-4 flex items-center gap-2 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3 text-xs text-[#8a5b4f]">
@@ -741,6 +780,34 @@ const filteredProducts = useMemo(() => {
                 <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Số điện thoại *" value={form.phone} onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))} />
                 <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Ghi chú về ngân sách (tuỳ chọn)" value={form.desiredPriceNote} onChange={(event) => setForm((prev) => ({ ...prev, desiredPriceNote: event.target.value }))} />
                 <textarea rows={4} className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Ghi chú thêm (tuỳ chọn)" value={form.note} onChange={(event) => setForm((prev) => ({ ...prev, note: event.target.value }))} />
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] p-4">
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={form.requireVatInvoice}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        requireVatInvoice: event.target.checked,
+                      }))
+                    }
+                    className="mt-1 h-4 w-4 rounded border-[#d7b8a5] text-[#7a160e] focus:ring-[#7a160e]"
+                  />
+                  <span>
+                    <span className="block text-sm font-semibold text-[#7a160e]">Yêu cầu xuất hóa đơn VAT</span>
+                  </span>
+                </label>
+
+                {form.requireVatInvoice && (
+                  <div className="mt-4 space-y-3">
+                    <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Tên công ty xuất VAT *" value={form.vatCompanyName} onChange={(event) => setForm((prev) => ({ ...prev, vatCompanyName: event.target.value }))} />
+                    <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Mã số thuế *" value={form.vatCompanyTaxCode} onChange={(event) => setForm((prev) => ({ ...prev, vatCompanyTaxCode: event.target.value }))} />
+                    <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Địa chỉ công ty xuất VAT *" value={form.vatCompanyAddress} onChange={(event) => setForm((prev) => ({ ...prev, vatCompanyAddress: event.target.value }))} />
+                    <input type="email" className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Email nhận hóa đơn VAT *" value={form.vatInvoiceEmail} onChange={(event) => setForm((prev) => ({ ...prev, vatInvoiceEmail: event.target.value }))} />
+                  </div>
+                )}
               </div>
 
               {formError && <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600">{formError}</div>}

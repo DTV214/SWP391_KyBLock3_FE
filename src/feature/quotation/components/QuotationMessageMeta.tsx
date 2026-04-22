@@ -23,6 +23,7 @@ const ACTION_VALUE_LABELS: Record<string, string> = {
   START_REVIEW: "Bắt đầu rà soát",
   SEND_ADMIN: "Gửi quản trị viên",
   APPROVE: "Phê duyệt",
+  ADMIN_APPROVE: "Admin duyệt",
   REJECT: "Từ chối",
   NOTE: "Ghi chú",
 };

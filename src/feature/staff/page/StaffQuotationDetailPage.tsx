@@ -23,22 +23,29 @@ import {
 } from "@/feature/quotation/services/quotationService";
 import { getQuotationStatusMeta } from "@/feature/quotation/utils/quotationStatus";
 import QuotationMessageMeta from "@/feature/quotation/components/QuotationMessageMeta";
-
-type FeeFormState = {
-  isSubtracted: number;
-  price: string;
-  description: string;
-};
-
-const defaultFeeForm: FeeFormState = {
-  isSubtracted: 1,
-  price: "",
-  description: "",
-};
+import QuotationFeeFormFields from "@/feature/quotation/components/QuotationFeeFormFields";
+import {
+  DEFAULT_FEE_FORM as defaultFeeForm,
+  findExistingFixedFee,
+  getFeeFormForExistingFee,
+  isHiddenQuotationMessage,
+  resolveFeeFormPayload,
+  type FeeFormState,
+} from "@/feature/quotation/utils/quotationFeeOptions";
 
 const formatMoney = (value?: number | null) => {
   if (typeof value !== "number") return "Chưa có";
   return `${value.toLocaleString("vi-VN")}đ`;
+};
+
+const formatSignedMoney = (value: number | null | undefined, sign: "+" | "-") => {
+  if (typeof value !== "number") return "Chưa có";
+  return `${sign}${Math.abs(value).toLocaleString("vi-VN")}đ`;
+};
+
+type FetchDetailOptions = {
+  showLoading?: boolean;
+  includeFees?: boolean;
 };
 
 const formatDate = (value?: string | null) => {
@@ -109,23 +116,26 @@ export default function StaffQuotationDetailPage() {
     }
   };
 
-  const fetchDetail = async () => {
+  const fetchDetail = async ({
+    showLoading = true,
+    includeFees = true,
+  }: FetchDetailOptions = {}) => {
     if (!id) return;
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       setError(null);
       const response = await quotationService.getStaffQuotationById(id);
       const nextDetail = (response?.data || null) as QuotationDetail | null;
       setDetail(nextDetail);
 
-      if (nextDetail?.lines?.length) {
+      if (includeFees && nextDetail?.lines?.length) {
         await Promise.all(nextDetail.lines.map((line) => fetchFeesForItem(line.quotationItemId)));
       }
     } catch (err) {
       console.error(err);
       setError("Không thể tải chi tiết quotation.");
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -160,6 +170,11 @@ export default function StaffQuotationDetailPage() {
     if (!detail?.lines) return 0;
     return detail.lines.reduce((sum, line) => sum + (line.quantity || 0), 0);
   }, [detail]);
+
+  const visibleMessages = useMemo(
+    () => (detail?.messages || []).filter((message) => !isHiddenQuotationMessage(message)),
+    [detail?.messages],
+  );
 
   const handleStartReview = async () => {
     if (!id) return;
@@ -200,19 +215,37 @@ export default function StaffQuotationDetailPage() {
       setError("Giá phí phải lớn hơn 0.");
       return;
     }
+    const feePayload = resolveFeeFormPayload(form);
+    if (!feePayload) {
+      setError("Vui lòng nhập mô tả cho phí khác.");
+      return;
+    }
+    const existingFixedFee =
+      form.descriptionType !== "OTHER"
+        ? findExistingFixedFee(feesByItem[quotationItemId] || [], form.descriptionType)
+        : undefined;
 
     try {
       setFeeSubmitting((prev) => ({ ...prev, [quotationItemId]: true }));
       setError(null);
-      await quotationService.createStaffFee(id, {
-        quotationItemId,
-        isSubtracted: form.isSubtracted,
-        price,
-        description: form.description,
-      });
+      if (existingFixedFee) {
+        await quotationService.updateStaffFee(id, existingFixedFee.quotationFeeId, {
+          quotationFeeId: existingFixedFee.quotationFeeId,
+          isSubtracted: feePayload.isSubtracted,
+          price,
+          description: feePayload.description,
+        });
+      } else {
+        await quotationService.createStaffFee(id, {
+          quotationItemId,
+          isSubtracted: feePayload.isSubtracted,
+          price,
+          description: feePayload.description,
+        });
+      }
       setNewFeeForms((prev) => ({ ...prev, [quotationItemId]: { ...defaultFeeForm } }));
       await fetchFeesForItem(quotationItemId);
-      await fetchDetail();
+      await fetchDetail({ showLoading: false, includeFees: false });
     } catch (err: any) {
       console.error(err);
       setError(err?.response?.data?.msg || "Không thể tạo phí.");
@@ -223,11 +256,7 @@ export default function StaffQuotationDetailPage() {
 
   const openEditFee = (fee: QuotationFee) => {
     setEditingFeeId(fee.quotationFeeId);
-    setEditFeeForm({
-      isSubtracted: fee.isSubtracted,
-      price: String(fee.price),
-      description: fee.description || "",
-    });
+    setEditFeeForm(getFeeFormForExistingFee(fee));
   };
 
   const handleUpdateFee = async (quotationItemId: number, fee: QuotationFee) => {
@@ -237,20 +266,25 @@ export default function StaffQuotationDetailPage() {
       setError("Giá phí phải lớn hơn 0.");
       return;
     }
+    const feePayload = resolveFeeFormPayload(editFeeForm);
+    if (!feePayload) {
+      setError("Vui lòng nhập mô tả cho phí khác.");
+      return;
+    }
 
     try {
       setFeeSubmitting((prev) => ({ ...prev, [quotationItemId]: true }));
       setError(null);
       await quotationService.updateStaffFee(id, fee.quotationFeeId, {
         quotationFeeId: fee.quotationFeeId,
-        isSubtracted: editFeeForm.isSubtracted,
+        isSubtracted: feePayload.isSubtracted,
         price,
-        description: editFeeForm.description,
+        description: feePayload.description,
       });
       setEditingFeeId(null);
       setEditFeeForm({ ...defaultFeeForm });
       await fetchFeesForItem(quotationItemId);
-      await fetchDetail();
+      await fetchDetail({ showLoading: false, includeFees: false });
     } catch (err: any) {
       console.error(err);
       setError(err?.response?.data?.msg || "Không thể cập nhật phí.");
@@ -268,7 +302,7 @@ export default function StaffQuotationDetailPage() {
       setError(null);
       await quotationService.deleteStaffFee(id, feeId);
       await fetchFeesForItem(quotationItemId);
-      await fetchDetail();
+      await fetchDetail({ showLoading: false, includeFees: false });
     } catch (err: any) {
       console.error(err);
       setError(err?.response?.data?.msg || "Không thể xóa phí.");
@@ -385,14 +419,27 @@ export default function StaffQuotationDetailPage() {
                 </div>
               </div>
 
+              {detail.requireVatInvoice && (
+                <div className="bg-amber-50 rounded-2xl border border-amber-200 p-6 shadow-sm">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-amber-800">Thông tin VAT</h3>
+                  <div className="mt-4 space-y-2 text-sm text-amber-900">
+                    <p>Công ty: <span className="font-semibold">{detail.vatCompanyName || "-"}</span></p>
+                    <p>Mã số thuế: <span className="font-semibold">{detail.vatCompanyTaxCode || "-"}</span></p>
+                    <p>Địa chỉ: <span className="font-semibold">{detail.vatCompanyAddress || "-"}</span></p>
+                    <p>Email hóa đơn: <span className="font-semibold">{detail.vatInvoiceEmail || "-"}</span></p>
+                  </div>
+                </div>
+              )}
+
               <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-[#7a160e]/80">Tổng hợp giá</h3>
                 <div className="mt-4 space-y-2 text-sm">
                   <p>Tổng gốc: <span className="font-semibold">{formatMoney(detail.totalOriginal)}</span></p>
-                  <p>Tổng giảm trừ: <span className="font-semibold text-emerald-700">{formatMoney(detail.totalSubtract)}</span></p>
-                  <p>Tổng cộng thêm: <span className="font-semibold text-rose-700">{formatMoney(detail.totalAdd)}</span></p>
-                  <p>Discount amount: <span className="font-semibold">{formatMoney(detail.totalDiscountAmount)}</span></p>
+                  <p>Tổng giảm trừ: <span className="font-semibold text-emerald-700">{formatSignedMoney(detail.totalSubtract, "-")}</span></p>
+                  <p>Tổng cộng thêm: <span className="font-semibold text-rose-700">{formatSignedMoney(detail.totalAdd, "+")}</span></p>
                   <p className="pt-2 border-t border-gray-100">Sau điều chỉnh: <span className="font-semibold text-[#7a160e]">{formatMoney(detail.totalAfterDiscount)}</span></p>
+                  <p>VAT dự kiến: <span className="font-semibold">{formatMoney(detail.vatAmountPreview)}</span></p>
+                  <p className="pt-2 border-t border-gray-100">Thanh toán gồm VAT: <span className="font-semibold text-[#7a160e]">{formatMoney(detail.finalPayablePreview)}</span></p>
                 </div>
                 <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-600 space-y-2">
                   <p>Ghi chú ngân sách: {detail.desiredPriceNote || "-"}</p>
@@ -409,6 +456,9 @@ export default function StaffQuotationDetailPage() {
                     const fees = feesByItem[line.quotationItemId] || [];
                     const itemForm = newFeeForms[line.quotationItemId] || defaultFeeForm;
                     const isItemBusy = feeLoading[line.quotationItemId] || feeSubmitting[line.quotationItemId];
+                    const willUpdateFixedFee =
+                      itemForm.descriptionType !== "OTHER" &&
+                      Boolean(findExistingFixedFee(fees, itemForm.descriptionType));
 
                     return (
                       <div key={line.quotationItemId} className="rounded-xl border border-[#f1e1d6] bg-[#fffaf5] p-4">
@@ -448,39 +498,10 @@ export default function StaffQuotationDetailPage() {
                                 <div key={fee.quotationFeeId} className="rounded-lg border border-gray-100 p-2">
                                   {editingFeeId === fee.quotationFeeId ? (
                                     <div className="space-y-2">
-                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                        <select
-                                          value={editFeeForm.isSubtracted}
-                                          onChange={(e) =>
-                                            setEditFeeForm((prev) => ({
-                                              ...prev,
-                                              isSubtracted: Number(e.target.value),
-                                            }))
-                                          }
-                                          className="rounded-md border border-gray-200 px-2 py-1 text-xs"
-                                        >
-                                          <option value={1}>Phí cộng thêm</option>
-                                          <option value={0}>Phí giảm trừ</option>
-                                        </select>
-                                        <input
-                                          type="number"
-                                          min={1}
-                                          value={editFeeForm.price}
-                                          onChange={(e) =>
-                                            setEditFeeForm((prev) => ({ ...prev, price: e.target.value }))
-                                          }
-                                          className="rounded-md border border-gray-200 px-2 py-1 text-xs"
-                                          placeholder="Giá phí"
-                                        />
-                                        <input
-                                          value={editFeeForm.description}
-                                          onChange={(e) =>
-                                            setEditFeeForm((prev) => ({ ...prev, description: e.target.value }))
-                                          }
-                                          className="rounded-md border border-gray-200 px-2 py-1 text-xs"
-                                          placeholder="Mô tả"
-                                        />
-                                      </div>
+                                      <QuotationFeeFormFields
+                                        form={editFeeForm}
+                                        onChange={setEditFeeForm}
+                                      />
                                       <div className="flex items-center gap-2 justify-end">
                                         <button
                                           type="button"
@@ -532,49 +553,15 @@ export default function StaffQuotationDetailPage() {
 
                         <div className="mt-3 rounded-lg border border-[#ead8cc] bg-white p-3">
                           <p className="text-xs font-semibold text-[#7a160e]">Thêm phí mới</p>
-                          <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2">
-                            <select
-                              value={itemForm.isSubtracted}
-                              onChange={(e) =>
+                          <div className="mt-2">
+                            <QuotationFeeFormFields
+                              form={itemForm}
+                              onChange={(nextForm) =>
                                 setNewFeeForms((prev) => ({
                                   ...prev,
-                                  [line.quotationItemId]: {
-                                    ...itemForm,
-                                    isSubtracted: Number(e.target.value),
-                                  },
+                                  [line.quotationItemId]: nextForm,
                                 }))
                               }
-                              className="rounded-md border border-gray-200 px-2 py-1 text-xs"
-                            >
-                              <option value={1}>Phí cộng thêm</option>
-                              <option value={0}>Phí giảm trừ</option>
-                            </select>
-                            <input
-                              type="number"
-                              min={1}
-                              value={itemForm.price}
-                              onChange={(e) =>
-                                setNewFeeForms((prev) => ({
-                                  ...prev,
-                                  [line.quotationItemId]: { ...itemForm, price: e.target.value },
-                                }))
-                              }
-                              className="rounded-md border border-gray-200 px-2 py-1 text-xs"
-                              placeholder="Giá phí"
-                            />
-                            <input
-                              value={itemForm.description}
-                              onChange={(e) =>
-                                setNewFeeForms((prev) => ({
-                                  ...prev,
-                                  [line.quotationItemId]: {
-                                    ...itemForm,
-                                    description: e.target.value,
-                                  },
-                                }))
-                              }
-                              className="rounded-md border border-gray-200 px-2 py-1 text-xs"
-                              placeholder="Mô tả"
                             />
                           </div>
                           <div className="mt-2 flex justify-end">
@@ -585,7 +572,7 @@ export default function StaffQuotationDetailPage() {
                               className="inline-flex items-center gap-1 rounded-md bg-[#7a160e] px-3 py-1.5 text-xs text-white disabled:opacity-60"
                             >
                               <Plus className="h-3.5 w-3.5" />
-                              Thêm phí
+                              {willUpdateFixedFee ? "Cập nhật phí" : "Thêm phí"}
                             </button>
                           </div>
                         </div>
@@ -600,9 +587,9 @@ export default function StaffQuotationDetailPage() {
                   <ScrollText className="h-4 w-4" />
                   Lịch sử trao đổi
                 </h3>
-                {detail.messages && detail.messages.length > 0 ? (
+                {visibleMessages.length > 0 ? (
                   <div className="mt-4 space-y-3">
-                    {detail.messages.map((msg) => (
+                    {visibleMessages.map((msg) => (
                       <div key={msg.quotationMessageId} className="rounded-lg border border-[#f1e1d6] bg-[#fffaf5] p-3 text-sm">
                         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                           <span className={`rounded-full px-2 py-0.5 font-semibold ${getRoleBadgeClass(msg.fromRole)}`}>{msg.fromRole}</span>
