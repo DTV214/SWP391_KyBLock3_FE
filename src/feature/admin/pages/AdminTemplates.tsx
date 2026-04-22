@@ -6,6 +6,8 @@ import { configService, type ProductConfig } from "@/api/configService";
 import { categoryService, type Category } from "@/api/categoryService";
 import { configDetailServiceAPI } from "@/api";
 import type { ConfigDetailDto, CreateConfigDetailRequest, UpdateConfigDetailRequest } from "@/api/dtos/productConfig.dto";
+import axiosClient from "@/api/axiosClient";
+import { API_ENDPOINTS } from "@/api/apiConfig";
 
 interface ProductDetailWithChild extends ProductDetailRequest {
   childProduct?: Product;
@@ -68,6 +70,21 @@ export default function AdminTemplates() {
         );
       }, 1000);
     });
+  };
+
+  void uploadMedia;
+
+  const uploadTemplateImage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res: any = await axiosClient.post(API_ENDPOINTS.MEDIA.UPLOAD, formData);
+    const url = res?.data?.url;
+
+    if (!url) {
+      throw new Error("Upload ảnh thất bại: không nhận được URL từ server");
+    }
+
+    return url;
   };
 
   const fetchTemplates = async () => {
@@ -261,7 +278,7 @@ export default function AdminTemplates() {
       // Upload ảnh nếu có file mới chọn
       let finalImageUrl = imageUrl || '';
       if (imageFile) {
-        finalImageUrl = await uploadMedia(imageFile);
+        finalImageUrl = await uploadTemplateImage(imageFile);
       }
       
       const createData: CreateComboProductRequest = {
@@ -617,12 +634,17 @@ export default function AdminTemplates() {
     try {
       setSaving(true);
       const token = localStorage.getItem('token') || '';
+      let finalImageUrl = imageUrl || '';
+
+      if (imageFile) {
+        finalImageUrl = await uploadTemplateImage(imageFile);
+      }
       
       const updateData: UpdateComboProductRequest = {
         productname,
         category: "",  // Empty for baskets/combos (no category needed)
         description: description || undefined,
-        imageUrl: imageUrl || undefined,
+        imageUrl: finalImageUrl || undefined,
         status,
         productDetails: productDetails.map(pd => ({
           productid: pd.productid,
