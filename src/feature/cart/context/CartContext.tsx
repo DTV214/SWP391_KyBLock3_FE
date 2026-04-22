@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Product } from '@/api/productService';
-import { cartService, type CartResponse, type AddToCartRequest } from '@/feature/cart/services/cartService';
+import { cartService, type CartResponse, type AddToCartRequest, type CartItemResponse } from '@/feature/cart/services/cartService';
 
 export interface CartItem extends Product {
     cartQuantity: number;
@@ -35,18 +35,48 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Helper: Get token
     const getToken = () => localStorage.getItem('token');
 
+    const mapCartItem = (item: CartItemResponse): CartItem => ({
+        productid: item.productId,
+        productname: item.productName,
+        price: item.price,
+        imageUrl: item.imageUrl,
+        sku: item.sku,
+        cartQuantity: item.quantity,
+        cartDetailId: item.cartDetailId,
+    });
+
+    const mergeCartItemsPreservingOrder = (
+        previousItems: CartItem[],
+        nextItems: CartItem[],
+    ) => {
+        if (previousItems.length === 0) {
+            return nextItems;
+        }
+
+        const nextItemsByProductId = new Map(
+            nextItems.map((item) => [item.productid, item] as const),
+        );
+
+        const orderedExistingItems = previousItems
+            .map((item) => nextItemsByProductId.get(item.productid))
+            .filter((item): item is CartItem => Boolean(item));
+
+        const existingProductIds = new Set(
+            previousItems.map((item) => item.productid),
+        );
+        const newItems = nextItems.filter(
+            (item) => !existingProductIds.has(item.productid),
+        );
+
+        return [...orderedExistingItems, ...newItems];
+    };
+
     // Hàm cập nhật state chung từ CartResponse
     const updateCartState = (response: CartResponse) => {
-        const updatedItems = response.items.map((item) => ({
-            productid: item.productId,
-            productname: item.productName,
-            price: item.price,
-            imageUrl: item.imageUrl,
-            sku: item.sku,
-            cartQuantity: item.quantity,
-            cartDetailId: item.cartDetailId,
-        }));
-        setItems(updatedItems);
+        const nextItems = response.items.map(mapCartItem);
+        setItems((previousItems) =>
+            mergeCartItemsPreservingOrder(previousItems, nextItems),
+        );
         setItemCount(response.itemCount || 0); // Cập nhật số lượng mới từ API
     };
 
