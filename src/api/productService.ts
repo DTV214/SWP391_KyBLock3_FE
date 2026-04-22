@@ -1,4 +1,4 @@
-﻿import axiosClient from './axiosClient';
+import axiosClient from './axiosClient';
 import { API_ENDPOINTS } from './apiConfig';
 import { inventoryAdminService } from './inventoryAdminService';
 import { stockUtils } from '@/lib/stockUtils';
@@ -143,14 +143,14 @@ const buildUpdateNormalFormData = (product: Product): FormData => {
 
 const buildUpdateCustomFormData = (basket: UpdateComboProductRequest): FormData => {
   const form = new FormData();
-  if (basket.productname) form.append('productname', basket.productname);
-  if (basket.description != null) form.append('description', basket.description);
-  if (basket.status) form.append('status', basket.status);
-  if (basket.imageUrl) form.append('imageUrl', basket.imageUrl);
+  if (basket.productname) form.append('Productname', basket.productname);
+  if (basket.description != null) form.append('Description', basket.description);
+  if (basket.status) form.append('Status', basket.status);
+  if (basket.imageUrl) form.append('ImageUrl', basket.imageUrl);
   if (basket.productDetails) {
     basket.productDetails.forEach((pd, i) => {
-      if (pd.productid != null) form.append(`productDetails[${i}].productid`, String(pd.productid));
-      if (pd.quantity != null) form.append(`productDetails[${i}].quantity`, String(pd.quantity));
+      if (pd.productid != null) form.append(`ProductDetails[${i}].Productid`, String(pd.productid));
+      if (pd.quantity != null) form.append(`ProductDetails[${i}].Quantity`, String(pd.quantity));
     });
   }
   return form;
@@ -158,14 +158,14 @@ const buildUpdateCustomFormData = (basket: UpdateComboProductRequest): FormData 
 
 const buildCreateComboFormData = (basket: CreateComboProductRequest): FormData => {
   const form = new FormData();
-  if (basket.configid != null) form.append('configid', String(basket.configid));
-  form.append('productname', basket.productname);
-  if (basket.description) form.append('description', basket.description);
-  if (basket.status) form.append('status', basket.status);
-  if (basket.imageUrl) form.append('imageUrl', basket.imageUrl);
+  if (basket.configid != null) form.append('Configid', String(basket.configid));
+  form.append('Productname', basket.productname);
+  if (basket.description) form.append('Description', basket.description);
+  if (basket.status) form.append('Status', basket.status);
+  if (basket.imageUrl) form.append('ImageUrl', basket.imageUrl);
   basket.productDetails.forEach((pd, i) => {
-    if (pd.productid != null) form.append(`productDetails[${i}].productid`, String(pd.productid));
-    if (pd.quantity != null) form.append(`productDetails[${i}].quantity`, String(pd.quantity));
+    if (pd.productid != null) form.append(`ProductDetails[${i}].Productid`, String(pd.productid));
+    if (pd.quantity != null) form.append(`ProductDetails[${i}].Quantity`, String(pd.quantity));
   });
   return form;
 };

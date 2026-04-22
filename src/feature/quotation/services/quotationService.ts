@@ -46,7 +46,15 @@ export interface ManualQuotationItem {
   quantity: number;
 }
 
-export interface ManualQuotationRequest {
+export interface QuotationVatRequestFields {
+  requireVatInvoice: boolean;
+  vatCompanyName?: string | null;
+  vatCompanyTaxCode?: string | null;
+  vatCompanyAddress?: string | null;
+  vatInvoiceEmail?: string | null;
+}
+
+export interface QuotationCreateManualRequest extends QuotationVatRequestFields {
   company: string;
   address: string;
   email: string;
@@ -56,23 +64,52 @@ export interface ManualQuotationRequest {
   items: ManualQuotationItem[];
 }
 
-export interface ManualQuotationResponse {
+export interface QuotationUpdateDraftRequest extends QuotationCreateManualRequest {}
+
+export interface QuotationRecommendRequest extends QuotationVatRequestFields {
+  company: string;
+  address: string;
+  email: string;
+  phone: string;
+  desiredBudget?: number | null;
+  desiredPriceNote?: string;
+  note?: string;
+  items?: ManualQuotationItem[];
+}
+
+export interface QuotationSimpleDto {
   quotationId: number;
   status: string;
   quotationType: string;
   desiredBudget?: number | null;
   totalPrice?: number | null;
+  requireVatInvoice: boolean;
+  vatRatePreview: number;
+  vatAmountPreview: number;
+  finalPayablePreview: number;
   revision: number;
 }
 
-export interface QuotationSummary {
+export interface QuotationListItemDto {
   quotationId: number;
   status: string;
   requestDate: string;
   company: string;
   totalPrice?: number | null;
+  requireVatInvoice: boolean;
+  vatRatePreview: number;
+  vatAmountPreview: number;
+  finalPayablePreview: number;
   revision: number;
 }
+
+export interface RecommendPreviewDto {
+  quotation: QuotationSimpleDto;
+}
+
+export type ManualQuotationRequest = QuotationCreateManualRequest;
+export type ManualQuotationResponse = QuotationSimpleDto;
+export type QuotationSummary = QuotationListItemDto;
 
 export interface QuotationFee {
   quotationFeeId: number;
@@ -107,7 +144,7 @@ export interface QuotationMessage {
   metaJson?: string | null;
 }
 
-export interface QuotationDetail {
+export interface QuotationDetailDto {
   quotationId: number;
   accountId: number;
   orderId?: number | null;
@@ -127,14 +164,24 @@ export interface QuotationDetail {
   phone: string;
   desiredPriceNote?: string | null;
   note?: string | null;
+  requireVatInvoice: boolean;
+  vatCompanyName?: string | null;
+  vatCompanyTaxCode?: string | null;
+  vatCompanyAddress?: string | null;
+  vatInvoiceEmail?: string | null;
   totalOriginal?: number | null;
   totalSubtract?: number | null;
   totalAdd?: number | null;
   totalAfterDiscount?: number | null;
   totalDiscountAmount?: number | null;
+  vatRatePreview: number;
+  vatAmountPreview: number;
+  finalPayablePreview: number;
   lines: QuotationLine[];
   messages?: QuotationMessage[];
 }
+
+export type QuotationDetail = QuotationDetailDto;
 
 export interface CreateQuotationFeeRequest {
   staffAccountId?: number;
@@ -184,8 +231,18 @@ export const quotationService = {
     return response;
   },
 
-  createManual: async (payload: ManualQuotationRequest) => {
+  createManual: async (payload: QuotationCreateManualRequest) => {
     const response = await axiosClient.post(`${BASE_URL}/quotations/manual`, payload);
+    return response;
+  },
+
+  updateDraft: async (id: number | string, payload: QuotationUpdateDraftRequest) => {
+    const response = await axiosClient.put(`${BASE_URL}/quotations/${id}/draft`, payload);
+    return response;
+  },
+
+  requestRecommendation: async (payload: QuotationRecommendRequest) => {
+    const response = await axiosClient.post(`${BASE_URL}/quotations/recommend/request`, payload);
     return response;
   },
 
@@ -219,6 +276,14 @@ export const quotationService = {
     payload: CustomerQuotationDecisionRequest,
   ) => {
     const response = await axiosClient.post(`${BASE_URL}/quotations/${id}/customer-reject`, payload);
+    return response;
+  },
+
+  confirmRecommendedQuotation: async (
+    id: number | string,
+    payload: CustomerQuotationDecisionRequest = {},
+  ) => {
+    const response = await axiosClient.post(`${BASE_URL}/quotations/${id}/recommend/confirm`, payload);
     return response;
   },
 

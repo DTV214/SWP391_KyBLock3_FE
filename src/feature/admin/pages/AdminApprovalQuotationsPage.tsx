@@ -160,6 +160,9 @@ export default function AdminApprovalQuotationsPage() {
         <div className="space-y-3">
           {paginatedRows.map((item) => {
             const statusMeta = getQuotationStatusMeta(item.status);
+            const displayTotal = item.requireVatInvoice
+              ? item.finalPayablePreview
+              : item.totalPrice;
             return (
               <div
                 key={item.quotationId}
@@ -175,6 +178,11 @@ export default function AdminApprovalQuotationsPage() {
                     >
                       {statusMeta.label}
                     </span>
+                    {item.requireVatInvoice && (
+                      <span className="text-xs px-2 py-1 rounded-full border border-amber-200 bg-amber-50 font-semibold text-amber-700">
+                        Có VAT
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-gray-700">
                     Công ty: {item.company || "Không có"}
@@ -186,7 +194,17 @@ export default function AdminApprovalQuotationsPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="text-right">
+                  {item.requireVatInvoice && (
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">Tổng gồm VAT</p>
+                      <p className="font-semibold text-[#7a160e]">
+                        {typeof displayTotal === "number"
+                          ? `${displayTotal.toLocaleString("vi-VN")}đ`
+                          : "Chưa có"}
+                      </p>
+                    </div>
+                  )}
+                  <div className={`text-right ${item.requireVatInvoice ? "hidden" : ""}`}>
                     <p className="text-xs text-gray-500">Tổng tiền</p>
                     <p className="font-semibold text-[#7a160e]">
                       {item.totalPrice
