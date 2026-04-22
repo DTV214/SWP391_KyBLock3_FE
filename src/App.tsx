@@ -8,7 +8,6 @@ import {
 import Navbar from "./layouts/components/Navbar";
 import Footer from "./layouts/components/Footer";
 import BackToTop from "./components/common/BackToTop";
-import ChatBot from "./components/common/ChatBot";
 import { CartProvider } from "./feature/cart/context/CartContext";
 import CartSidebar from "./feature/cart/components/CartSidebar";
 import "./App.css";
@@ -275,7 +274,6 @@ function App() {
 
         <Footer />
         <BackToTop />
-        <ChatBot />
         <CartSidebar />
         <CustomerChatWidget />
       </div>

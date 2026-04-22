@@ -343,7 +343,9 @@ export default function CustomerChatWidget() {
       : null;
 
   return (
-    <div className="fixed bottom-6 right-24 z-[200] max-md:bottom-6 max-md:right-20">
+    <div
+      className={`fixed bottom-6 right-6 ${isOpen ? "z-[10000]" : "z-[200]"}`}
+    >
       {isOpen ? (
         <div className="w-[90vw] max-w-[360px] h-[520px] bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden flex flex-col">
           <div className="bg-tet-primary text-white px-4 py-3 flex items-center justify-between">
