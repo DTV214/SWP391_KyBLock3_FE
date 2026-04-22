@@ -10,8 +10,9 @@ import { DEFAULT_FEE_FORM as defaultFeeForm, findExistingFixedFee, getFeeFormFor
 const formatMoney = (value?: number | null) => (typeof value === "number" ? `${value.toLocaleString("vi-VN")}đ` : "Chưa có");
 const formatSignedMoney = (value: number | null | undefined, sign: "+" | "-") => (typeof value === "number" ? `${sign}${Math.abs(value).toLocaleString("vi-VN")}đ` : "Chưa có");
 const formatDate = (value?: string | null) => (value ? new Date(value).toLocaleString("vi-VN") : "-");
+type FetchDetailOptions = { showLoading?: boolean; includeFees?: boolean };
 const getRoleBadgeClass = (role?: string | null) => role === "STAFF" ? "bg-amber-100 text-amber-800 border border-amber-200" : role === "ADMIN" ? "bg-violet-100 text-violet-800 border border-violet-200" : role === "CUSTOMER" ? "bg-sky-100 text-sky-800 border border-sky-200" : "bg-slate-100 text-slate-700 border border-slate-200";
-const getActionBadgeClass = (action?: string | null) => action === "SUBMIT" ? "bg-blue-50 text-blue-700" : action === "START_REVIEW" ? "bg-amber-50 text-amber-700" : action === "SEND_ADMIN" ? "bg-violet-50 text-violet-700" : action === "APPROVE" ? "bg-emerald-50 text-emerald-700" : action === "REJECT" ? "bg-red-50 text-red-700" : action === "NOTE" ? "bg-gray-100 text-gray-700" : "bg-slate-100 text-slate-700";
+const getActionBadgeClass = (action?: string | null) => action === "SUBMIT" ? "bg-blue-50 text-blue-700" : action === "START_REVIEW" ? "bg-amber-50 text-amber-700" : action === "SEND_ADMIN" ? "bg-violet-50 text-violet-700" : action === "APPROVE" || action === "ADMIN_APPROVE" ? "bg-emerald-50 text-emerald-700" : action === "REJECT" ? "bg-red-50 text-red-700" : action === "NOTE" ? "bg-gray-100 text-gray-700" : "bg-slate-100 text-slate-700";
 const ROLE_LABELS: Record<string, string> = {
   STAFF: "Nhân viên",
   ADMIN: "Quản trị viên",
@@ -22,6 +23,7 @@ const ACTION_LABELS: Record<string, string> = {
   START_REVIEW: "Bắt đầu rà soát",
   SEND_ADMIN: "Gửi quản trị viên",
   APPROVE: "Phê duyệt",
+  ADMIN_APPROVE: "Admin duyệt",
   REJECT: "Từ chối",
   NOTE: "Ghi chú",
 };
@@ -72,10 +74,10 @@ export default function AdminApprovalQuotationDetailPage() {
     }
   };
 
-  const fetchDetail = async () => {
+  const fetchDetail = async ({ showLoading = true, includeFees = true }: FetchDetailOptions = {}) => {
     if (!id) return;
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       setError(null);
       const [staffResult, adminResult] = await Promise.allSettled([quotationService.getStaffQuotationById(id), quotationService.getAdminQuotationById(id)]);
       const staffDetail = staffResult.status === "fulfilled" ? ((staffResult.value?.data || null) as QuotationDetail | null) : null;
@@ -89,13 +91,14 @@ export default function AdminApprovalQuotationDetailPage() {
       }
       setDetailMode(nextMode);
       setDetail(nextDetail);
-      if (nextMode === "staff" && nextDetail.lines?.length) await Promise.all(nextDetail.lines.map((line) => fetchFeesForItem(line.quotationItemId)));
-      else { setFeesByItem({}); setNewFeeForms({}); }
+      if (nextMode === "staff") {
+        if (includeFees && nextDetail.lines?.length) await Promise.all(nextDetail.lines.map((line) => fetchFeesForItem(line.quotationItemId)));
+      } else { setFeesByItem({}); setNewFeeForms({}); }
     } catch (err) {
       console.error(err);
       setError("Không thể tải chi tiết báo giá cho quản trị viên.");
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -147,7 +150,7 @@ export default function AdminApprovalQuotationDetailPage() {
       else await quotationService.createStaffFee(id, { quotationItemId, isSubtracted: feePayload.isSubtracted, price, description: feePayload.description });
       setNewFeeForms((prev) => ({ ...prev, [quotationItemId]: { ...defaultFeeForm } }));
       await fetchFeesForItem(quotationItemId);
-      await fetchDetail();
+      await fetchDetail({ showLoading: false, includeFees: false });
     } catch (err: any) {
       console.error(err);
       setError(err?.response?.data?.msg || "Không thể tạo phí.");
@@ -170,7 +173,7 @@ export default function AdminApprovalQuotationDetailPage() {
       setEditingFeeId(null);
       setEditFeeForm({ ...defaultFeeForm });
       await fetchFeesForItem(quotationItemId);
-      await fetchDetail();
+      await fetchDetail({ showLoading: false, includeFees: false });
     } catch (err: any) {
       console.error(err);
       setError(err?.response?.data?.msg || "Không thể cập nhật phí.");
@@ -185,7 +188,7 @@ export default function AdminApprovalQuotationDetailPage() {
       setError(null);
       await quotationService.deleteStaffFee(id, feeId);
       await fetchFeesForItem(quotationItemId);
-      await fetchDetail();
+      await fetchDetail({ showLoading: false, includeFees: false });
     } catch (err: any) {
       console.error(err);
       setError(err?.response?.data?.msg || "Không thể xóa phí.");

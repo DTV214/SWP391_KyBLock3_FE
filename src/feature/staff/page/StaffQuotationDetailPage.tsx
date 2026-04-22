@@ -43,6 +43,11 @@ const formatSignedMoney = (value: number | null | undefined, sign: "+" | "-") =>
   return `${sign}${Math.abs(value).toLocaleString("vi-VN")}đ`;
 };
 
+type FetchDetailOptions = {
+  showLoading?: boolean;
+  includeFees?: boolean;
+};
+
 const formatDate = (value?: string | null) => {
   if (!value) return "-";
   return new Date(value).toLocaleString("vi-VN");
@@ -111,23 +116,26 @@ export default function StaffQuotationDetailPage() {
     }
   };
 
-  const fetchDetail = async () => {
+  const fetchDetail = async ({
+    showLoading = true,
+    includeFees = true,
+  }: FetchDetailOptions = {}) => {
     if (!id) return;
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       setError(null);
       const response = await quotationService.getStaffQuotationById(id);
       const nextDetail = (response?.data || null) as QuotationDetail | null;
       setDetail(nextDetail);
 
-      if (nextDetail?.lines?.length) {
+      if (includeFees && nextDetail?.lines?.length) {
         await Promise.all(nextDetail.lines.map((line) => fetchFeesForItem(line.quotationItemId)));
       }
     } catch (err) {
       console.error(err);
       setError("Không thể tải chi tiết quotation.");
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -237,7 +245,7 @@ export default function StaffQuotationDetailPage() {
       }
       setNewFeeForms((prev) => ({ ...prev, [quotationItemId]: { ...defaultFeeForm } }));
       await fetchFeesForItem(quotationItemId);
-      await fetchDetail();
+      await fetchDetail({ showLoading: false, includeFees: false });
     } catch (err: any) {
       console.error(err);
       setError(err?.response?.data?.msg || "Không thể tạo phí.");
@@ -276,7 +284,7 @@ export default function StaffQuotationDetailPage() {
       setEditingFeeId(null);
       setEditFeeForm({ ...defaultFeeForm });
       await fetchFeesForItem(quotationItemId);
-      await fetchDetail();
+      await fetchDetail({ showLoading: false, includeFees: false });
     } catch (err: any) {
       console.error(err);
       setError(err?.response?.data?.msg || "Không thể cập nhật phí.");
@@ -294,7 +302,7 @@ export default function StaffQuotationDetailPage() {
       setError(null);
       await quotationService.deleteStaffFee(id, feeId);
       await fetchFeesForItem(quotationItemId);
-      await fetchDetail();
+      await fetchDetail({ showLoading: false, includeFees: false });
     } catch (err: any) {
       console.error(err);
       setError(err?.response?.data?.msg || "Không thể xóa phí.");
