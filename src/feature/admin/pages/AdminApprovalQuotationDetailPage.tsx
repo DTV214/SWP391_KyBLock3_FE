@@ -4,10 +4,11 @@ import { Building, Calendar, CheckCircle2, Clock, FileText, Pencil, PlayCircle, 
 import { quotationService, type QuotationDetail, type QuotationFee, type QuotationProductDetail } from "@/feature/quotation/services/quotationService";
 import { getQuotationStatusMeta } from "@/feature/quotation/utils/quotationStatus";
 import QuotationMessageMeta from "@/feature/quotation/components/QuotationMessageMeta";
+import QuotationFeeFormFields from "@/feature/quotation/components/QuotationFeeFormFields";
+import { DEFAULT_FEE_FORM as defaultFeeForm, findExistingFixedFee, getFeeFormForExistingFee, isHiddenQuotationMessage, resolveFeeFormPayload, type FeeFormState } from "@/feature/quotation/utils/quotationFeeOptions";
 
-type FeeFormState = { isSubtracted: number; price: string; description: string };
-const defaultFeeForm: FeeFormState = { isSubtracted: 1, price: "", description: "" };
 const formatMoney = (value?: number | null) => (typeof value === "number" ? `${value.toLocaleString("vi-VN")}đ` : "Chưa có");
+const formatSignedMoney = (value: number | null | undefined, sign: "+" | "-") => (typeof value === "number" ? `${sign}${Math.abs(value).toLocaleString("vi-VN")}đ` : "Chưa có");
 const formatDate = (value?: string | null) => (value ? new Date(value).toLocaleString("vi-VN") : "-");
 const getRoleBadgeClass = (role?: string | null) => role === "STAFF" ? "bg-amber-100 text-amber-800 border border-amber-200" : role === "ADMIN" ? "bg-violet-100 text-violet-800 border border-violet-200" : role === "CUSTOMER" ? "bg-sky-100 text-sky-800 border border-sky-200" : "bg-slate-100 text-slate-700 border border-slate-200";
 const getActionBadgeClass = (action?: string | null) => action === "SUBMIT" ? "bg-blue-50 text-blue-700" : action === "START_REVIEW" ? "bg-amber-50 text-amber-700" : action === "SEND_ADMIN" ? "bg-violet-50 text-violet-700" : action === "APPROVE" ? "bg-emerald-50 text-emerald-700" : action === "REJECT" ? "bg-red-50 text-red-700" : action === "NOTE" ? "bg-gray-100 text-gray-700" : "bg-slate-100 text-slate-700";
@@ -120,6 +121,7 @@ export default function AdminApprovalQuotationDetailPage() {
 
   const statusMeta = getQuotationStatusMeta(detail?.status === "DRAFT" ? "SUBMITTED" : detail?.status);
   const totalQuantity = useMemo(() => detail?.lines?.reduce((sum, line) => sum + (line.quantity || 0), 0) || 0, [detail]);
+  const visibleMessages = useMemo(() => (detail?.messages || []).filter((message) => !isHiddenQuotationMessage(message)), [detail?.messages]);
   const canStartReview = detailMode === "staff" && detail?.status === "SUBMITTED";
   const canSendAdmin = detailMode === "staff" && detail?.status === "STAFF_REVIEWING";
   const canEditFees = detailMode === "staff" && ["SUBMITTED", "STAFF_REVIEWING", "ADMIN_REJECTED"].includes(detail?.status || "");
@@ -135,10 +137,14 @@ export default function AdminApprovalQuotationDetailPage() {
     const form = newFeeForms[quotationItemId] || defaultFeeForm;
     const price = Number(form.price);
     if (!price || price <= 0) return void setError("Giá phí phải lớn hơn 0.");
+    const feePayload = resolveFeeFormPayload(form);
+    if (!feePayload) return void setError("Vui lòng nhập mô tả cho phí khác.");
+    const existingFixedFee = form.descriptionType !== "OTHER" ? findExistingFixedFee(feesByItem[quotationItemId] || [], form.descriptionType) : undefined;
     try {
       setFeeSubmitting((prev) => ({ ...prev, [quotationItemId]: true }));
       setError(null);
-      await quotationService.createStaffFee(id, { quotationItemId, isSubtracted: form.isSubtracted, price, description: form.description });
+      if (existingFixedFee) await quotationService.updateStaffFee(id, existingFixedFee.quotationFeeId, { quotationFeeId: existingFixedFee.quotationFeeId, isSubtracted: feePayload.isSubtracted, price, description: feePayload.description });
+      else await quotationService.createStaffFee(id, { quotationItemId, isSubtracted: feePayload.isSubtracted, price, description: feePayload.description });
       setNewFeeForms((prev) => ({ ...prev, [quotationItemId]: { ...defaultFeeForm } }));
       await fetchFeesForItem(quotationItemId);
       await fetchDetail();
@@ -150,15 +156,17 @@ export default function AdminApprovalQuotationDetailPage() {
     }
   };
 
-  const openEditFee = (fee: QuotationFee) => { setEditingFeeId(fee.quotationFeeId); setEditFeeForm({ isSubtracted: fee.isSubtracted, price: String(fee.price), description: fee.description || "" }); };
+  const openEditFee = (fee: QuotationFee) => { setEditingFeeId(fee.quotationFeeId); setEditFeeForm(getFeeFormForExistingFee(fee)); };
   const handleUpdateFee = async (quotationItemId: number, fee: QuotationFee) => {
     if (!id) return;
     const price = Number(editFeeForm.price);
     if (!price || price <= 0) return void setError("Giá phí phải lớn hơn 0.");
+    const feePayload = resolveFeeFormPayload(editFeeForm);
+    if (!feePayload) return void setError("Vui lòng nhập mô tả cho phí khác.");
     try {
       setFeeSubmitting((prev) => ({ ...prev, [quotationItemId]: true }));
       setError(null);
-      await quotationService.updateStaffFee(id, fee.quotationFeeId, { quotationFeeId: fee.quotationFeeId, isSubtracted: editFeeForm.isSubtracted, price, description: editFeeForm.description });
+      await quotationService.updateStaffFee(id, fee.quotationFeeId, { quotationFeeId: fee.quotationFeeId, isSubtracted: feePayload.isSubtracted, price, description: feePayload.description });
       setEditingFeeId(null);
       setEditFeeForm({ ...defaultFeeForm });
       await fetchFeesForItem(quotationItemId);
@@ -217,13 +225,27 @@ export default function AdminApprovalQuotationDetailPage() {
                 <div className="flex items-center gap-2"><User className="h-4 w-4 text-gray-500" />Email: <span className="font-semibold">{detail.email || "Không có"}</span></div>
                 <p>Số điện thoại: <span className="font-semibold">{detail.phone || "Không có"}</span></p><p>Địa chỉ: <span className="font-semibold">{detail.address || "Không có"}</span></p><p>Mã tài khoản: <span className="font-semibold">{detail.accountId ?? "-"}</span></p><p>Mã đơn hàng: <span className="font-semibold">{detail.orderId ?? "-"}</span></p><p>Lần chỉnh sửa: <span className="font-semibold">{detail.revision}</span></p><p>Nhân viên rà soát: <span className="font-semibold">{detail.staffReviewerId ?? "-"}</span></p><p>Quản trị viên rà soát: <span className="font-semibold">{detail.adminReviewerId ?? "-"}</span></p>
               </div>
+              {detail.requireVatInvoice && (
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  <p className="font-semibold text-amber-800">Thông tin VAT</p>
+                  <p className="mt-2">Công ty: <span className="font-semibold">{detail.vatCompanyName || "-"}</span></p>
+                  <p>Mã số thuế: <span className="font-semibold">{detail.vatCompanyTaxCode || "-"}</span></p>
+                  <p>Địa chỉ: <span className="font-semibold">{detail.vatCompanyAddress || "-"}</span></p>
+                  <p>Email hóa đơn: <span className="font-semibold">{detail.vatInvoiceEmail || "-"}</span></p>
+                </div>
+              )}
+              <div className="mt-4 rounded-xl border border-[#f1e1d6] bg-[#fffaf5] p-3 text-sm text-[#7b5a4c]">
+                <p>Trước VAT: <span className="font-semibold text-[#4a0d06]">{formatMoney(detail.totalAfterDiscount)}</span></p>
+                <p>VAT dự kiến: <span className="font-semibold text-[#4a0d06]">{formatMoney(detail.vatAmountPreview)}</span></p>
+                <p className="mt-2 border-t border-[#f1e1d6] pt-2">Thanh toán gồm VAT: <span className="font-semibold text-[#7a160e]">{formatMoney(detail.finalPayablePreview)}</span></p>
+              </div>
               <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-600 space-y-2">
                 <div className="flex items-center gap-2"><Calendar className="h-4 w-4" />Ngày tạo: {formatDate(detail.requestDate)}</div><div className="flex items-center gap-2"><Clock className="h-4 w-4" />Ngày gửi yêu cầu: {formatDate(detail.submittedAt)}</div><div className="flex items-center gap-2"><Clock className="h-4 w-4" />Nhân viên rà soát: {formatDate(detail.staffReviewedAt)}</div><div className="flex items-center gap-2"><Clock className="h-4 w-4" />Quản trị viên rà soát: {formatDate(detail.adminReviewedAt)}</div><div className="flex items-center gap-2"><Clock className="h-4 w-4" />Khách phản hồi: {formatDate(detail.customerRespondedAt)}</div>
               </div>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-[#7a160e]/80">Tổng hợp giá</h3>
-              <div className="mt-4 space-y-2 text-sm"><p>Tổng gốc: <span className="font-semibold">{formatMoney(detail.totalOriginal)}</span></p><p>Tổng giảm trừ: <span className="font-semibold text-emerald-700">{formatMoney(detail.totalSubtract)}</span></p><p>Tổng cộng thêm: <span className="font-semibold text-rose-700">{formatMoney(detail.totalAdd)}</span></p><p>Số tiền giảm giá: <span className="font-semibold">{formatMoney(detail.totalDiscountAmount)}</span></p><p className="pt-2 border-t border-gray-100">Sau điều chỉnh: <span className="font-semibold text-[#7a160e]">{formatMoney(detail.totalAfterDiscount)}</span></p></div>
+              <div className="mt-4 space-y-2 text-sm"><p>Tổng gốc: <span className="font-semibold">{formatMoney(detail.totalOriginal)}</span></p><p>Tổng giảm trừ: <span className="font-semibold text-emerald-700">{formatSignedMoney(detail.totalSubtract, "-")}</span></p><p>Tổng cộng thêm: <span className="font-semibold text-rose-700">{formatSignedMoney(detail.totalAdd, "+")}</span></p><p className="pt-2 border-t border-gray-100">Sau điều chỉnh: <span className="font-semibold text-[#7a160e]">{formatMoney(detail.totalAfterDiscount)}</span></p></div>
               <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-600 space-y-2"><p>Ghi chú ngân sách: {detail.desiredPriceNote || "-"}</p><p>Ghi chú thêm: {detail.note || "-"}</p></div>
             </div>
           </div>
@@ -236,14 +258,15 @@ export default function AdminApprovalQuotationDetailPage() {
                   const fees = detailMode === "staff" ? feesByItem[line.quotationItemId] || [] : line.fees || [];
                   const itemForm = newFeeForms[line.quotationItemId] || defaultFeeForm;
                   const isItemBusy = feeLoading[line.quotationItemId] || feeSubmitting[line.quotationItemId];
+                  const willUpdateFixedFee = itemForm.descriptionType !== "OTHER" && Boolean(findExistingFixedFee(fees, itemForm.descriptionType));
                   return (
                     <div key={line.quotationItemId} className="rounded-xl border border-[#f1e1d6] bg-[#fffaf5] p-4">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3"><div className="h-12 w-12 overflow-hidden rounded-xl bg-[#f1e1d6]">{productImageMap[line.productId] ? <img src={productImageMap[line.productId]} alt={line.productName} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-[10px] text-[#8a5b4f]">Không có ảnh</div>}</div><div><p className="text-sm font-semibold text-[#4a0d06]">{line.productName}</p><p className="text-xs text-[#8a5b4f]">{line.sku || "Không có"}</p></div></div>
                         <div className="text-right text-xs"><p>Số lượng: {line.quantity}</p><p>Đơn giá: {formatMoney(line.unitPrice)}</p><p>Gốc: {formatMoney(line.originalLineTotal)}</p><p className="text-emerald-700">Giảm trừ: {formatMoney(line.subtractTotal)}</p><p className="text-rose-700">Cộng thêm: {formatMoney(line.addTotal)}</p><p className="font-semibold text-[#7a160e]">Thành tiền: {formatMoney(line.finalLineTotal)}</p></div>
                       </div>
-                      <div className="mt-3 rounded-lg border border-[#ead8cc] bg-white p-3"><p className="text-xs font-semibold text-[#7a160e]">Danh sách phí</p>{isItemBusy && canEditFees && fees.length === 0 ? <p className="text-xs text-gray-500 mt-2">Đang tải phí...</p> : fees.length === 0 ? <p className="text-xs text-gray-500 mt-2">Chưa có phí cho sản phẩm này.</p> : <div className="mt-2 space-y-2">{fees.map((fee) => <div key={fee.quotationFeeId} className="rounded-lg border border-gray-100 p-2">{canEditFees && editingFeeId === fee.quotationFeeId ? <div className="space-y-2"><div className="grid grid-cols-1 md:grid-cols-3 gap-2"><select value={editFeeForm.isSubtracted} onChange={(e) => setEditFeeForm((prev) => ({ ...prev, isSubtracted: Number(e.target.value) }))} className="rounded-md border border-gray-200 px-2 py-1 text-xs"><option value={1}>Phí cộng thêm</option><option value={0}>Phí giảm trừ</option></select><input type="number" min={1} value={editFeeForm.price} onChange={(e) => setEditFeeForm((prev) => ({ ...prev, price: e.target.value }))} className="rounded-md border border-gray-200 px-2 py-1 text-xs" placeholder="Giá phí" /><input value={editFeeForm.description} onChange={(e) => setEditFeeForm((prev) => ({ ...prev, description: e.target.value }))} className="rounded-md border border-gray-200 px-2 py-1 text-xs" placeholder="Mô tả" /></div><div className="flex items-center gap-2 justify-end"><button type="button" onClick={() => handleUpdateFee(line.quotationItemId, fee)} className="inline-flex items-center gap-1 rounded-md bg-green-600 px-2 py-1 text-xs text-white"><Save className="h-3 w-3" /> Lưu</button><button type="button" onClick={() => setEditingFeeId(null)} className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs"><X className="h-3 w-3" /> Hủy</button></div></div> : <div className="flex items-center justify-between gap-3"><div><p className={`text-xs font-semibold ${fee.isSubtracted === 1 ? "text-rose-700" : "text-emerald-700"}`}>{fee.isSubtracted === 1 ? "Cộng thêm" : "Giảm trừ"}: {formatMoney(fee.price)}</p><p className="text-xs text-gray-500">{fee.description || "Không có mô tả"}</p></div>{canEditFees && <div className="flex items-center gap-1"><button type="button" onClick={() => openEditFee(fee)} className="rounded-md border border-gray-300 p-1 text-gray-600"><Pencil className="h-3.5 w-3.5" /></button><button type="button" onClick={() => handleDeleteFee(line.quotationItemId, fee.quotationFeeId)} className="rounded-md border border-red-200 p-1 text-red-600"><Trash2 className="h-3.5 w-3.5" /></button></div>}</div>}</div>)}</div>}</div>
-                      {canEditFees && <div className="mt-3 rounded-lg border border-[#ead8cc] bg-white p-3"><p className="text-xs font-semibold text-[#7a160e]">Thêm phí mới</p><div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2"><select value={itemForm.isSubtracted} onChange={(e) => setNewFeeForms((prev) => ({ ...prev, [line.quotationItemId]: { ...itemForm, isSubtracted: Number(e.target.value) } }))} className="rounded-md border border-gray-200 px-2 py-1 text-xs"><option value={1}>Phí cộng thêm</option><option value={0}>Phí giảm trừ</option></select><input type="number" min={1} value={itemForm.price} onChange={(e) => setNewFeeForms((prev) => ({ ...prev, [line.quotationItemId]: { ...itemForm, price: e.target.value } }))} className="rounded-md border border-gray-200 px-2 py-1 text-xs" placeholder="Giá phí" /><input value={itemForm.description} onChange={(e) => setNewFeeForms((prev) => ({ ...prev, [line.quotationItemId]: { ...itemForm, description: e.target.value } }))} className="rounded-md border border-gray-200 px-2 py-1 text-xs" placeholder="Mô tả" /></div><div className="mt-2 flex justify-end"><button type="button" disabled={isItemBusy} onClick={() => handleCreateFee(line.quotationItemId)} className="inline-flex items-center gap-1 rounded-md bg-[#7a160e] px-3 py-1.5 text-xs text-white disabled:opacity-60"><Plus className="h-3.5 w-3.5" />Thêm phí</button></div></div>}
+                      <div className="mt-3 rounded-lg border border-[#ead8cc] bg-white p-3"><p className="text-xs font-semibold text-[#7a160e]">Danh sách phí</p>{isItemBusy && canEditFees && fees.length === 0 ? <p className="text-xs text-gray-500 mt-2">Đang tải phí...</p> : fees.length === 0 ? <p className="text-xs text-gray-500 mt-2">Chưa có phí cho sản phẩm này.</p> : <div className="mt-2 space-y-2">{fees.map((fee) => <div key={fee.quotationFeeId} className="rounded-lg border border-gray-100 p-2">{canEditFees && editingFeeId === fee.quotationFeeId ? <div className="space-y-2"><QuotationFeeFormFields form={editFeeForm} onChange={setEditFeeForm} /><div className="flex items-center gap-2 justify-end"><button type="button" onClick={() => handleUpdateFee(line.quotationItemId, fee)} className="inline-flex items-center gap-1 rounded-md bg-green-600 px-2 py-1 text-xs text-white"><Save className="h-3 w-3" /> Lưu</button><button type="button" onClick={() => setEditingFeeId(null)} className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs"><X className="h-3 w-3" /> Hủy</button></div></div> : <div className="flex items-center justify-between gap-3"><div><p className={`text-xs font-semibold ${fee.isSubtracted === 1 ? "text-rose-700" : "text-emerald-700"}`}>{fee.isSubtracted === 1 ? "Cộng thêm" : "Giảm trừ"}: {formatMoney(fee.price)}</p><p className="text-xs text-gray-500">{fee.description || "Không có mô tả"}</p></div>{canEditFees && <div className="flex items-center gap-1"><button type="button" onClick={() => openEditFee(fee)} className="rounded-md border border-gray-300 p-1 text-gray-600"><Pencil className="h-3.5 w-3.5" /></button><button type="button" onClick={() => handleDeleteFee(line.quotationItemId, fee.quotationFeeId)} className="rounded-md border border-red-200 p-1 text-red-600"><Trash2 className="h-3.5 w-3.5" /></button></div>}</div>}</div>)}</div>}</div>
+                      {canEditFees && <div className="mt-3 rounded-lg border border-[#ead8cc] bg-white p-3"><p className="text-xs font-semibold text-[#7a160e]">Thêm phí mới</p><div className="mt-2"><QuotationFeeFormFields form={itemForm} onChange={(nextForm) => setNewFeeForms((prev) => ({ ...prev, [line.quotationItemId]: nextForm }))} /></div><div className="mt-2 flex justify-end"><button type="button" disabled={isItemBusy} onClick={() => handleCreateFee(line.quotationItemId)} className="inline-flex items-center gap-1 rounded-md bg-[#7a160e] px-3 py-1.5 text-xs text-white disabled:opacity-60"><Plus className="h-3.5 w-3.5" />{willUpdateFixedFee ? "Cập nhật phí" : "Thêm phí"}</button></div></div>}
                     </div>
                   );
                 })}
@@ -251,7 +274,7 @@ export default function AdminApprovalQuotationDetailPage() {
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-[#7a160e]/80 flex items-center gap-2"><ScrollText className="h-4 w-4" />Lịch sử trao đổi</h3>
-              {detail.messages && detail.messages.length > 0 ? <div className="mt-4 space-y-3">{detail.messages.map((msg) => <div key={msg.quotationMessageId} className="rounded-lg border border-[#f1e1d6] bg-[#fffaf5] p-3 text-sm"><div className="flex flex-wrap items-center gap-2 text-xs text-gray-500"><span className={`rounded-full px-2 py-0.5 font-semibold ${getRoleBadgeClass(msg.fromRole)}`}>{getRoleLabel(msg.fromRole)}</span><span className={`rounded-full px-2 py-0.5 ${getActionBadgeClass(msg.actionType)}`}>{getActionLabel(msg.actionType)}</span><span>#{msg.fromAccountId ?? "-"}</span><span>{formatDate(msg.createdAt)}</span></div><p className="mt-1 text-gray-700">{msg.message}</p><QuotationMessageMeta metaJson={msg.metaJson} /></div>)}</div> : <p className="mt-4 text-sm text-gray-500">Chưa có lịch sử trao đổi.</p>}
+              {visibleMessages.length > 0 ? <div className="mt-4 space-y-3">{visibleMessages.map((msg) => <div key={msg.quotationMessageId} className="rounded-lg border border-[#f1e1d6] bg-[#fffaf5] p-3 text-sm"><div className="flex flex-wrap items-center gap-2 text-xs text-gray-500"><span className={`rounded-full px-2 py-0.5 font-semibold ${getRoleBadgeClass(msg.fromRole)}`}>{getRoleLabel(msg.fromRole)}</span><span className={`rounded-full px-2 py-0.5 ${getActionBadgeClass(msg.actionType)}`}>{getActionLabel(msg.actionType)}</span><span>#{msg.fromAccountId ?? "-"}</span><span>{formatDate(msg.createdAt)}</span></div><p className="mt-1 text-gray-700">{msg.message}</p><QuotationMessageMeta metaJson={msg.metaJson} /></div>)}</div> : <p className="mt-4 text-sm text-gray-500">Chưa có lịch sử trao đổi.</p>}
             </div>
           </div>
         </div>

@@ -151,6 +151,9 @@ export default function QuotationHistoryPage() {
           ) : (
             paginatedRows.map((item) => {
               const statusMeta = getQuotationStatusMeta(item.status);
+              const displayTotal = item.requireVatInvoice
+                ? item.finalPayablePreview
+                : item.totalPrice;
               return (
                 <div
                   key={item.quotationId}
@@ -162,6 +165,11 @@ export default function QuotationHistoryPage() {
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusMeta.badgeClass}`}>
                         {statusMeta.label}
                       </span>
+                      {item.requireVatInvoice && (
+                        <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                          Có VAT
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-[#7b5a4c]">
                       Công ty: <span className="font-semibold">{item.company || "N/A"}</span>
@@ -173,9 +181,9 @@ export default function QuotationHistoryPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="text-right mr-2">
-                      <p className="text-xs text-[#8a5b4f]">Ước tính</p>
+                      <p className="text-xs text-[#8a5b4f]">{item.requireVatInvoice ? "Gồm VAT" : "Ước tính"}</p>
                       <p className="text-lg font-semibold text-[#7a160e]">
-                        {item.totalPrice ? `${item.totalPrice.toLocaleString("vi-VN")}đ` : "Chưa có"}
+                        {typeof displayTotal === "number" ? `${displayTotal.toLocaleString("vi-VN")}đ` : "Chưa có"}
                       </p>
                     </div>
                     {item.status === "DRAFT" && (
