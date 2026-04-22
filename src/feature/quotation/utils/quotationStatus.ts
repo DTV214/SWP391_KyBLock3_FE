@@ -22,11 +22,11 @@ export const QUOTATION_STATUS_META: Record<string, QuotationStatusMeta> = {
     badgeClass: "bg-amber-100 text-amber-800 border border-amber-200",
   },
   WAITING_ADMIN: {
-    label: "Chờ admin duyệt",
+    label: "Chờ quản trị viên duyệt",
     badgeClass: "bg-violet-100 text-violet-800 border border-violet-200",
   },
   ADMIN_REJECTED: {
-    label: "Admin từ chối",
+    label: "Quản trị viên từ chối",
     badgeClass: "bg-rose-100 text-rose-800 border border-rose-200",
   },
   WAITING_CUSTOMER: {
