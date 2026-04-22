@@ -65,7 +65,6 @@ export const DashboardDetailModal: React.FC<DashboardDetailModalProps> = ({
                   {type === "VIP" && <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500 text-right">Tổng chi tiêu</th>}
                   {type === "FREQUENT" && <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500 text-right">Số đơn hàng</th>}
                   {type === "CANCELER" && <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500 text-right">Đơn đã hủy</th>}
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500 text-right">Tỷ lệ thành công</th>
                 </>
               )}
               {isProduct && (
@@ -113,11 +112,6 @@ export const DashboardDetailModal: React.FC<DashboardDetailModalProps> = ({
                       {type === "VIP" && <td className="px-6 py-4 text-sm font-black text-rose-600 text-right">{formatCurrency((item as CustomerOrderStatistics).totalSpentAllTime)}</td>}
                       {type === "FREQUENT" && <td className="px-6 py-4 text-sm font-black text-blue-600 text-right">{(item as CustomerOrderStatistics).totalOrders} đơn</td>}
                       {type === "CANCELER" && <td className="px-6 py-4 text-sm font-black text-red-600 text-right">{(item as CustomerOrderStatistics).cancelledOrders} đơn</td>}
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
-                          {(item as CustomerOrderStatistics).successRate}%
-                        </span>
-                      </td>
                     </>
                   )}
 
