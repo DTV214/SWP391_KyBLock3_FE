@@ -575,8 +575,31 @@ export interface CustomerOrderStatistics {
 }
 
 export const getCustomerOrderStatistics = async (startDate?: string, endDate?: string): Promise<CustomerOrderStatistics[]> => {
-  const response = await axiosClient.get(API_ENDPOINTS.DASHBOARD.CUSTOMER_STATISTICS(startDate, endDate));
-  return response.data;
+  const response: any = await axiosClient.get(API_ENDPOINTS.DASHBOARD.CUSTOMER_STATISTICS(startDate, endDate));
+  const rawData = Array.isArray(response.data) ? response.data : (Array.isArray(response) ? response : []);
+  
+  return rawData.map((c: any) => {
+    const totalOrders = toNumber(c?.totalOrders ?? c?.TotalOrders);
+    const successfulOrders = toNumber(c?.successfulOrders ?? c?.SuccessfulOrders);
+    // Nếu server không trả về successRate, tự tính: (thành công / tổng) * 100
+    const rawSuccessRate = c?.successRate ?? c?.SuccessRate;
+    const successRate = rawSuccessRate != null 
+      ? toNumber(rawSuccessRate) 
+      : (totalOrders > 0 ? Math.round((successfulOrders / totalOrders) * 100) : 0);
+
+    return {
+      accountId: toNumber(c?.accountId ?? c?.AccountId),
+      fullName: String(c?.fullName ?? c?.FullName ?? ""),
+      email: String(c?.email ?? c?.Email ?? ""),
+      totalOrders,
+      successfulOrders,
+      cancelledOrders: toNumber(c?.cancelledOrders ?? c?.CancelledOrders),
+      processingOrders: toNumber(c?.processingOrders ?? c?.ProcessingOrders),
+      totalSpent: toNumber(c?.totalSpent ?? c?.TotalSpent),
+      totalSpentAllTime: toNumber(c?.totalSpentAllTime ?? c?.TotalSpentAllTime),
+      successRate
+    };
+  });
 };
 
 export interface HighlightCustomer {

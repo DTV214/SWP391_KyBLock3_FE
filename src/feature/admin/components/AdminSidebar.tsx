@@ -1,7 +1,8 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
+  BarChart2,
   Package,
   Tag,
   Settings,
@@ -61,6 +62,11 @@ export default function AdminSidebar() {
       path: "/admin/overview",
       label: "Tổng quan",
       icon: <LayoutDashboard size={18} />,
+    },
+    {
+      path: "/admin/reports",
+      label: "Báo cáo",
+      icon: <BarChart2 size={18} />,
     },
     {
       path: "/admin/accounts",

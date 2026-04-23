@@ -1,4 +1,4 @@
-﻿import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation } from "react-router-dom";
 import AdminSidebar from "../components/AdminSidebar";
 import AdminHeader from "../components/AdminHeader";
 import { ChevronRight } from "lucide-react";
@@ -12,6 +12,7 @@ export default function AdminLayout() {
 
   const getBreadcrumbName = (path: string) => {
     if (path.includes("overview")) return "Tổng quan";
+    if (path.includes("reports")) return "Báo cáo & Thống kê";
     if (path.includes("accounts")) return "Quản lý tài khoản";
     if (path.includes("store-locations")) return "Quản lý cửa hàng";
     if (path.includes("products")) return "Quản lý sản phẩm";

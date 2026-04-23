@@ -125,7 +125,7 @@ export const DashboardInsightsContainer: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <h2 className="text-lg font-serif font-bold text-tet-primary flex items-center gap-2">
           <Target className="text-tet-accent" size={20} />
-          Phân tích chuyên sâu (PO Insights)
+          Phân tích Chuyên sâu · Business Insights
         </h2>
 
         {/* Quick Date Filter */}
@@ -201,39 +201,39 @@ export const DashboardInsightsContainer: React.FC = () => {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {data.topSpender && (
               <HighlightCard
-                title="Khách V.I.P (Chi nhiều nhất)"
+                title="🏆 Top Chi tiêu — V.I.P"
                 value={formatCurrency(data.topSpender.totalValue)}
                 subtitle={`${data.topSpender.fullName} (${data.topSpender.orderCount} đơn)`}
                 icon={Crown}
                 colorScheme="yellow"
-                onClick={() => handleCardClick("VIP", "Danh sách Top 10 khách V.I.P")}
+                onClick={() => handleCardClick("VIP", "Top 10 Khách hàng V.I.P — Chi tiêu cao nhất")}
               />
             )}
 
             {data.mostFrequentBuyer && (
               <HighlightCard
-                title="Khách chăm mua nhất"
+                title="🔄 Tần suất mua hàng cao nhất"
                 value={`${data.mostFrequentBuyer.orderCount} đơn`}
                 subtitle={data.mostFrequentBuyer.fullName}
                 icon={ShoppingCart}
                 colorScheme="blue"
-                onClick={() => handleCardClick("FREQUENT", "Top 10 khách hàng chăm mua")}
+                onClick={() => handleCardClick("FREQUENT", "Top 10 Khách hàng — Mua hàng thường xuyên nhất")}
               />
             )}
 
             {data.topSellingProduct && (
               <HighlightCard
-                title="Sản phẩm đắt hàng nhất"
+                title="📦 Sản phẩm bán chạy #1"
                 value={data.topSellingProduct.productName}
                 subtitle={`Bán được: ${data.topSellingProduct.totalQuantity} — Thu: ${formatCurrency(data.topSellingProduct.totalRevenue)}`}
                 icon={Target}
                 colorScheme="green"
-                onClick={() => handleCardClick("BEST_SELLER", "Top 10 sản phẩm bán chạy nhất")}
+                onClick={() => handleCardClick("BEST_SELLER", "Top 10 Sản phẩm — Doanh số cao nhất")}
               />
             )}
 
             <HighlightCard
-              title="Tỷ lệ hủy đơn"
+              title="⚠️ Tỷ lệ hủy đơn hàng"
               value={`${data.cancellationStats.cancellationRate}%`}
               subtitle={`Hủy: ${data.cancellationStats.cancelledOrders} / Chốt: ${data.cancellationStats.validOrders}`}
               icon={AlertTriangle}
@@ -245,17 +245,17 @@ export const DashboardInsightsContainer: React.FC = () => {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {data.topCanceler && (
               <HighlightCard
-                title="Khách hay hủy đơn nhất"
+                title="🚫 Khách hàng hay hủy đơn"
                 value={`${data.topCanceler.totalValue} đơn hủy`}
                 subtitle={`${data.topCanceler.fullName}`}
                 icon={UserX}
                 colorScheme="red"
-                onClick={() => handleCardClick("CANCELER", "Top 10 khách hàng hay hủy đơn")}
+                onClick={() => handleCardClick("CANCELER", "Top 10 Khách hàng — Hủy đơn nhiều nhất")}
               />
             )}
 
             <HighlightCard
-              title="Giá trị trung bình / Đơn (AOV)"
+              title="💰 Giá trị đơn TB (AOV)"
               value={formatCurrency(data.averageOrderValue)}
               subtitle="Doanh thu / Tổng đơn thành công"
               icon={DollarSign}
@@ -264,7 +264,7 @@ export const DashboardInsightsContainer: React.FC = () => {
 
             {data.underperformingProduct && (
               <HighlightCard
-                title="Sản phẩm bán ế (Cần xả)"
+                title="📉 Sản phẩm cần đẩy hàng"
                 value={data.underperformingProduct.productName}
                 subtitle={`Chỉ bán được: ${data.underperformingProduct.totalQuantity} trong kỳ`}
                 icon={TrendingDown}
@@ -273,12 +273,12 @@ export const DashboardInsightsContainer: React.FC = () => {
             )}
 
             <HighlightCard
-              title="Thất thoát Giỏ hàng"
+              title="🛒 Giỏ hàng bị bỏ rơi"
               value={formatCurrency(data.abandonedCartValue.totalLostValue)}
               subtitle={`${data.abandonedCartValue.cartCount} giỏ hàng bị bỏ`}
               icon={ShoppingCart}
               colorScheme="yellow"
-              onClick={() => handleCardClick("ABANDONED", "Danh sách giỏ hàng bị bỏ rơi")}
+              onClick={() => handleCardClick("ABANDONED", "Danh sách Giỏ hàng — Chưa thanh toán")}
             />
           </div>
         </div>

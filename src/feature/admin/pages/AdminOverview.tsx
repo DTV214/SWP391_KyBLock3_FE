@@ -10,6 +10,8 @@ import {
   YAxis,
 } from "recharts";
 import {
+  BarChart2,
+  ChevronRight,
   DollarSign,
   Gift,
   Loader2,
@@ -25,13 +27,8 @@ import {
 import RevenueChart from "../components/RevenueChart";
 import CustomerEfficiencyWidget from "../components/CustomerEfficiencyWidget";
 import { DashboardInsightsContainer } from "../components/insights/DashboardInsightsContainer";
-import MonthlyComparisonChart from "../components/MonthlyComparisonChart";
-import CategoryPerformanceCharts from "../components/CategoryPerformanceCharts";
-import TopTrendingProducts from "../components/TopTrendingProducts";
-import { CustomerCareInsights } from "../components/insights/CustomerCareInsights";
 import adminDashboardService, {
   type DashboardSummary,
-  type DashboardHighlights,
 } from "../services/adminDashboardService";
 
 export default function AdminOverview() {
@@ -41,9 +38,6 @@ export default function AdminOverview() {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [actualRevenueTotal, setActualRevenueTotal] = useState<number | null>(
-    null,
-  );
-  const [insightsData, setInsightsData] = useState<DashboardHighlights | null>(
     null,
   );
   const [isNewCustomersModalOpen, setIsNewCustomersModalOpen] = useState(false);
@@ -71,10 +65,9 @@ export default function AdminOverview() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [summaryResult, actualRevenueResult, insightsResult] = await Promise.allSettled([
+        const [summaryResult, actualRevenueResult] = await Promise.allSettled([
           adminDashboardService.getDashboardSummary(),
           adminDashboardService.getActualRevenue(),
-          adminDashboardService.getDashboardInsights(),
         ]);
 
         if (summaryResult.status !== "fulfilled") {
@@ -85,10 +78,6 @@ export default function AdminOverview() {
           setActualRevenueTotal(actualRevenueResult.value.totalRevenue);
         } else {
           setActualRevenueTotal(null);
-        }
-
-        if (insightsResult.status === "fulfilled") {
-          setInsightsData(insightsResult.value);
         }
 
         setData(summaryResult.value);
@@ -380,13 +369,31 @@ export default function AdminOverview() {
 
       <DashboardInsightsContainer />
 
-      {insightsData && (
-        <CustomerCareInsights data={insightsData} />
-      )}
-
-      <MonthlyComparisonChart />
-      <TopTrendingProducts />
-      <CategoryPerformanceCharts />
+      {/* Reports Call to Action */}
+      <section className="relative overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-8 shadow-sm">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold text-blue-900 flex items-center gap-2">
+              <BarChart2 size={24} className="text-blue-600" />
+              Báo cáo & Thống kê chi tiết
+            </h3>
+            <p className="text-blue-700/70 text-sm max-w-xl">
+              Khám phá các báo cáo chuyên sâu về xu hướng sản phẩm, phân tích VAT, 
+              hiệu suất danh mục và hành vi khách hàng để đưa ra các quyết định kinh doanh chính xác.
+            </p>
+          </div>
+          <button 
+            onClick={() => navigate("/admin/reports")}
+            className="flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+          >
+            Xem tất cả báo cáo
+            <ChevronRight size={20} />
+          </button>
+        </div>
+        <div className="absolute -right-8 -bottom-8 opacity-5 text-blue-900">
+          <BarChart2 size={200} />
+        </div>
+      </section>
 
       <section className="rounded-[2rem] border border-blue-100 bg-gradient-to-br from-blue-50 to-purple-50 p-5 xl:p-6">
         <div className="flex items-center justify-between">

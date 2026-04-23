@@ -41,6 +41,7 @@ import AccountVouchers from "@/feature/account/pages/AccountVouchers";
 // Admin Module
 import AdminLayout from "@/feature/admin/layouts/AdminLayout";
 import AdminOverview from "@/feature/admin/pages/AdminOverview";
+import AdminReports from "@/feature/admin/pages/AdminReports";
 import AdminProducts from "@/feature/admin/pages/AdminProducts";
 import AdminCategories from "@/feature/admin/pages/AdminCategories";
 import AdminConfigs from "@/feature/admin/pages/AdminConfigs";
@@ -223,6 +224,7 @@ function App() {
             >
               <Route index element={<Navigate to="overview" replace />} />
               <Route path="overview" element={<AdminOverview />} />
+              <Route path="reports" element={<AdminReports />} />
               <Route path="products" element={<AdminProducts />} />
               <Route path="categories" element={<AdminCategories />} />
               <Route path="configs" element={<AdminConfigs />} />

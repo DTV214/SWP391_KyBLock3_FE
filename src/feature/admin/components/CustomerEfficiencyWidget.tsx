@@ -84,6 +84,16 @@ const CustomerEfficiencyWidget: React.FC = () => {
     return { label: "New", icon: "🥉", color: "bg-gray-100 text-gray-700 border-gray-200" };
   };
 
+  const averageSuccessRate = useMemo(() => {
+    if (stats.length === 0) return 0;
+    return Math.round(stats.reduce((sum, c) => sum + c.successRate, 0) / stats.length);
+  }, [stats]);
+
+  const modalAverageSuccessRate = useMemo(() => {
+    if (filteredModalStats.length === 0) return 0;
+    return Math.round(filteredModalStats.reduce((sum, c) => sum + c.successRate, 0) / filteredModalStats.length);
+  }, [filteredModalStats]);
+
   // View template for customer row
   const renderCustomerRow = (customer: CustomerOrderStatistics) => (
     <div
@@ -173,10 +183,25 @@ const CustomerEfficiencyWidget: React.FC = () => {
       >
         <div className="absolute inset-0 bg-tet-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
         <div className="flex items-center justify-between mb-6 relative">
-          <h3 className="text-lg font-serif font-bold text-tet-primary flex items-center gap-2">
-            <TrendingUp className="text-tet-accent" size={20} />
-            Khách hàng thân thiết
-          </h3>
+          <div>
+            <h3 className="text-lg font-serif font-bold text-tet-primary flex items-center gap-2">
+              <TrendingUp className="text-tet-accent" size={20} />
+              Khách hàng thân thiết
+            </h3>
+            {stats.length > 0 && (
+              <div className="mt-2 flex items-center gap-2">
+                 <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border shadow-sm ${
+                   averageSuccessRate >= 80 ? "bg-green-50 text-green-700 border-green-200" :
+                   averageSuccessRate >= 50 ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+                   "bg-red-50 text-red-700 border-red-200"
+                 }`}>
+                   <TrendingUp size={12} />
+                   <span className="text-xs font-black">Điểm TB: {averageSuccessRate}%</span>
+                 </div>
+                 <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Top 5 khách hàng</span>
+              </div>
+            )}
+          </div>
           <span className="text-xs text-tet-accent font-medium bg-tet-secondary/20 px-3 py-1.5 rounded-lg group-hover:bg-tet-accent group-hover:text-white transition-colors border border-tet-accent/20">
             Xem tất cả
           </span>
@@ -214,6 +239,36 @@ const CustomerEfficiencyWidget: React.FC = () => {
             </div>
 
             <div className="p-4 sm:p-6 flex flex-col gap-5 border-b shadow-sm z-10 bg-white">
+              {/* Summary Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-4 px-1">
+                <div className="flex items-center gap-4">
+                  <div className="bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100 shadow-sm">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Số lượng khách</p>
+                    <p className="text-lg font-black text-gray-800 leading-none">{filteredModalStats.length}</p>
+                  </div>
+                  
+                  <div className={`px-4 py-2 rounded-2xl border shadow-sm ${
+                    modalAverageSuccessRate >= 80 ? "bg-green-50 border-green-100" :
+                    modalAverageSuccessRate >= 50 ? "bg-yellow-50 border-yellow-100" :
+                    "bg-red-50 border-red-100"
+                  }`}>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Điểm TB hiệu suất</p>
+                    <p className={`text-lg font-black leading-none ${
+                      modalAverageSuccessRate >= 80 ? "text-green-600" :
+                      modalAverageSuccessRate >= 50 ? "text-yellow-600" :
+                      "text-red-600"
+                    }`}>
+                      {modalAverageSuccessRate}%
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 text-xs text-gray-400 font-medium italic bg-gray-50 px-3 py-1.5 rounded-full">
+                  <AlertCircle size={14} />
+                  Dựa trên tỷ lệ đơn hàng thành công trong kỳ
+                </div>
+              </div>
+
               {/* Toolbar: Search and Filters */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="relative w-full md:w-64">
