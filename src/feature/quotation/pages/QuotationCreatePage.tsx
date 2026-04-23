@@ -275,12 +275,12 @@ const filteredProducts = useMemo(() => {
         !form.vatCompanyAddress.trim() ||
         !form.vatInvoiceEmail.trim()
       ) {
-        setFormError("Vui lòng nhập đầy đủ thông tin xuất hóa đơn VAT.");
+        setFormError("Vui lòng nhập đầy đủ thông tin VAT.");
         return;
       }
 
       if (!EMAIL_PATTERN.test(form.vatInvoiceEmail.trim())) {
-        setFormError("Email nhận hóa đơn VAT không hợp lệ.");
+        setFormError("Email xác thực VAT không hợp lệ.");
         return;
       }
     }
@@ -796,16 +796,16 @@ const filteredProducts = useMemo(() => {
                     className="mt-1 h-4 w-4 rounded border-[#d7b8a5] text-[#7a160e] focus:ring-[#7a160e]"
                   />
                   <span>
-                    <span className="block text-sm font-semibold text-[#7a160e]">Yêu cầu xuất hóa đơn VAT</span>
+                    <span className="block text-sm font-semibold text-[#7a160e]">Yêu cầu VAT</span>
                   </span>
                 </label>
 
                 {form.requireVatInvoice && (
                   <div className="mt-4 space-y-3">
-                    <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Tên công ty xuất VAT *" value={form.vatCompanyName} onChange={(event) => setForm((prev) => ({ ...prev, vatCompanyName: event.target.value }))} />
+                    <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Tên công ty *" value={form.vatCompanyName} onChange={(event) => setForm((prev) => ({ ...prev, vatCompanyName: event.target.value }))} />
                     <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Mã số thuế *" value={form.vatCompanyTaxCode} onChange={(event) => setForm((prev) => ({ ...prev, vatCompanyTaxCode: event.target.value }))} />
-                    <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Địa chỉ công ty xuất VAT *" value={form.vatCompanyAddress} onChange={(event) => setForm((prev) => ({ ...prev, vatCompanyAddress: event.target.value }))} />
-                    <input type="email" className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Email nhận hóa đơn VAT *" value={form.vatInvoiceEmail} onChange={(event) => setForm((prev) => ({ ...prev, vatInvoiceEmail: event.target.value }))} />
+                    <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Địa chỉ công ty *" value={form.vatCompanyAddress} onChange={(event) => setForm((prev) => ({ ...prev, vatCompanyAddress: event.target.value }))} />
+                    <input type="email" className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Email xác thực VAT *" value={form.vatInvoiceEmail} onChange={(event) => setForm((prev) => ({ ...prev, vatInvoiceEmail: event.target.value }))} />
                   </div>
                 )}
               </div>

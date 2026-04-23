@@ -234,7 +234,7 @@ export default function AdminApprovalQuotationDetailPage() {
                   <p className="mt-2">Công ty: <span className="font-semibold">{detail.vatCompanyName || "-"}</span></p>
                   <p>Mã số thuế: <span className="font-semibold">{detail.vatCompanyTaxCode || "-"}</span></p>
                   <p>Địa chỉ: <span className="font-semibold">{detail.vatCompanyAddress || "-"}</span></p>
-                  <p>Email hóa đơn: <span className="font-semibold">{detail.vatInvoiceEmail || "-"}</span></p>
+                  <p>Email xác thực VAT: <span className="font-semibold">{detail.vatInvoiceEmail || "-"}</span></p>
                 </div>
               )}
               <div className="mt-4 rounded-xl border border-[#f1e1d6] bg-[#fffaf5] p-3 text-sm text-[#7b5a4c]">

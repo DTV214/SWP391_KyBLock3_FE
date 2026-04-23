@@ -29,8 +29,8 @@ const highlights = [
   },
   {
     icon: ReceiptText,
-    title: "Hóa đơn linh hoạt",
-    description: "Hỗ trợ xuất VAT và điều khoản thanh toán doanh nghiệp.",
+    title: "Thông tin VAT linh hoạt",
+    description: "Hỗ trợ ghi nhận thông tin VAT và điều khoản thanh toán doanh nghiệp.",
   },
   {
     icon: Truck,

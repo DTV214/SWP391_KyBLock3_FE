@@ -190,11 +190,11 @@ export default function CheckoutPage() {
         !formData.vatCompanyAddress.trim() ||
         !formData.vatInvoiceEmail.trim()
       ) {
-        setError("Vui lòng điền đầy đủ thông tin hóa đơn VAT");
+        setError("Vui lòng điền đầy đủ thông tin VAT");
         return;
       }
       if (!isValidEmail(formData.vatInvoiceEmail.trim())) {
-        setError("Email nhận hóa đơn VAT không hợp lệ");
+        setError("Email xác thực VAT không hợp lệ");
         return;
       }
     }
@@ -393,10 +393,10 @@ export default function CheckoutPage() {
                 </div>
               </section>
 
-              {/* 3. Hóa đơn VAT */}
+              {/* 3. Thông tin VAT */}
               <section className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
                 <h3 className="text-xl font-serif font-bold text-tet-primary">
-                  Hóa đơn VAT
+                  Thông tin VAT
                 </h3>
                 <div className="flex items-start gap-3 rounded-2xl border border-gray-200 p-4 bg-gray-50/50">
                   <Checkbox
@@ -426,7 +426,7 @@ export default function CheckoutPage() {
                       htmlFor="requireVatInvoice"
                       className="font-bold text-sm cursor-pointer"
                     >
-                      Xuất hóa đơn VAT (8%)
+                      Yêu cầu VAT (8%)
                     </Label>
                     <p className="text-xs text-gray-500">
                       Khi bật tùy chọn này, hệ thống sẽ tính thêm VAT 8% trên
@@ -465,7 +465,7 @@ export default function CheckoutPage() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">
-                        Email nhận hóa đơn *
+                        Email xác thực VAT *
                       </Label>
                       <Input
                         name="vatInvoiceEmail"

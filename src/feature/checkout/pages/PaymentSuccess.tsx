@@ -9,24 +9,19 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { orderService } from "../services/orderService";
 
 interface PaymentSuccessProps {
   orderId?: number | string | null;
 }
 
-type InvoiceType = "regular" | "vat";
-
 export default function PaymentSuccess({
   orderId: propOrderId,
 }: PaymentSuccessProps = {}) {
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const [downloadingType, setDownloadingType] = useState<InvoiceType | null>(
-    null,
-  );
-  const [isVatInvoice, setIsVatInvoice] = useState(false);
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
 
   const resolvedOrderId = useMemo(() => {
     const stateOrderId = (location.state as { orderId?: number | string } | null)
@@ -45,49 +40,19 @@ export default function PaymentSuccess({
   }, [location.state, propOrderId, searchParams]);
 
   const numericOrderId = resolvedOrderId ? Number(resolvedOrderId) : NaN;
-  const isDownloadingRegular = downloadingType === "regular";
-  const isDownloadingVat = downloadingType === "vat";
 
-  useEffect(() => {
-    const loadOrderInfo = async () => {
-      if (!resolvedOrderId || Number.isNaN(numericOrderId)) {
-        setIsVatInvoice(false);
-        return;
-      }
-
-      try {
-        const token = localStorage.getItem("token") || undefined;
-        const order = await orderService.getOrderById(numericOrderId, token);
-        setIsVatInvoice(order.requireVatInvoice);
-      } catch (error) {
-        console.error(
-          "Không thể tải thông tin đơn hàng để hiển thị hóa đơn:",
-          error,
-        );
-        setIsVatInvoice(false);
-      }
-    };
-
-    void loadOrderInfo();
-  }, [resolvedOrderId, numericOrderId]);
-
-  const handleDownloadInvoice = async (type: InvoiceType) => {
+  const handleDownloadInvoice = async () => {
     if (!resolvedOrderId || Number.isNaN(numericOrderId)) return;
 
     try {
-      setDownloadingType(type);
+      setIsDownloadingInvoice(true);
       const token = localStorage.getItem("token") || undefined;
-
-      if (type === "vat") {
-        await orderService.downloadVatInvoice(numericOrderId, token);
-      } else {
-        await orderService.downloadInvoice(numericOrderId, token);
-      }
+      await orderService.downloadInvoice(numericOrderId, token);
     } catch (error) {
       console.error("Lỗi khi tải hóa đơn:", error);
       alert("Đã xảy ra lỗi khi tải hóa đơn. Vui lòng thử lại sau.");
     } finally {
-      setDownloadingType(null);
+      setIsDownloadingInvoice(false);
     }
   };
 
@@ -116,8 +81,8 @@ export default function PaymentSuccess({
               Thanh toán thành công
             </h1>
             <p className="mx-auto max-w-md text-base leading-7 text-gray-600">
-              Cảm ơn bạn đã mua hàng. Bạn có thể tải hóa đơn ngay hoặc tiếp tục
-              khám phá thêm sản phẩm.
+              Cảm ơn bạn đã mua hàng. Hóa đơn bán hàng sẽ được gửi qua email;
+              nếu có yêu cầu VAT, thông tin VAT đã được ghi nhận để xác thực.
             </p>
             {resolvedOrderId && (
               <div className="inline-flex items-center gap-2 rounded-full border border-[#EDE5B5] bg-[#FBF5E8]/70 px-4 py-2 text-sm font-semibold text-tet-primary">
@@ -129,41 +94,20 @@ export default function PaymentSuccess({
 
           <div className="mt-8 flex flex-col gap-4">
             {resolvedOrderId && (
-              <div
-                className={`grid gap-3 ${
-                  isVatInvoice ? "grid-cols-2" : "grid-cols-1"
-                }`}
+              <Button
+                onClick={handleDownloadInvoice}
+                disabled={isDownloadingInvoice}
+                className="h-14 w-full min-w-0 rounded-xl bg-[#006969] px-3 text-sm font-bold text-white shadow-md shadow-[#006969]/20 hover:bg-[#005858] sm:text-base"
               >
-                <Button
-                  onClick={() => handleDownloadInvoice("regular")}
-                  disabled={downloadingType !== null}
-                  className="h-14 min-w-0 rounded-xl bg-[#006969] px-3 text-sm font-bold text-white shadow-md shadow-[#006969]/20 hover:bg-[#005858] sm:text-base"
-                >
-                  {isDownloadingRegular ? (
-                    <Loader2 className="size-5 animate-spin" />
-                  ) : (
-                    <FileDown className="size-5" />
-                  )}
-                  {isDownloadingRegular
-                    ? "Đang xử lý..."
-                    : "Tải hóa đơn thường"}
-                </Button>
-
-                {isVatInvoice && (
-                  <Button
-                    onClick={() => handleDownloadInvoice("vat")}
-                    disabled={downloadingType !== null}
-                    className="h-14 min-w-0 rounded-xl bg-tet-primary px-3 text-sm font-bold text-white shadow-md shadow-[#5A1107]/20 hover:bg-tet-accent sm:text-base"
-                  >
-                    {isDownloadingVat ? (
-                      <Loader2 className="size-5 animate-spin" />
-                    ) : (
-                      <FileDown className="size-5" />
-                    )}
-                    {isDownloadingVat ? "Đang xử lý..." : "Tải hóa đơn VAT"}
-                  </Button>
+                {isDownloadingInvoice ? (
+                  <Loader2 className="size-5 animate-spin" />
+                ) : (
+                  <FileDown className="size-5" />
                 )}
-              </div>
+                {isDownloadingInvoice
+                  ? "Đang xử lý..."
+                  : "Tải hóa đơn bán hàng"}
+              </Button>
             )}
 
             <Button

@@ -54,9 +54,7 @@ export default function OrderDetailModal({
     productId: 0,
     productName: "",
   });
-  const [downloadingInvoiceType, setDownloadingInvoiceType] = useState<
-    "regular" | "vat" | null
-  >(null);
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
   const [stockMovementsLoading, setStockMovementsLoading] = useState(false);
 
@@ -159,20 +157,16 @@ export default function OrderDetailModal({
     setIsEditing(false);
   };
 
-  const handleDownloadInvoice = async (invoiceType: "regular" | "vat") => {
+  const handleDownloadInvoice = async () => {
     try {
-      setDownloadingInvoiceType(invoiceType);
+      setIsDownloadingInvoice(true);
       const token = localStorage.getItem("token") || undefined;
-      if (invoiceType === "vat") {
-        await orderService.downloadVatInvoice(displayOrder.orderId, token);
-      } else {
-        await orderService.downloadInvoice(displayOrder.orderId, token);
-      }
+      await orderService.downloadInvoice(displayOrder.orderId, token);
     } catch (error) {
       console.error("Error downloading invoice:", error);
       alert("Không thể tải hóa đơn. Vui lòng thử lại!");
     } finally {
-      setDownloadingInvoiceType(null);
+      setIsDownloadingInvoice(false);
     }
   };
 
@@ -524,7 +518,7 @@ export default function OrderDetailModal({
           {displayOrder.requireVatInvoice && (
             <section className="space-y-4">
               <h3 className="text-xl font-serif font-bold text-tet-primary px-1">
-                Thông tin hóa đơn VAT
+                Thông tin VAT đã ghi nhận
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-white border border-gray-100 shadow-sm rounded-3xl">
                 <div>
@@ -553,7 +547,7 @@ export default function OrderDetailModal({
                 </div>
                 <div className="md:col-span-2">
                   <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
-                    Email nhận hóa đơn
+                    Email xác thực VAT
                   </p>
                   <p className="text-sm font-bold text-gray-800 mt-1">
                     {displayOrder.vatInvoiceEmail || "Không có"}
@@ -636,35 +630,17 @@ export default function OrderDetailModal({
         {/* Modal Footer */}
         <div className="sticky bottom-0 bg-white/90 backdrop-blur-md border-t border-gray-100 p-6 flex flex-wrap justify-end gap-3 z-10">
           <button
-            onClick={() => handleDownloadInvoice("regular")}
-            disabled={downloadingInvoiceType !== null}
+            onClick={handleDownloadInvoice}
+            disabled={isDownloadingInvoice}
             className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
           >
-            {downloadingInvoiceType === "regular" ? (
+            {isDownloadingInvoice ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <FileDown className="w-4 h-4" />
             )}
-            {downloadingInvoiceType === "regular"
-              ? "Đang tải..."
-              : "Tải hóa đơn thường"}
+            {isDownloadingInvoice ? "Đang tải..." : "Tải hóa đơn bán hàng"}
           </button>
-          {displayOrder.requireVatInvoice && (
-            <button
-              onClick={() => handleDownloadInvoice("vat")}
-              disabled={downloadingInvoiceType !== null}
-              className="px-6 py-3 bg-tet-primary text-white rounded-full hover:bg-[#A30D25] disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
-            >
-              {downloadingInvoiceType === "vat" ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <FileDown className="w-4 h-4" />
-              )}
-              {downloadingInvoiceType === "vat"
-                ? "Đang tải..."
-                : "Tải hóa đơn VAT"}
-            </button>
-          )}
           <button
             onClick={onClose}
             className="px-8 py-3 bg-gray-900 text-white rounded-full hover:bg-black transition-all font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5"

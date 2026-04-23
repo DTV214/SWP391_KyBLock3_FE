@@ -426,7 +426,7 @@ export default function StaffQuotationDetailPage() {
                     <p>Công ty: <span className="font-semibold">{detail.vatCompanyName || "-"}</span></p>
                     <p>Mã số thuế: <span className="font-semibold">{detail.vatCompanyTaxCode || "-"}</span></p>
                     <p>Địa chỉ: <span className="font-semibold">{detail.vatCompanyAddress || "-"}</span></p>
-                    <p>Email hóa đơn: <span className="font-semibold">{detail.vatInvoiceEmail || "-"}</span></p>
+                    <p>Email xác thực VAT: <span className="font-semibold">{detail.vatInvoiceEmail || "-"}</span></p>
                   </div>
                 </div>
               )}

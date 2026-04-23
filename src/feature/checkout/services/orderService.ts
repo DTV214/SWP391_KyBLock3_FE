@@ -416,22 +416,6 @@ export const downloadInvoice = async (
   );
 };
 
-/**
- * Download VAT invoice PDF.
- * GET /api/orders/{orderId}/invoice-vat
- */
-export const downloadVatInvoice = async (
-  orderId: number,
-  token?: string,
-): Promise<void> => {
-  return downloadPdfByUrl(
-    API_ENDPOINTS.ORDERS.INVOICE_VAT(orderId),
-    orderId,
-    token,
-    "HoaDonVAT",
-  );
-};
-
 const downloadPdfByUrl = async (
   requestUrl: string,
   orderId: number,
@@ -483,5 +467,4 @@ export const orderService = {
   allocateOrderStock,
   cancelOrder,
   downloadInvoice,
-  downloadVatInvoice,
 };

@@ -313,7 +313,7 @@ export default function QuotationStatusPage() {
                       <span className="font-semibold text-right">{detail.vatCompanyAddress || "-"}</span>
                     </div>
                     <div className="flex justify-between gap-4">
-                      <span>Email hóa đơn</span>
+                      <span>Email xác thực VAT</span>
                       <span className="font-semibold text-right">{detail.vatInvoiceEmail || "-"}</span>
                     </div>
                   </div>

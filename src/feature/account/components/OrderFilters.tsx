@@ -102,7 +102,7 @@ export default function OrderFilters({
           {/* VAT Filter */}
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-widest text-gray-500">
-              Loại hóa đơn
+              Thông tin VAT
             </label>
             <select
               defaultValue="all"
