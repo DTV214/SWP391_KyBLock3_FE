@@ -5,6 +5,8 @@ import { categoryService, type Category } from "../../../api/categoryService";
 import axiosClient from "../../../api/axiosClient";
 import { API_ENDPOINTS } from "../../../api/apiConfig";
 import { useNavigate } from "react-router-dom";
+import ProductAssociationsWidget from "../components/ProductAssociationsWidget";
+import TopProductFinancials from "../components/TopProductFinancials";
 
 const PAGE_SIZE = 6;
 type MainTab = "single" | "baskets";
@@ -814,6 +816,9 @@ export default function AdminProducts() {
           )}
         </>
       )}
+
+      <ProductAssociationsWidget />
+      <TopProductFinancials />
 
       {/* Create/Edit Modal */}
       {showModal && (

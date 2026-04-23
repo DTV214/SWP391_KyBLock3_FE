@@ -24,15 +24,11 @@ import {
 } from "lucide-react";
 import RevenueChart from "../components/RevenueChart";
 import CustomerEfficiencyWidget from "../components/CustomerEfficiencyWidget";
-import VatSegmentChart from "../components/VatSegmentChart";
-import ProductAssociationsWidget from "../components/ProductAssociationsWidget";
 import { DashboardInsightsContainer } from "../components/insights/DashboardInsightsContainer";
 import MonthlyComparisonChart from "../components/MonthlyComparisonChart";
 import CategoryPerformanceCharts from "../components/CategoryPerformanceCharts";
 import TopTrendingProducts from "../components/TopTrendingProducts";
 import { CustomerCareInsights } from "../components/insights/CustomerCareInsights";
-import TopProductFinancials from "../components/TopProductFinancials";
-import { orderService, type OrderResponse } from "@/feature/checkout/services/orderService";
 import adminDashboardService, {
   type DashboardSummary,
   type DashboardHighlights,
@@ -63,9 +59,6 @@ export default function AdminOverview() {
   const [newCustomersSummary, setNewCustomersSummary] = useState<
     DashboardSummary["newAccounts"] | null
   >(null);
-  const [vatOrders, setVatOrders] = useState<OrderResponse[]>([]);
-  const [vatLoading, setVatLoading] = useState(true);
-  const [vatError, setVatError] = useState<string | null>(null);
 
   const handleScrollToRevenueChart = () => {
     revenueChartSectionRef.current?.scrollIntoView({
@@ -109,41 +102,6 @@ export default function AdminOverview() {
     };
 
     void fetchData();
-  }, []);
-
-  useEffect(() => {
-    const loadVatOrders = async () => {
-      try {
-        setVatLoading(true);
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setVatOrders([]);
-          setVatError("Không tìm thấy phiên đăng nhập để tải dữ liệu VAT.");
-          return;
-        }
-
-        const firstPageData = await orderService.getAllOrders(1, token);
-        let allOrdersData = [...firstPageData.data];
-
-        if (firstPageData.totalPages > 1) {
-          for (let page = 2; page <= firstPageData.totalPages; page++) {
-            const pageData = await orderService.getAllOrders(page, token);
-            allOrdersData = [...allOrdersData, ...pageData.data];
-          }
-        }
-
-        setVatOrders(allOrdersData);
-        setVatError(null);
-      } catch (err) {
-        console.error("Failed to load VAT chart data:", err);
-        setVatOrders([]);
-        setVatError("Không thể tải dữ liệu biểu đồ VAT.");
-      } finally {
-        setVatLoading(false);
-      }
-    };
-
-    void loadVatOrders();
   }, []);
 
   useEffect(() => {
@@ -428,28 +386,7 @@ export default function AdminOverview() {
 
       <MonthlyComparisonChart />
       <TopTrendingProducts />
-      <TopProductFinancials initialProducts={data?.topProducts || []} />
       <CategoryPerformanceCharts />
-
-      {vatLoading ? (
-        <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="flex min-h-[220px] items-center justify-center gap-2 text-sm text-gray-500">
-            <Loader2 className="animate-spin" size={18} />
-            Đang tải dữ liệu VAT...
-          </div>
-        </section>
-      ) : vatError ? (
-        <section className="rounded-[2rem] border border-red-100 bg-red-50 p-6 shadow-sm">
-          <p className="text-sm text-red-600">{vatError}</p>
-        </section>
-      ) : (
-        <VatSegmentChart
-          orders={vatOrders}
-          subtitlePrefix="Toàn bộ đơn hàng hiện tại:"
-        />
-      )}
-
-      <ProductAssociationsWidget />
 
       <section className="rounded-[2rem] border border-blue-100 bg-gradient-to-br from-blue-50 to-purple-50 p-5 xl:p-6">
         <div className="flex items-center justify-between">

@@ -13,6 +13,7 @@ import {
   type OrderResponse,
 } from "@/feature/checkout/services/orderService";
 import type { SortBy } from "@/feature/account/utils/orderFilterUtils";
+import VatSegmentChart from "../components/VatSegmentChart";
 
 // Trạng thái đơn hàng đã thanh toán
 const PAID_STATUSES = [
@@ -390,6 +391,11 @@ export default function AdminOrderHistory() {
           </button>
         </div>
       )}
+
+      <VatSegmentChart
+        orders={filteredOrders}
+        subtitlePrefix="Theo bộ lọc hiện tại:"
+      />
 
       {selectedOrder && (
         <OrderDetailModal
