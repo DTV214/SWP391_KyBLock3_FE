@@ -243,10 +243,17 @@ export default function AdminChatPage() {
     const syncConversation = async () => {
       await loadMessages(selectedConversationId);
       await markAsRead(selectedConversationId);
-      await loadConversations();
+      setUnreadMap((prev) => ({ ...prev, [selectedConversationId]: 0 }));
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.senderId === selectedConversation?.userId
+            ? { ...message, isRead: true }
+            : message,
+        ),
+      );
     };
     void syncConversation();
-  }, [selectedConversationId]);
+  }, [selectedConversationId, selectedConversation?.userId]);
 
   useEffect(() => {
     if (!selectedConversationId) return;

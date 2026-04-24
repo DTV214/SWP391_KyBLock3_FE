@@ -214,7 +214,7 @@ export const API_ENDPOINTS = {
     READ: (conversationId: string | number) =>
       `${BASE_URL}/chat/read/${conversationId}`,
     BACKOFFICE_ORDER_DETAIL: (orderId: string | number) =>
-      `${BASE_URL}/${orderId}`,
+      `${BASE_URL}/orders/${orderId}`,
   },
   STORE_LOCATIONS: {
     LIST: `${BASE_URL}/store-locations`,
