@@ -68,9 +68,6 @@ export default function OrderDetailModal({
   const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
   const [stockMovementsLoading, setStockMovementsLoading] = useState(false);
-  const orderTypeLabel = displayOrder.isFromQuotation
-    ? "Đơn từ báo giá"
-    : "Đơn thường";
 
   // Sync displayOrder with order prop when it changes
   useEffect(() => {
@@ -321,15 +318,6 @@ export default function OrderDetailModal({
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {displayOrder.requireVatInvoice && <VatOrderBadge />}
-                <p
-                  className={`text-sm px-4 py-1.5 rounded-full border font-bold inline-block shadow-sm ${
-                    displayOrder.isFromQuotation
-                      ? "border-indigo-200 bg-indigo-50 text-indigo-700"
-                      : "border-gray-200 bg-white text-gray-600"
-                  }`}
-                >
-                  {orderTypeLabel}
-                </p>
                 <p
                   className={`text-sm px-4 py-1.5 rounded-full border font-bold inline-block shadow-sm ${getStatusColorClass(displayOrder.status)}`}
                 >

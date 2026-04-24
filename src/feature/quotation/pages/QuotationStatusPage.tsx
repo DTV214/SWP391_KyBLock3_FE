@@ -45,6 +45,11 @@ const formatMoney = (value?: number | null) => {
   return `${value.toLocaleString("vi-VN")}đ`;
 };
 
+const formatDate = (value?: string | null) => {
+  if (!value) return "Chưa có";
+  return new Date(value).toLocaleString("vi-VN");
+};
+
 export default function QuotationStatusPage() {
   const { id } = useParams();
   const location = useLocation();
@@ -101,7 +106,6 @@ export default function QuotationStatusPage() {
   const hasVatRequest = detail?.requireVatInvoice === true;
 
   const fallbackItems = useMemo(() => state.items || [], [state.items]);
-
   const handleSubmitToStaff = async () => {
     if (!id) return;
     try {
@@ -206,38 +210,67 @@ export default function QuotationStatusPage() {
             </div>
           </div>
 
-          <div className="mt-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="rounded-3xl border border-[#f1e1d6] bg-white p-6">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-[#7a160e]/70">Thông tin yêu cầu</h3>
-              <div className="mt-4 space-y-3 text-sm text-[#7b5a4c]">
-                <div className="flex justify-between gap-4">
-                  <span>Công ty</span>
-                  <span className="font-semibold text-[#4a0d06] text-right">{detail?.company || state.company || "Chưa cập nhật"}</span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span>Email</span>
-                  <span className="font-semibold text-[#4a0d06] text-right">{detail?.email || state.email || "Chưa cập nhật"}</span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span>Số điện thoại</span>
-                  <span className="font-semibold text-[#4a0d06] text-right">{detail?.phone || state.phone || "Chưa cập nhật"}</span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span>Địa chỉ</span>
-                  <span className="font-semibold text-[#4a0d06] text-right">{detail?.address || state.address || "Chưa cập nhật"}</span>
-                </div>
+          <div className="mt-10 rounded-3xl border border-[#f1e1d6] bg-white p-6">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-[#7a160e]/70">Thông tin yêu cầu</h3>
+            <div className="mt-4 grid gap-3 text-sm text-[#7b5a4c] md:grid-cols-2">
+              <div className="flex justify-between gap-4 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3">
+                <span>Công ty</span>
+                <span className="font-semibold text-[#4a0d06] text-right">{detail?.company || state.company || "Chưa cập nhật"}</span>
+              </div>
+              <div className="flex justify-between gap-4 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3">
+                <span>Email</span>
+                <span className="font-semibold text-[#4a0d06] text-right">{detail?.email || state.email || "Chưa cập nhật"}</span>
+              </div>
+              <div className="flex justify-between gap-4 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3">
+                <span>Số điện thoại</span>
+                <span className="font-semibold text-[#4a0d06] text-right">{detail?.phone || state.phone || "Chưa cập nhật"}</span>
+              </div>
+              <div className="flex justify-between gap-4 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3">
+                <span>Địa chỉ</span>
+                <span className="font-semibold text-[#4a0d06] text-right">{detail?.address || state.address || "Chưa cập nhật"}</span>
+              </div>
+              <div className="flex justify-between gap-4 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3">
+                <span>Loại báo giá</span>
+                <span className="font-semibold text-[#4a0d06] text-right">{detail?.quotationType || "Chưa có"}</span>
+              </div>
+              <div className="flex justify-between gap-4 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3">
+                <span>Lần chỉnh sửa</span>
+                <span className="font-semibold text-[#4a0d06] text-right">{detail?.revision ?? 0}</span>
+              </div>
+              <div className="flex justify-between gap-4 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3">
+                <span>Ngày tạo</span>
+                <span className="font-semibold text-[#4a0d06] text-right">{formatDate(detail?.requestDate)}</span>
+              </div>
+              <div className="flex justify-between gap-4 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3">
+                <span>Ngày gửi</span>
+                <span className="font-semibold text-[#4a0d06] text-right">{formatDate(detail?.submittedAt)}</span>
+              </div>
+              <div className="flex justify-between gap-4 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3 md:col-span-2">
+                <span>Mã đơn hàng</span>
+                <span className="font-semibold text-[#4a0d06] text-right">{detail?.orderId ?? "Chưa tạo"}</span>
+              </div>
+              <div className="rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] p-4 md:col-span-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a160e]/70">Ghi chú</p>
+                <p className="mt-2 text-sm text-[#4a0d06]">
+                  Ghi chú ngân sách: {detail?.desiredPriceNote || "Không có"}
+                </p>
+                <p className="mt-2 text-sm text-[#4a0d06]">
+                  Ghi chú thêm: {detail?.note || "Không có"}
+                </p>
               </div>
             </div>
+          </div>
 
-            <div className="rounded-3xl border border-[#f1e1d6] bg-white p-6">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-[#7a160e]/70">Danh sách sản phẩm</h3>
-              <div className="mt-4 space-y-3 text-sm text-[#7b5a4c]">
-                {detail?.lines && detail.lines.length > 0 ? (
-                  detail.lines.map((item) => (
-                    <div
-                      key={item.quotationItemId}
-                      className="flex items-center justify-between rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3"
-                    >
+          <div className="mt-6 rounded-3xl border border-[#f1e1d6] bg-white p-6">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-[#7a160e]/70">Danh sách sản phẩm</h3>
+            <div className="mt-4 space-y-3 text-sm text-[#7b5a4c]">
+              {detail?.lines && detail.lines.length > 0 ? (
+                detail.lines.map((item) => (
+                  <div
+                    key={item.quotationItemId}
+                    className="rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className="h-12 w-12 overflow-hidden rounded-xl bg-[#f1e1d6]">
                           {productImageMap[item.productId] ? (
@@ -253,26 +286,65 @@ export default function QuotationStatusPage() {
                       </div>
                       <span className="text-xs font-semibold">Số lượng: {item.quantity}</span>
                     </div>
-                  ))
-                ) : fallbackItems.length > 0 ? (
-                  fallbackItems.map((item, index) => (
-                    <div
-                      key={`${item.productname}-${index}`}
-                      className="flex items-center justify-between rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3"
-                    >
-                      <div>
-                        <p className="font-semibold text-[#4a0d06]">{item.productname}</p>
-                        <p className="text-xs text-[#8a5b4f]">{item.sku ? `Mã SP: ${item.sku}` : "Mã SP: N/A"}</p>
+                    <div className="mt-4 grid gap-2 rounded-2xl border border-[#ead8cc] bg-white p-3 text-xs text-[#7b5a4c]">
+                      <div className="flex justify-between gap-4">
+                        <span>Đơn giá</span>
+                        <span className="font-semibold text-[#4a0d06]">{formatMoney(item.unitPrice)}</span>
                       </div>
-                      <span className="text-xs font-semibold">Số lượng: {item.quantity}</span>
+                      <div className="flex justify-between gap-4">
+                        <span>Giá gốc</span>
+                        <span className="font-semibold text-[#4a0d06]">{formatMoney(item.originalLineTotal)}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span>Giảm trừ</span>
+                        <span className="font-semibold text-emerald-700">{formatMoney(item.subtractTotal)}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span>Cộng thêm</span>
+                        <span className="font-semibold text-rose-700">{formatMoney(item.addTotal)}</span>
+                      </div>
+                      <div className="flex justify-between gap-4 border-t border-[#f1e1d6] pt-2">
+                        <span>Thành tiền</span>
+                        <span className="font-bold text-[#7a160e]">{formatMoney(item.finalLineTotal)}</span>
+                      </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-[#f1e1d6] p-4 text-center text-xs text-[#8a5b4f]">
-                    Không có dữ liệu sản phẩm.
+                    {item.fees && item.fees.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {item.fees.map((fee) => (
+                          <div key={fee.quotationFeeId} className="flex items-center justify-between rounded-xl border border-[#ead8cc] bg-white px-3 py-2 text-xs">
+                            <div>
+                              <p className={`font-semibold ${fee.isSubtracted === 1 ? "text-rose-700" : "text-emerald-700"}`}>
+                                {fee.isSubtracted === 1 ? "Cộng thêm" : "Giảm trừ"}
+                              </p>
+                              <p className="mt-1 text-[#8a5b4f]">{fee.description || "Không có mô tả"}</p>
+                            </div>
+                            <span className={`font-bold ${fee.isSubtracted === 1 ? "text-rose-700" : "text-emerald-700"}`}>
+                              {fee.isSubtracted === 1 ? "+" : "-"}{formatMoney(fee.price)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                ))
+              ) : fallbackItems.length > 0 ? (
+                fallbackItems.map((item, index) => (
+                  <div
+                    key={`${item.productname}-${index}`}
+                    className="flex items-center justify-between rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-semibold text-[#4a0d06]">{item.productname}</p>
+                      <p className="text-xs text-[#8a5b4f]">{item.sku ? `Mã SP: ${item.sku}` : "Mã SP: N/A"}</p>
+                    </div>
+                    <span className="text-xs font-semibold">Số lượng: {item.quantity}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-[#f1e1d6] p-4 text-center text-xs text-[#8a5b4f]">
+                  Không có dữ liệu sản phẩm.
+                </div>
+              )}
             </div>
           </div>
 
@@ -281,6 +353,18 @@ export default function QuotationStatusPage() {
               <div className="rounded-3xl border border-[#f1e1d6] bg-white p-6">
                 <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-[#7a160e]/70">Tổng thanh toán dự kiến</h3>
                 <div className="mt-4 space-y-3 text-sm text-[#7b5a4c]">
+                  <div className="flex justify-between gap-4">
+                    <span>Tổng gốc</span>
+                    <span className="font-semibold text-[#4a0d06]">{formatMoney(detail.totalOriginal)}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span>Tổng giảm trừ</span>
+                    <span className="font-semibold text-emerald-700">{formatMoney(detail.totalSubtract)}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span>Tổng cộng thêm</span>
+                    <span className="font-semibold text-rose-700">{formatMoney(detail.totalAdd)}</span>
+                  </div>
                   <div className="flex justify-between gap-4">
                     <span>Trước VAT</span>
                     <span className="font-semibold text-[#4a0d06]">{formatMoney(detail.totalAfterDiscount)}</span>
@@ -395,11 +479,11 @@ export default function QuotationStatusPage() {
             )}
             {(currentStatus === "CONVERTED_TO_ORDER" || currentStatus === "CUSTOMER_ACCEPTED") && (
               <Link
-                to="/account/orders"
+                to={detail?.orderId ? `/account/orders/${detail.orderId}` : "/account/orders"}
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
               >
                 <ShoppingBag className="h-4 w-4" />
-                Xem đơn hàng của tôi
+                {detail?.orderId ? `Xem đơn hàng #${detail.orderId}` : "Xem đơn hàng của tôi"}
               </Link>
             )}
             <Link

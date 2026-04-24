@@ -311,7 +311,7 @@ export default function AdminOrderHistory() {
               : "text-gray-600 hover:bg-gray-50"
           }`}
         >
-          {"\u0110\u01a1n t\u1eeb quotation"}
+          {"Đơn hàng báo giá"}
         </button>
       </div>
 
@@ -343,7 +343,7 @@ export default function AdminOrderHistory() {
           </p>
           <p className="text-sm text-gray-400">
             {quotationType === "quotation"
-              ? "Kh\u00f4ng c\u00f3 \u0111\u01a1n quotation ph\u00f9 h\u1ee3p v\u1edbi b\u1ed9 l\u1ecdc."
+              ? "Không có đơn hàng báo giá phù hợp với bộ lọc."
               : "Kh\u00f4ng c\u00f3 \u0111\u01a1n h\u00e0ng th\u01b0\u1eddng n\u00e0o ho\u1eb7c kh\u00f4ng c\u00f3 \u0111\u01a1n h\u00e0ng ph\u00f9 h\u1ee3p v\u1edbi b\u1ed9 l\u1ecdc."}
           </p>
         </div>

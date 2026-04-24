@@ -58,7 +58,6 @@ export default function OrderCard({
   const firstItem = order.items[0];
   const placeholder = "https://via.placeholder.com/80?text=No+Image";
   const actualRevenue = order.actualRevenue ?? null;
-  const orderTypeLabel = order.isFromQuotation ? "Đơn từ báo giá" : "Đơn thường";
 
   useEffect(() => {
     setOrder(initialOrder);
@@ -215,15 +214,6 @@ export default function OrderCard({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {order.requireVatInvoice && <VatOrderBadge />}
-            <span
-              className={`text-[10px] px-3 py-1 rounded-full border font-bold uppercase tracking-widest ${
-                order.isFromQuotation
-                  ? "border-indigo-200 bg-indigo-50 text-indigo-700"
-                  : "border-gray-200 bg-gray-50 text-gray-600"
-              }`}
-            >
-              {orderTypeLabel}
-            </span>
             <span
               className={`text-[10px] px-3 py-1 rounded-full border font-bold uppercase tracking-widest ${getDisplayStatusColorClass(order.status)}`}
             >
