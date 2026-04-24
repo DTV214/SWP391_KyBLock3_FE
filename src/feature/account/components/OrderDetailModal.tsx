@@ -1,11 +1,17 @@
 ﻿import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { X, Loader2, Edit2, Save, X as XIcon, Package, FileDown } from "lucide-react";
 import {
   type OrderResponse,
   type OrderItem,
   orderService,
 } from "@/feature/checkout/services/orderService";
+import {
+  quotationService,
+  type QuotationDetail,
+} from "@/feature/quotation/services/quotationService";
+import { getQuotationStatusMeta } from "@/feature/quotation/utils/quotationStatus";
 import { formatOrderDate } from "../utils/orderFilterUtils";
 import {
   translateOrderStatus,
@@ -54,9 +60,17 @@ export default function OrderDetailModal({
     productId: 0,
     productName: "",
   });
+  const [quotationDetail, setQuotationDetail] = useState<QuotationDetail | null>(
+    null,
+  );
+  const [quotationLoading, setQuotationLoading] = useState(false);
+  const [quotationError, setQuotationError] = useState<string | null>(null);
   const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
   const [stockMovementsLoading, setStockMovementsLoading] = useState(false);
+  const orderTypeLabel = displayOrder.isFromQuotation
+    ? "Đơn từ báo giá"
+    : "Đơn thường";
 
   // Sync displayOrder with order prop when it changes
   useEffect(() => {
@@ -76,6 +90,91 @@ export default function OrderDetailModal({
       loadPayments();
     }
   }, [isOpen, order.orderId]);
+
+  useEffect(() => {
+    if (!isOpen || displayOrder.isFromQuotation !== true) {
+      setQuotationDetail(null);
+      setQuotationError(null);
+      setQuotationLoading(false);
+      return;
+    }
+
+    if (typeof displayOrder.quotationId !== "number") {
+      setQuotationDetail(null);
+      setQuotationError("Đơn hàng này chưa có mã báo giá liên kết.");
+      setQuotationLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadQuotationDetail = async () => {
+      setQuotationLoading(true);
+      setQuotationError(null);
+
+      const quotationId = displayOrder.quotationId as number;
+      const requestFactories = isAdmin
+        ? [
+            (targetQuotationId: number) =>
+              quotationService.getAdminQuotationById(targetQuotationId),
+            (targetQuotationId: number) =>
+              quotationService.getStaffQuotationById(targetQuotationId),
+            (targetQuotationId: number) =>
+              quotationService.getQuotationById(targetQuotationId),
+          ]
+        : [
+            (targetQuotationId: number) =>
+              quotationService.getQuotationById(targetQuotationId),
+          ];
+
+      for (const requestFactory of requestFactories) {
+        try {
+          const response = await requestFactory(quotationId);
+          const nextDetail = (response?.data || null) as QuotationDetail | null;
+          if (!nextDetail) continue;
+
+          const orderMatches =
+            nextDetail.orderId == null ||
+            nextDetail.orderId === displayOrder.orderId;
+
+          if (!orderMatches) {
+            continue;
+          }
+
+          if (isMounted) {
+            setQuotationDetail(nextDetail);
+            setQuotationError(null);
+          }
+          return;
+        } catch {
+          // Try the next available quotation endpoint.
+        }
+      }
+
+      if (isMounted) {
+        setQuotationDetail(null);
+        setQuotationError(
+          "Không thể tải chi tiết báo giá cho đơn hàng quotation này.",
+        );
+      }
+    };
+
+    void loadQuotationDetail().finally(() => {
+      if (isMounted) {
+        setQuotationLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    displayOrder.isFromQuotation,
+    displayOrder.orderId,
+    displayOrder.quotationId,
+    isAdmin,
+    isOpen,
+  ]);
 
   const loadPayments = async () => {
     try {
@@ -172,6 +271,14 @@ export default function OrderDetailModal({
 
   if (!isOpen) return null;
 
+  const isQuotationOrder = displayOrder.isFromQuotation === true;
+  const quotationStatusMeta = getQuotationStatusMeta(quotationDetail?.status);
+  const getOrderItemImage = (productId: number) =>
+    displayOrder.items.find((item) => item.productId === productId)?.imageUrl ||
+    "";
+  const formatQuotationMoney = (value?: number | null) =>
+    typeof value === "number" ? `${value.toLocaleString("vi-VN")}đ` : "Chưa có";
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -214,6 +321,15 @@ export default function OrderDetailModal({
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {displayOrder.requireVatInvoice && <VatOrderBadge />}
+                <p
+                  className={`text-sm px-4 py-1.5 rounded-full border font-bold inline-block shadow-sm ${
+                    displayOrder.isFromQuotation
+                      ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                      : "border-gray-200 bg-white text-gray-600"
+                  }`}
+                >
+                  {orderTypeLabel}
+                </p>
                 <p
                   className={`text-sm px-4 py-1.5 rounded-full border font-bold inline-block shadow-sm ${getStatusColorClass(displayOrder.status)}`}
                 >
@@ -394,125 +510,281 @@ export default function OrderDetailModal({
 
           {/* Order Items Section */}
           <section className="space-y-4">
-            <h3 className="text-xl font-serif font-bold text-tet-primary px-1">
-              Sản phẩm đơn hàng
-            </h3>
-            <div className="space-y-4">
-              {displayOrder.items.map((item: OrderItem) => (
-                <div key={item.orderDetailId} className="space-y-2">
-                  {/* Main item */}
-                  <div className="flex gap-4 p-4 bg-white rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
-                    <div className="w-20 h-20 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
-                      {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl}
-                          alt={item.productName}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-tet-secondary to-tet-primary/10">
-                          <span className="text-2xl">🎁</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 flex flex-col justify-center">
-                      <div className="flex items-start justify-between mb-1">
-                        <h4 className="font-bold text-gray-800 text-base">
-                          {item.productName}
-                        </h4>
-                        {isAdmin &&
-                          (!item.productDetails ||
-                            item.productDetails.length === 0) && (
-                            <button
-                              onClick={() =>
-                                loadStockMovements(
-                                  item.productId,
-                                  item.productName,
-                                )
-                              }
-                              disabled={stockMovementsLoading}
-                              className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg font-bold text-xs transition-all disabled:opacity-50 whitespace-nowrap flex items-center gap-1.5"
-                              title="Xem lịch sử di chuyển kho"
-                            >
-                              <Package className="w-3.5 h-3.5" /> Kho
-                            </button>
-                          )}
-                      </div>
-                      <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-3">
-                        SKU: {item.sku}
-                      </p>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
-                          {(
-                            item.quantity > 0 ? item.amount / item.quantity : item.price
-                          ).toLocaleString("vi-VN")}
-                          đ <span className="text-xs">x</span>{" "}
-                          <span className="font-bold text-gray-800">
-                            {item.quantity}
-                          </span>
-                        </span>
-                        <span className="font-black text-tet-primary text-lg ml-auto">
-                          {item.amount.toLocaleString("vi-VN")}đ
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+              <h3 className="text-xl font-serif font-bold text-tet-primary">
+                {isQuotationOrder ? "Chi tiết sản phẩm theo báo giá" : "Sản phẩm đơn hàng"}
+              </h3>
+              {isQuotationOrder && displayOrder.quotationId != null && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    to={`/quotation/status/${displayOrder.quotationId}`}
+                    className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100"
+                  >
+                    Xem báo giá #{displayOrder.quotationId}
+                  </Link>
+                  {quotationDetail && (
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-bold ${quotationStatusMeta.badgeClass}`}
+                    >
+                      {quotationStatusMeta.label}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
 
-                  {/* Product Details (nested items) */}
-                  {item.productDetails && item.productDetails.length > 0 && (
-                    <div className="ml-6 space-y-2.5 p-4 bg-gray-50/80 rounded-2xl border border-gray-100">
-                      <p className="text-[11px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
-                        <Package size={14} /> Thành phần trong giỏ:
-                      </p>
-                      {item.productDetails.map((detail: any, index: number) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-3 p-2 bg-white rounded-xl border border-gray-100 shadow-sm"
-                        >
-                          <div className="w-10 h-10 bg-gray-50 rounded-lg overflow-hidden shrink-0">
-                            {detail.imageurl ? (
+            {isQuotationOrder ? (
+              quotationLoading ? (
+                <div className="flex items-center gap-3 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                  <Loader2 className="h-5 w-5 animate-spin text-tet-primary" />
+                  <p className="text-sm text-gray-600">
+                    Đang tải chi tiết báo giá...
+                  </p>
+                </div>
+              ) : quotationError ? (
+                <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+                  {quotationError}
+                </div>
+              ) : quotationDetail ? (
+                <div className="space-y-4">
+                  {quotationDetail.lines.map((line) => (
+                    <div
+                      key={line.quotationItemId}
+                      className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm"
+                    >
+                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                        <div className="flex gap-4">
+                          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
+                            {getOrderItemImage(line.productId) ? (
                               <img
-                                src={detail.imageurl}
-                                alt={detail.productname}
-                                className="w-full h-full object-cover"
+                                src={getOrderItemImage(line.productId)}
+                                alt={line.productName}
+                                className="h-full w-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gray-100 text-xs">
-                                📷
+                              <div className="flex h-full w-full items-center justify-center text-xs font-bold text-gray-300">
+                                No image
                               </div>
                             )}
                           </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-bold text-gray-700 truncate">
-                              {detail.productname}
+                          <div className="min-w-0">
+                            <p className="text-base font-bold text-gray-900">
+                              {line.productName}
                             </p>
-                            <div className="flex items-center justify-between mt-0.5">
-                              <span className="text-xs font-black text-tet-primary">
-                                x{detail.quantity}
-                              </span>
-                              {isAdmin && (
-                                <button
-                                  onClick={() =>
-                                    loadStockMovements(
-                                      detail.productid || 0,
-                                      detail.productname || "",
-                                    )
-                                  }
-                                  disabled={stockMovementsLoading}
-                                  className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-md font-bold text-[10px] transition-all disabled:opacity-50 flex items-center gap-1"
-                                >
-                                  <Package className="w-3 h-3" /> Lịch sử kho
-                                </button>
-                              )}
+                            <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-gray-400">
+                              SKU: {line.sku || "N/A"}
+                            </p>
+                            <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-600">
+                              <p>
+                                Số lượng:{" "}
+                                <span className="font-bold text-gray-900">
+                                  {line.quantity}
+                                </span>
+                              </p>
+                              <p>
+                                Đơn giá:{" "}
+                                <span className="font-bold text-gray-900">
+                                  {formatQuotationMoney(line.unitPrice)}
+                                </span>
+                              </p>
+                              <p>
+                                Giá gốc:{" "}
+                                <span className="font-bold text-gray-900">
+                                  {formatQuotationMoney(line.originalLineTotal)}
+                                </span>
+                              </p>
+                              <p>
+                                Thành tiền:{" "}
+                                <span className="font-bold text-tet-primary">
+                                  {formatQuotationMoney(line.finalLineTotal)}
+                                </span>
+                              </p>
                             </div>
                           </div>
                         </div>
-                      ))}
+
+                        <div className="grid min-w-[220px] grid-cols-1 gap-2 rounded-2xl border border-gray-100 bg-gray-50 p-4 text-sm">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-gray-500">Giảm trừ</span>
+                            <span className="font-bold text-emerald-700">
+                              {formatQuotationMoney(line.subtractTotal)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-gray-500">Cộng thêm</span>
+                            <span className="font-bold text-rose-700">
+                              {formatQuotationMoney(line.addTotal)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] p-4">
+                        <p className="text-xs font-bold uppercase tracking-widest text-[#a06b56]">
+                          Chi tiết điều chỉnh giá
+                        </p>
+                        {line.fees && line.fees.length > 0 ? (
+                          <div className="mt-3 space-y-2">
+                            {line.fees.map((fee) => (
+                              <div
+                                key={fee.quotationFeeId}
+                                className="flex flex-col gap-2 rounded-2xl border border-[#f1e1d6] bg-white p-3 md:flex-row md:items-center md:justify-between"
+                              >
+                                <div>
+                                  <p
+                                    className={`text-sm font-bold ${
+                                      fee.isSubtracted === 1
+                                        ? "text-rose-700"
+                                        : "text-emerald-700"
+                                    }`}
+                                  >
+                                    {fee.isSubtracted === 1
+                                      ? "Cộng thêm"
+                                      : "Giảm trừ"}
+                                  </p>
+                                  <p className="mt-1 text-sm text-gray-600">
+                                    {fee.description || "Không có mô tả"}
+                                  </p>
+                                </div>
+                                <span
+                                  className={`text-sm font-black ${
+                                    fee.isSubtracted === 1
+                                      ? "text-rose-700"
+                                      : "text-emerald-700"
+                                  }`}
+                                >
+                                  {fee.isSubtracted === 1 ? "+" : "-"}
+                                  {formatQuotationMoney(fee.price)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-sm text-gray-500">
+                            Không có khoản điều chỉnh nào cho sản phẩm này.
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
+              ) : null
+            ) : (
+              <div className="space-y-4">
+                {displayOrder.items.map((item: OrderItem) => (
+                  <div key={item.orderDetailId} className="space-y-2">
+                    <div className="flex gap-4 p-4 bg-white rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                      <div className="w-20 h-20 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.productName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-tet-secondary to-tet-primary/10">
+                            <span className="text-2xl">🎁</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 flex flex-col justify-center">
+                        <div className="flex items-start justify-between mb-1">
+                          <h4 className="font-bold text-gray-800 text-base">
+                            {item.productName}
+                          </h4>
+                          {isAdmin &&
+                            (!item.productDetails ||
+                              item.productDetails.length === 0) && (
+                              <button
+                                onClick={() =>
+                                  loadStockMovements(
+                                    item.productId,
+                                    item.productName,
+                                  )
+                                }
+                                disabled={stockMovementsLoading}
+                                className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg font-bold text-xs transition-all disabled:opacity-50 whitespace-nowrap flex items-center gap-1.5"
+                                title="Xem lịch sử di chuyển kho"
+                              >
+                                <Package className="w-3.5 h-3.5" /> Kho
+                              </button>
+                            )}
+                        </div>
+                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-3">
+                          SKU: {item.sku}
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
+                            {(
+                              item.quantity > 0 ? item.amount / item.quantity : item.price
+                            ).toLocaleString("vi-VN")}
+                            đ <span className="text-xs">x</span>{" "}
+                            <span className="font-bold text-gray-800">
+                              {item.quantity}
+                            </span>
+                          </span>
+                          <span className="font-black text-tet-primary text-lg ml-auto">
+                            {item.amount.toLocaleString("vi-VN")}đ
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {item.productDetails && item.productDetails.length > 0 && (
+                      <div className="ml-6 space-y-2.5 p-4 bg-gray-50/80 rounded-2xl border border-gray-100">
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
+                          <Package size={14} /> Thành phần trong giỏ:
+                        </p>
+                        {item.productDetails.map((detail: any, index: number) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 p-2 bg-white rounded-xl border border-gray-100 shadow-sm"
+                          >
+                            <div className="w-10 h-10 bg-gray-50 rounded-lg overflow-hidden shrink-0">
+                              {detail.imageurl ? (
+                                <img
+                                  src={detail.imageurl}
+                                  alt={detail.productname}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gray-100 text-xs">
+                                  📷
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-bold text-gray-700 truncate">
+                                {detail.productname}
+                              </p>
+                              <div className="flex items-center justify-between mt-0.5">
+                                <span className="text-xs font-black text-tet-primary">
+                                  x{detail.quantity}
+                                </span>
+                                {isAdmin && (
+                                  <button
+                                    onClick={() =>
+                                      loadStockMovements(
+                                        detail.productid || 0,
+                                        detail.productname || "",
+                                      )
+                                    }
+                                    disabled={stockMovementsLoading}
+                                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-md font-bold text-[10px] transition-all disabled:opacity-50 flex items-center gap-1"
+                                  >
+                                    <Package className="w-3 h-3" /> Lịch sử kho
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           {displayOrder.requireVatInvoice && (
@@ -562,59 +834,130 @@ export default function OrderDetailModal({
             <h3 className="text-lg font-serif font-bold text-tet-primary mb-4">
               Tính toán chi phí
             </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 font-medium">Tổng tiền hàng</span>
-                <span className="font-bold text-gray-800">
-                  {displayOrder.totalPrice.toLocaleString("vi-VN")}đ
-                </span>
-              </div>
-              {displayOrder.discountValue > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 font-medium">Giảm giá</span>
-                  <span className="font-black text-green-700">
-                    -{displayOrder.discountValue.toLocaleString("vi-VN")}đ
-                  </span>
+            {isQuotationOrder ? (
+              quotationLoading ? (
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <Loader2 className="h-5 w-5 animate-spin text-tet-primary" />
+                  Đang tải tổng tiền từ báo giá...
                 </div>
-              )}
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 font-medium">
-                  Thành tiền sau giảm
-                </span>
-                <span className="font-bold text-gray-800">
-                  {displayOrder.finalPrice.toLocaleString("vi-VN")}đ
-                </span>
-              </div>
-              {displayOrder.requireVatInvoice && (
+              ) : quotationError || !quotationDetail ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+                  {quotationError || "Không có dữ liệu báo giá để hiển thị tổng tiền."}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 font-medium">Tổng gốc</span>
+                    <span className="font-bold text-gray-800">
+                      {formatQuotationMoney(quotationDetail.totalOriginal)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 font-medium">Tổng giảm trừ</span>
+                    <span className="font-black text-emerald-700">
+                      -{formatQuotationMoney(quotationDetail.totalSubtract)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 font-medium">Tổng cộng thêm</span>
+                    <span className="font-black text-rose-700">
+                      +{formatQuotationMoney(quotationDetail.totalAdd)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 font-medium">
+                      Sau điều chỉnh
+                    </span>
+                    <span className="font-bold text-gray-800">
+                      {formatQuotationMoney(quotationDetail.totalAfterDiscount)}
+                    </span>
+                  </div>
+                  {displayOrder.requireVatInvoice && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 font-medium">VAT</span>
+                      <span className="font-bold text-gray-800">
+                        {formatQuotationMoney(quotationDetail.vatAmountPreview)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="border-t border-gray-200 my-4" />
+                  <div className="flex justify-between items-end">
+                    <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">
+                      Tổng thanh toán
+                    </span>
+                    <span className="text-3xl font-black text-tet-primary">
+                      {formatQuotationMoney(quotationDetail.finalPayablePreview)}
+                    </span>
+                  </div>
+                  {isAdmin && (
+                    <div className="flex justify-between text-sm pt-2">
+                      <span className="text-gray-600 font-medium">
+                        Doanh thu thực nhận
+                      </span>
+                      <span className="font-bold text-emerald-700">
+                        {displayOrder.actualRevenue == null
+                          ? "Chưa có dữ liệu"
+                          : `${displayOrder.actualRevenue.toLocaleString("vi-VN")}đ`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )
+            ) : (
+              <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 font-medium">VAT (8%)</span>
+                  <span className="text-gray-600 font-medium">Tổng tiền hàng</span>
                   <span className="font-bold text-gray-800">
-                    {displayOrder.vatAmount.toLocaleString("vi-VN")}đ
+                    {displayOrder.totalPrice.toLocaleString("vi-VN")}đ
                   </span>
                 </div>
-              )}
-              <div className="border-t border-gray-200 my-4" />
-              <div className="flex justify-between items-end">
-                <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">
-                  Tổng thanh toán
-                </span>
-                <span className="text-3xl font-black text-tet-primary">
-                  {displayOrder.finalPayableAmount.toLocaleString("vi-VN")}đ
-                </span>
-              </div>
-              {isAdmin && (
-                <div className="flex justify-between text-sm pt-2">
+                {displayOrder.discountValue > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 font-medium">Giảm giá</span>
+                    <span className="font-black text-green-700">
+                      -{displayOrder.discountValue.toLocaleString("vi-VN")}đ
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
                   <span className="text-gray-600 font-medium">
-                    Doanh thu thực nhận
+                    Thành tiền sau giảm
                   </span>
-                  <span className="font-bold text-emerald-700">
-                    {displayOrder.actualRevenue == null
-                      ? "Chưa có dữ liệu"
-                      : `${displayOrder.actualRevenue.toLocaleString("vi-VN")}đ`}
+                  <span className="font-bold text-gray-800">
+                    {displayOrder.finalPrice.toLocaleString("vi-VN")}đ
                   </span>
                 </div>
-              )}
-            </div>
+                {displayOrder.requireVatInvoice && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 font-medium">VAT (8%)</span>
+                    <span className="font-bold text-gray-800">
+                      {displayOrder.vatAmount.toLocaleString("vi-VN")}đ
+                    </span>
+                  </div>
+                )}
+                <div className="border-t border-gray-200 my-4" />
+                <div className="flex justify-between items-end">
+                  <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">
+                    Tổng thanh toán
+                  </span>
+                  <span className="text-3xl font-black text-tet-primary">
+                    {displayOrder.finalPayableAmount.toLocaleString("vi-VN")}đ
+                  </span>
+                </div>
+                {isAdmin && (
+                  <div className="flex justify-between text-sm pt-2">
+                    <span className="text-gray-600 font-medium">
+                      Doanh thu thực nhận
+                    </span>
+                    <span className="font-bold text-emerald-700">
+                      {displayOrder.actualRevenue == null
+                        ? "Chưa có dữ liệu"
+                        : `${displayOrder.actualRevenue.toLocaleString("vi-VN")}đ`}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </section>
 
           {/* Payments Section */}

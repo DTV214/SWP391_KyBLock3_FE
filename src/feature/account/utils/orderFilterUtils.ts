@@ -48,12 +48,12 @@ export const filterOrders = (
     filters: OrderFilters
 ): OrderResponse[] => {
     return orders.filter((order) => {
-        const isQuotationOrder = order.isQuotation === 1;
+        const isFromQuotationOrder = order.isFromQuotation === true;
 
-        if (filters.quotationType === 'quotation' && !isQuotationOrder) {
+        if (filters.quotationType === 'quotation' && !isFromQuotationOrder) {
             return false;
         }
-        if (filters.quotationType === 'normal' && isQuotationOrder) {
+        if (filters.quotationType === 'normal' && isFromQuotationOrder) {
             return false;
         }
 

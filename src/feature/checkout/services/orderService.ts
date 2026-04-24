@@ -53,6 +53,8 @@ export interface FeedbackResponse {
 
 export interface OrderResponse {
   orderId: number;
+  quotationId?: number | null;
+  isFromQuotation?: boolean;
   accountId: number;
   orderDateTime: string;
   totalPrice: number;
@@ -67,7 +69,6 @@ export interface OrderResponse {
   note: string;
   promotionCode: string;
   shippedDate?: string | null;
-  isQuotation?: number | null;
 
   requireVatInvoice: boolean;
   vatRate: number;
@@ -216,6 +217,11 @@ const normalizeOrderResponse = (order: Partial<OrderResponse>): OrderResponse =>
 
   return {
     orderId: toNumber(order.orderId, 0),
+    quotationId: order.quotationId == null ? null : toNumber(order.quotationId),
+    isFromQuotation: toBoolean(
+      order.isFromQuotation,
+      order.quotationId != null,
+    ),
     accountId: toNumber(order.accountId, 0),
     orderDateTime: order.orderDateTime ?? "",
     totalPrice,
@@ -231,7 +237,6 @@ const normalizeOrderResponse = (order: Partial<OrderResponse>): OrderResponse =>
     note: order.note ?? "",
     promotionCode: toOptionalString(order.promotionCode),
     shippedDate: order.shippedDate ?? null,
-    isQuotation: order.isQuotation == null ? null : toNumber(order.isQuotation),
     requireVatInvoice,
     vatRate,
     vatAmount,
