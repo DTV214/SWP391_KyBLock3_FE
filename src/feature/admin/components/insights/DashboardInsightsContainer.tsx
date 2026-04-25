@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Crown, ShoppingCart, Target, AlertTriangle, TrendingDown, DollarSign, Calendar, AlertCircle, UserX } from "lucide-react";
+import { Crown, ShoppingCart, Target, Calendar, AlertCircle, UserX } from "lucide-react";
 import adminDashboardService from "../../services/adminDashboardService";
 import type { DashboardHighlights, CustomerOrderStatistics } from "../../services/adminDashboardService";
 import { HighlightCard } from "./HighlightCard";

@@ -19,7 +19,7 @@ import {
   Settings,
   ShoppingCart,
   Tag,
-  TrendingUp,
+  
   Users,
   Wallet,
   X,
