@@ -8,6 +8,7 @@ import {
   Gift,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { clearAuthState } from "@/feature/auth/utils/authCleanup";
 
 export default function AccountSidebar() {
   const location = useLocation();
@@ -16,8 +17,7 @@ export default function AccountSidebar() {
   // --- LOGIC ĐĂNG XUẤT ---
   const handleLogout = () => {
     // Xóa sạch dấu vết đăng nhập
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    clearAuthState();
 
     // Đẩy người dùng về trang Login ngay lập tức
     navigate("/login");

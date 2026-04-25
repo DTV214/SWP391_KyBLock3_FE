@@ -22,6 +22,7 @@ import {
 import { chatService } from "@/feature/chat/services/chatService";
 import { chatRealtimeService } from "@/feature/chat/services/chatRealtime";
 import BackofficeChatRealtimeBridge from "@/feature/chat/components/BackofficeChatRealtimeBridge";
+import { clearAuthState } from "@/feature/auth/utils/authCleanup";
 
 export default function AdminSidebar() {
   const navigate = useNavigate();
@@ -50,9 +51,7 @@ export default function AdminSidebar() {
 
   const handleLogout = () => {
     if (confirm("Bạn có chắc muốn đăng xuất?")) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("role");
+      clearAuthState();
       navigate("/login");
     }
   };

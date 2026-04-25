@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/feature/cart/context/CartContext";
+import { clearAuthState } from "@/feature/auth/utils/authCleanup";
 
 const LOGO_URL =
   "https://res.cloudinary.com/dratbz8bh/image/upload/v1769523263/Gemini_Generated_Image_h7qrtzh7qrtzh7qr_uszekn.png";
@@ -57,9 +58,7 @@ export default function Navbar() {
   const avatarName = panelLabel || user.username || "User";
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("role");
+    clearAuthState();
     setIsUserMenuOpen(false);
     navigate("/login");
   };

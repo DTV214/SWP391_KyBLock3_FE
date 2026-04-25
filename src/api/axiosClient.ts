@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { AxiosResponse, InternalAxiosRequestConfig } from "axios";
+import { clearAuthState } from "@/feature/auth/utils/authCleanup";
 
 // 1. Khởi tạo instance chính
 const axiosClient = axios.create({
@@ -51,10 +52,7 @@ axiosClient.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           console.error("Token hết hạn hoặc bị từ chối truy cập (401).");
-          // Xóa token
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          localStorage.removeItem("role"); // Nhớ xóa cả role nhé
+          clearAuthState();
 
           // Chuyển hướng nếu không phải đang ở trang login
           if (!window.location.pathname.includes("/login")) {
@@ -87,9 +85,7 @@ axiosPublic.interceptors.response.use(
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          localStorage.removeItem("role");
+          clearAuthState();
           break;
         case 403:
           console.error("Bạn không có quyền truy cập tính năng này (403)");

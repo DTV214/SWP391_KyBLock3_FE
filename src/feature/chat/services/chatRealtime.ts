@@ -81,6 +81,8 @@ class ChatRealtimeService {
   private connectionListeners = new Set<ConnectionListener>();
   private persistentGroups = new Map<string, PersistentGroupSubscription>();
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private isManualDisconnect = false;
+  private disconnectGeneration = 0;
 
   subscribe(listener: RealtimeListener): () => void {
     this.realtimeListeners.add(listener);
@@ -129,6 +131,7 @@ class ChatRealtimeService {
     if (this.startPromise) return;
     if (this.isConnected()) return;
     if (!this.hasActiveListeners()) return;
+    if (!localStorage.getItem("token")) return;
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
@@ -154,7 +157,10 @@ class ChatRealtimeService {
 
     connection.onclose(() => {
       this.emitConnection();
-      if (this.realtimeListeners.size > 0 || this.connectionListeners.size > 0) {
+      if (
+        !this.isManualDisconnect &&
+        (this.realtimeListeners.size > 0 || this.connectionListeners.size > 0)
+      ) {
         void this.ensureConnected();
       }
     });
@@ -197,6 +203,7 @@ class ChatRealtimeService {
   private async createAndStartConnection(): Promise<boolean> {
     const tokenFactory = () => localStorage.getItem("token") || "";
     const hadPreviousConnection = this.connection !== null;
+    const generation = this.disconnectGeneration;
     this.clearReconnectTimer();
 
     for (const url of resolveHubCandidates()) {
@@ -212,6 +219,10 @@ class ChatRealtimeService {
 
       try {
         await connection.start();
+        if (generation !== this.disconnectGeneration || !localStorage.getItem("token")) {
+          await connection.stop().catch(() => undefined);
+          return false;
+        }
         this.connection = connection;
         if (hadPreviousConnection) {
           await this.rejoinPersistentGroups();
@@ -230,6 +241,10 @@ class ChatRealtimeService {
   }
 
   async ensureConnected(): Promise<boolean> {
+    if (!localStorage.getItem("token")) {
+      return false;
+    }
+
     if (this.isConnected()) {
       return true;
     }
@@ -322,6 +337,24 @@ class ChatRealtimeService {
     this.connection = null;
     this.persistentGroups.clear();
     await connection.stop().catch(() => undefined);
+    this.emitConnection();
+  }
+
+  async disconnect(): Promise<void> {
+    this.isManualDisconnect = true;
+    this.disconnectGeneration += 1;
+    this.clearReconnectTimer();
+    this.startPromise = null;
+    this.persistentGroups.clear();
+
+    const connection = this.connection;
+    this.connection = null;
+
+    if (connection) {
+      await connection.stop().catch(() => undefined);
+    }
+
+    this.isManualDisconnect = false;
     this.emitConnection();
   }
 }
