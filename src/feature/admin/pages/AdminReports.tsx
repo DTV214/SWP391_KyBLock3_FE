@@ -81,7 +81,7 @@ const AdminReports: React.FC = () => {
     { id: "products", label: "Hiệu suất Sản phẩm", icon: Package },
     { id: "categories", label: "Danh mục hàng hóa", icon: PieChart },
     { id: "customers", label: "Chăm sóc khách hàng", icon: Users },
-    { id: "inventory", label: "Kết hợp sản phẩm", icon: ShoppingCart },
+    { id: "inventory", label: "Phân tích Sản phẩm", icon: ShoppingCart },
   ];
 
   return (

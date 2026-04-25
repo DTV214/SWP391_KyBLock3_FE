@@ -231,18 +231,6 @@ export const DashboardInsightsContainer: React.FC = () => {
                 onClick={() => handleCardClick("BEST_SELLER", "Top 10 Sản phẩm — Doanh số cao nhất")}
               />
             )}
-
-            <HighlightCard
-              title="⚠️ Tỷ lệ hủy đơn hàng"
-              value={`${data.cancellationStats.cancellationRate}%`}
-              subtitle={`Hủy: ${data.cancellationStats.cancelledOrders} / Chốt: ${data.cancellationStats.validOrders}`}
-              icon={AlertTriangle}
-              colorScheme="red"
-            />
-          </div>
-
-          {/* Row 2 — Rủi ro & Cơ hội */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {data.topCanceler && (
               <HighlightCard
                 title="🚫 Khách hàng hay hủy đơn"
@@ -253,34 +241,10 @@ export const DashboardInsightsContainer: React.FC = () => {
                 onClick={() => handleCardClick("CANCELER", "Top 10 Khách hàng — Hủy đơn nhiều nhất")}
               />
             )}
-
-            <HighlightCard
-              title="💰 Giá trị đơn TB (AOV)"
-              value={formatCurrency(data.averageOrderValue)}
-              subtitle="Doanh thu / Tổng đơn thành công"
-              icon={DollarSign}
-              colorScheme="indigo"
-            />
-
-            {data.underperformingProduct && (
-              <HighlightCard
-                title="📉 Sản phẩm cần đẩy hàng"
-                value={data.underperformingProduct.productName}
-                subtitle={`Chỉ bán được: ${data.underperformingProduct.totalQuantity} trong kỳ`}
-                icon={TrendingDown}
-                colorScheme="red"
-              />
-            )}
-
-            <HighlightCard
-              title="🛒 Giỏ hàng bị bỏ rơi"
-              value={formatCurrency(data.abandonedCartValue.totalLostValue)}
-              subtitle={`${data.abandonedCartValue.cartCount} giỏ hàng bị bỏ`}
-              icon={ShoppingCart}
-              colorScheme="yellow"
-              onClick={() => handleCardClick("ABANDONED", "Danh sách Giỏ hàng — Chưa thanh toán")}
-            />
+            
           </div>
+
+          
         </div>
       )}
 

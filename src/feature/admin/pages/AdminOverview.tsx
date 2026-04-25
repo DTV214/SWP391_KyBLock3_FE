@@ -263,14 +263,7 @@ export default function AdminOverview() {
       valueClassName: numberValueClassName,
       onClick: () => setIsNewCustomersModalOpen(true),
     },
-    {
-      label: "Tỉ lệ chuyển đổi",
-      value: `${data.conversionRate ?? 0}%`,
-      description: `${data.accountsWithOrders ?? 0} / ${data.totalCustomerAccounts ?? 0} khách đã mua`,
-      icon: <TrendingUp size={24} />,
-      color: "from-violet-500 to-purple-600",
-      valueClassName: numberValueClassName,
-    },
+    
   ];
 
   const quickActions = [
