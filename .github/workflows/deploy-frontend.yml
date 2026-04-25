@@ -25,7 +25,8 @@ jobs:
 
       - name: Build frontend
         env:
-          VITE_API_BASE_URL: http://14.225.207.221:5002/api
+          VITE_API_BASE_URL: http://160.187.229.26:5002/api
+          VITE_SIGNALR_URL: http://160.187.229.26:5002/chatHub
         run: npm run build
 
       - name: Archive dist
@@ -34,7 +35,7 @@ jobs:
       - name: Copy dist to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: 14.225.207.221
+          host: 160.187.229.26
           username: root
           password: ${{ secrets.VPS_PASSWORD }}
           port: 22
@@ -45,12 +46,15 @@ jobs:
       - name: Deploy dist on VPS
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: 14.225.207.221
+          host: 160.187.229.26
           username: root
           password: ${{ secrets.VPS_PASSWORD }}
           port: 22
           script: |
             set -e
+
+            apt update
+            apt install -y nginx
 
             DEPLOY_DIR=/var/www/html
             TMP_FILE=/tmp/frontend-dist.tar.gz
@@ -61,5 +65,22 @@ jobs:
             tar -xzf $TMP_FILE -C $DEPLOY_DIR
             rm -f $TMP_FILE
 
+            cat > /etc/nginx/sites-available/default << 'EOF'
+            server {
+                listen 80 default_server;
+                listen [::]:80 default_server;
+
+                server_name _;
+
+                root /var/www/html;
+                index index.html;
+
+                location / {
+                    try_files $uri $uri/ /index.html;
+                }
+            }
+            EOF
+
             nginx -t
-            systemctl reload nginx
+            systemctl enable nginx
+            systemctl reload nginx || systemctl restart nginx

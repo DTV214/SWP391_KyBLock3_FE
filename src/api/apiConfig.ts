@@ -1,25 +1,16 @@
 ﻿// Backend base URL (.NET 8)
 // src/api/apiConfig.ts
 // Prefer configuring via Vite env:
-// - VITE_API_BASE_URL=http://localhost:5280/api
-// - VITE_API_BASE_URL=http://14.225.207.221:5000/api
+// - VITE_API_BASE_URL=http://160.187.229.26:5002/api
 
 // 1. Vite env typing
 interface ViteEnv {
   VITE_API_BASE_URL?: string;
 }
-// const ENV_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
 const ENV_BASE_URL = (import.meta as unknown as { env: ViteEnv }).env
   ?.VITE_API_BASE_URL;
 // Fallback to current production server if env is not set
-const BASE_URL = (ENV_BASE_URL?.trim() || "http://14.225.207.221:5002/api").replace(/\/+$/, "");
-// const ROOT_URL = BASE_URL.replace(/\/api$/i, "");
-
-// const BASE_URL = (ENV_BASE_URL?.trim() || "https://localhost:7056/api").replace(
-//   /\/+$/,
-//   "",
-// );
-// const BASE_URL = (ENV_BASE_URL?.trim() || "http://localhost:5280/api").replace(/\/+$/, "");
+const BASE_URL = (ENV_BASE_URL?.trim() || "http://160.187.229.26:5002/api").replace(/\/+$/, "");
 // Change .env for local/deploy without touching this file.
 export const API_ENDPOINTS = {
   AUTH: {
