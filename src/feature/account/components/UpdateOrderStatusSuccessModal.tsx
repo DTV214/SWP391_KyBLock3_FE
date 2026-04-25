@@ -24,12 +24,12 @@ export default function UpdateOrderStatusSuccessModal({
 
     const getStatusMessage = () => {
         if (order.status === 'PROCESSING') {
-            return '�on h�ng dang du?c x? l�. S? s?m du?c giao d?n kh�ch h�ng.';
+            return 'Đơn hàng đang được xử lý. Sẽ sớm được giao đến khách hàng.';
         }
         if (order.status === 'SHIPPED') {
-            return '�on h�ng d� du?c giao h�ng th�nh c�ng!';
+            return 'Đơn hàng đã được giao hàng thành công!';
         }
-        return 'Tr?ng th�i don h�ng d� du?c c?p nh?t th�nh c�ng.';
+        return 'Trạng thái đơn hàng đã được cập nhật thành công.';
     };
 
     return (
@@ -54,7 +54,7 @@ export default function UpdateOrderStatusSuccessModal({
                             <div className="bg-blue-50 border-b border-blue-200 px-6 py-4 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <CheckCircle className="w-5 h-5 text-blue-600" />
-                                    <h2 className="text-lg font-bold text-blue-900">C?p nh?t tr?ng th�i th�nh c�ng</h2>
+                                    <h2 className="text-lg font-bold text-blue-900">Cập nhật trạng thái thành công</h2>
                                 </div>
                                 <button
                                     onClick={onClose}
@@ -81,26 +81,26 @@ export default function UpdateOrderStatusSuccessModal({
 
                                     <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                                         <div className="flex justify-between items-center">
-                                            <p className="text-sm text-gray-600"><span className="font-medium">M� don h�ng:</span></p>
+                                            <p className="text-sm text-gray-600"><span className="font-medium">Mã đơn hàng:</span></p>
                                             <p className="text-sm font-bold text-gray-900">#{order.orderId}</p>
                                         </div>
                                         <div className="flex justify-between items-center gap-3">
-                                            <p className="text-sm text-gray-600"><span className="font-medium">Tr?ng th�i m?i:</span></p>
+                                            <p className="text-sm text-gray-600"><span className="font-medium">Trạng thái mới:</span></p>
                                             <div className="flex flex-wrap items-center justify-end gap-2">
                                                 {order.requireVatInvoice && <VatOrderBadge />}
                                                 <p className="text-sm font-bold text-tet-primary">{getStatusLabel(order.status)}</p>
                                             </div>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <p className="text-sm text-gray-600"><span className="font-medium">T?ng ti?n:</span></p>
-                                            <p className="text-sm font-bold text-gray-900">{order.finalPayableAmount.toLocaleString('vi-VN')}?</p>
+                                            <p className="text-sm text-gray-600"><span className="font-medium">Tổng tiền:</span></p>
+                                            <p className="text-sm font-bold text-gray-900">{order.finalPayableAmount.toLocaleString('vi-VN')}đ</p>
                                         </div>
                                     </div>
 
                                     {order.status === 'SHIPPED' && (
                                         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                                             <p className="text-sm text-green-900">
-                                                <span className="font-medium">Giao h�ng:</span> Kh�ch h�ng s? nh?n du?c th�ng b�o v? tr?ng th�i giao h�ng c?a m�nh.
+                                                <span className="font-medium">Giao hàng:</span> Khách hàng sẽ nhận được thông báo về trạng thái giao hàng của mình.
                                             </p>
                                         </div>
                                     )}
@@ -112,7 +112,7 @@ export default function UpdateOrderStatusSuccessModal({
                                     onClick={onClose}
                                     className="px-8 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
                                 >
-                                    ��ng
+                                    Đóng
                                 </button>
                             </div>
                         </div>

@@ -37,7 +37,7 @@ export default function UpdateOrderStatusConfirmModal({
             await onConfirm();
             onClose();
         } catch (err: any) {
-            setError(err.message || 'Kh�ng th? c?p nh?t tr?ng th�i don h�ng');
+            setError(err.message || 'Không thể cập nhật trạng thái đơn hàng');
             console.error('Error updating order status:', err);
         } finally {
             setIsLoading(false);
@@ -66,7 +66,7 @@ export default function UpdateOrderStatusConfirmModal({
                             <div className="bg-blue-50 border-b border-blue-200 px-6 py-4 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <AlertCircle className="w-5 h-5 text-blue-600" />
-                                    <h2 className="text-lg font-bold text-blue-900">X�c nh?n c?p nh?t tr?ng th�i</h2>
+                                    <h2 className="text-lg font-bold text-blue-900">Xác nhận cập nhật trạng thái</h2>
                                 </div>
                                 <button
                                     onClick={onClose}
@@ -86,33 +86,33 @@ export default function UpdateOrderStatusConfirmModal({
 
                                 <div className="space-y-3">
                                     <p className="text-gray-700">
-                                        B?n c� ch?c ch?n mu?n <span className="font-bold text-blue-600">c?p nh?t tr?ng th�i</span> don h�ng n�y kh�ng?
+                                        Bạn có chắc chắn muốn <span className="font-bold text-blue-600">cập nhật trạng thái</span> đơn hàng này không?
                                     </p>
 
                                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
                                         <p className="text-sm text-blue-900">
-                                            <span className="font-bold">Thay d?i:</span>
+                                            <span className="font-bold">Thay đổi:</span>
                                         </p>
                                         <div className="space-y-2 ml-4">
                                             <p className="text-sm text-blue-900 flex flex-wrap items-center gap-2">
                                                 {order.requireVatInvoice && <VatOrderBadge />}
-                                                <span>Tr?ng th�i hi?n t?i: <span className="font-bold text-blue-600">{getStatusLabel(order.status)}</span></span>
+                                                <span>Trạng thái hiện tại: <span className="font-bold text-blue-600">{getStatusLabel(order.status)}</span></span>
                                             </p>
                                             <p className="text-sm text-blue-900 flex items-center gap-2">
-                                                <span>?</span>
-                                                <span>Tr?ng th�i m?i: <span className="font-bold text-green-600">{getStatusLabel(newStatus)}</span></span>
+                                                <span>→</span>
+                                                <span>Trạng thái mới: <span className="font-bold text-green-600">{getStatusLabel(newStatus)}</span></span>
                                             </p>
                                         </div>
                                     </div>
 
                                     <div className="bg-gray-50 p-4 rounded-lg">
                                         <p className="text-sm text-gray-600 mb-2">
-                                            <span className="font-medium">M� don h�ng:</span> #{order.orderId}
+                                            <span className="font-medium">Mã đơn hàng:</span> #{order.orderId}
                                         </p>
                                         <p className="text-sm text-gray-600">
-                                            <span className="font-medium">T?ng ti?n:</span>{' '}
+                                            <span className="font-medium">Tổng tiền:</span>{' '}
                                             <span className="font-bold text-gray-900">
-                                                {order.finalPayableAmount.toLocaleString('vi-VN')}?
+                                                {order.finalPayableAmount.toLocaleString('vi-VN')}đ
                                             </span>
                                         </p>
                                     </div>
@@ -125,7 +125,7 @@ export default function UpdateOrderStatusConfirmModal({
                                     disabled={isLoading}
                                     className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    H?y b?
+                                    Hủy bỏ
                                 </button>
                                 <button
                                     onClick={handleConfirm}
@@ -135,10 +135,10 @@ export default function UpdateOrderStatusConfirmModal({
                                     {isLoading ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            �ang x? l�...
+                                            Đang xử lý...
                                         </>
                                     ) : (
-                                        'X�c nh?n'
+                                        'Xác nhận'
                                     )}
                                 </button>
                             </div>
