@@ -112,11 +112,13 @@ const StaffRoute = ({ children }: { children: React.ReactNode }) => {
 function App() {
   const AppContent = () => {
     const location = useLocation();
-    const isAdminRoute = location.pathname.startsWith("/admin");
+    const isBackofficeRoute =
+      location.pathname.startsWith("/admin") ||
+      location.pathname.startsWith("/staff");
 
     return (
       <div className="min-h-screen flex flex-col bg-tet-bg font-sans">
-        {!isAdminRoute && <Navbar />}
+        {!isBackofficeRoute && <Navbar />}
         <main className="flex-grow">
           <Routes>
             {/* --- PUBLIC ROUTES --- */}
@@ -277,7 +279,7 @@ function App() {
         <Footer />
         <BackToTop />
         <CartSidebar />
-        <CustomerChatWidget />
+        {!isBackofficeRoute && <CustomerChatWidget />}
       </div>
     );
   };

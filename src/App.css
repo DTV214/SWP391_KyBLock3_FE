@@ -2,7 +2,7 @@
 
 /* src/App.css */
 
-/* LuĂ´n dĂ nh chá»— cho scrollbar, trĂ¡nh shift ná»™i dung */
+/* Luôn dành chỗ cho scrollbar, tránh shift nội dung */
 html,
 body {
   scrollbar-gutter: stable;
@@ -14,7 +14,7 @@ body {
   text-align: left;
 }
 
-/* CĂ¡c tĂ¹y chá»‰nh font chá»¯ náº¿u cáº§n */
+/* Các tùy chỉnh font chữ nếu cần */
 .font-serif {
   font-family: 'Playfair Display', serif;
 }
