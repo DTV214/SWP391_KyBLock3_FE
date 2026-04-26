@@ -773,8 +773,8 @@ const filteredProducts = useMemo(() => {
               </div>
 
               <div className="mt-6 space-y-4">
-                <h3 className="text-sm font-semibold">Thông tin công ty</h3>
-                <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Tên công ty *" value={form.company} onChange={(event) => setForm((prev) => ({ ...prev, company: event.target.value }))} />
+                <h3 className="text-sm font-semibold">Thông tin khách hàng</h3>
+                <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Tên khách hàng *" value={form.company} onChange={(event) => setForm((prev) => ({ ...prev, company: event.target.value }))} />
                 <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Địa chỉ *" value={form.address} onChange={(event) => setForm((prev) => ({ ...prev, address: event.target.value }))} />
                 <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Email *" value={form.email} onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))} />
                 <input className="w-full rounded-2xl border border-[#f1e1d6] bg-white px-4 py-3 text-sm focus:border-[#7a160e] focus:outline-none" placeholder="Số điện thoại *" value={form.phone} onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))} />

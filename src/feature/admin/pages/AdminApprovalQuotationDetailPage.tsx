@@ -224,7 +224,7 @@ export default function AdminApprovalQuotationDetailPage() {
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-[#7a160e]/80">Thông tin khách hàng</h3>
               <div className="mt-4 space-y-3 text-sm text-gray-700">
-                <div className="flex items-center gap-2"><Building className="h-4 w-4 text-gray-500" />Công ty: <span className="font-semibold">{detail.company || "Không có"}</span></div>
+                <div className="flex items-center gap-2"><Building className="h-4 w-4 text-gray-500" />Khách hàng: <span className="font-semibold">{detail.company || "Không có"}</span></div>
                 <div className="flex items-center gap-2"><User className="h-4 w-4 text-gray-500" />Email: <span className="font-semibold">{detail.email || "Không có"}</span></div>
                 <p>Số điện thoại: <span className="font-semibold">{detail.phone || "Không có"}</span></p><p>Địa chỉ: <span className="font-semibold">{detail.address || "Không có"}</span></p><p>Mã tài khoản: <span className="font-semibold">{detail.accountId ?? "-"}</span></p><p>Mã đơn hàng: <span className="font-semibold">{detail.orderId ?? "-"}</span></p><p>Lần chỉnh sửa: <span className="font-semibold">{detail.revision}</span></p><p>Nhân viên rà soát: <span className="font-semibold">{detail.staffReviewerId ?? "-"}</span></p><p>Quản trị viên rà soát: <span className="font-semibold">{detail.adminReviewerId ?? "-"}</span></p>
               </div>

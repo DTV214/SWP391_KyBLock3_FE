@@ -172,7 +172,7 @@ export default function QuotationHistoryPage() {
                       )}
                     </div>
                     <p className="text-sm text-[#7b5a4c]">
-                      Công ty: <span className="font-semibold">{item.company || "N/A"}</span>
+                      Khách hàng: <span className="font-semibold">{item.company || "N/A"}</span>
                     </p>
                     <div className="flex items-center gap-2 text-xs text-[#8a5b4f]">
                       <Calendar className="h-4 w-4" />

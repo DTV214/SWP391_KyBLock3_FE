@@ -1,6 +1,9 @@
 ﻿import { CheckCircle2, Circle, Clock, FileText, Send, ShoppingBag, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { CreditCard } from "lucide-react";
 import { Link, useLocation, useParams } from "react-router-dom";
+import { orderService, type OrderResponse } from "@/feature/checkout/services/orderService";
+import { paymentService } from "@/feature/checkout/services/paymentService";
 import {
   quotationService,
   type QuotationDetail,
@@ -50,6 +53,15 @@ const formatDate = (value?: string | null) => {
   return new Date(value).toLocaleString("vi-VN");
 };
 
+const PAID_ORDER_STATUSES = new Set([
+  "CONFIRMED",
+  "PAID_WAITING_STOCK",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED",
+  "COMPLETED",
+]);
+
 export default function QuotationStatusPage() {
   const { id } = useParams();
   const location = useLocation();
@@ -59,6 +71,10 @@ export default function QuotationStatusPage() {
   const [decisionLoading, setDecisionLoading] = useState<"accept" | "reject" | null>(null);
   const [decisionMessage, setDecisionMessage] = useState("");
   const [detail, setDetail] = useState<QuotationDetail | null>(null);
+  const [linkedOrder, setLinkedOrder] = useState<OrderResponse | null>(null);
+  const [paymentChecked, setPaymentChecked] = useState(false);
+  const [hasSuccessfulPayment, setHasSuccessfulPayment] = useState(false);
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
   const [productImageMap, setProductImageMap] = useState<Record<number, string>>({});
   const [error, setError] = useState<string | null>(null);
 
@@ -80,6 +96,41 @@ export default function QuotationStatusPage() {
   useEffect(() => {
     fetchDetail();
   }, [id]);
+
+  useEffect(() => {
+    const loadPaymentState = async () => {
+      const orderId = detail?.orderId;
+      const shouldCheckPayment =
+        detail?.status === "CONVERTED_TO_ORDER" && typeof orderId === "number";
+
+      setLinkedOrder(null);
+      setHasSuccessfulPayment(false);
+      setPaymentChecked(false);
+
+      if (!shouldCheckPayment) {
+        setPaymentChecked(true);
+        return;
+      }
+
+      try {
+        const [orderResult, payments] = await Promise.all([
+          orderService.getOrderById(orderId),
+          paymentService.getPaymentsByOrder(orderId),
+        ]);
+
+        setLinkedOrder(orderResult);
+        setHasSuccessfulPayment(
+          payments.some((payment) => payment.status === "SUCCESS"),
+        );
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setPaymentChecked(true);
+      }
+    };
+
+    void loadPaymentState();
+  }, [detail?.orderId, detail?.status]);
 
   useEffect(() => {
     const fetchProductImages = async () => {
@@ -104,6 +155,14 @@ export default function QuotationStatusPage() {
   const currentIndex = statusIndexMap[currentStatus] ?? 0;
   const statusMeta = getQuotationStatusMeta(currentStatus);
   const hasVatRequest = detail?.requireVatInvoice === true;
+  const isOrderAlreadyPaid =
+    hasSuccessfulPayment ||
+    (linkedOrder?.status ? PAID_ORDER_STATUSES.has(linkedOrder.status) : false);
+  const canPayConvertedOrder =
+    currentStatus === "CONVERTED_TO_ORDER" &&
+    typeof detail?.orderId === "number" &&
+    paymentChecked &&
+    !isOrderAlreadyPaid;
 
   const fallbackItems = useMemo(() => state.items || [], [state.items]);
   const handleSubmitToStaff = async () => {
@@ -154,6 +213,33 @@ export default function QuotationStatusPage() {
       setError(err?.response?.data?.msg || "Không thể từ chối báo giá.");
     } finally {
       setDecisionLoading(null);
+    }
+  };
+
+  const handlePayConvertedOrder = async () => {
+    const orderId = detail?.orderId;
+    if (typeof orderId !== "number") return;
+
+    try {
+      setPaymentSubmitting(true);
+      setError(null);
+      const paymentResponse = await paymentService.createPayment({
+        orderId,
+        paymentMethod: "VNPAY",
+      });
+      const paymentUrl = paymentResponse.paymentUrl || paymentResponse.paymentLink || "";
+
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+        return;
+      }
+
+      setError("Không nhận được đường dẫn thanh toán VNPay.");
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.response?.data?.msg || "Không thể tạo thanh toán VNPay.");
+    } finally {
+      setPaymentSubmitting(false);
     }
   };
 
@@ -214,7 +300,7 @@ export default function QuotationStatusPage() {
             <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-[#7a160e]/70">Thông tin yêu cầu</h3>
             <div className="mt-4 grid gap-3 text-sm text-[#7b5a4c] md:grid-cols-2">
               <div className="flex justify-between gap-4 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3">
-                <span>Công ty</span>
+                <span>Khách hàng</span>
                 <span className="font-semibold text-[#4a0d06] text-right">{detail?.company || state.company || "Chưa cập nhật"}</span>
               </div>
               <div className="flex justify-between gap-4 rounded-2xl border border-[#f1e1d6] bg-[#fffaf5] px-4 py-3">
@@ -485,6 +571,17 @@ export default function QuotationStatusPage() {
                 <ShoppingBag className="h-4 w-4" />
                 {detail?.orderId ? `Xem đơn hàng #${detail.orderId}` : "Xem đơn hàng của tôi"}
               </Link>
+            )}
+            {canPayConvertedOrder && (
+              <button
+                type="button"
+                onClick={handlePayConvertedOrder}
+                disabled={paymentSubmitting}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#7a160e] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#7a160e]/20 transition hover:bg-[#5c0f09] disabled:opacity-60"
+              >
+                <CreditCard className="h-4 w-4" />
+                {paymentSubmitting ? "Đang tạo thanh toán..." : "Thanh toán VNPay"}
+              </button>
             )}
             <Link
               to="/quotation/history"

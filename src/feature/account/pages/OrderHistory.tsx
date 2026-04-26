@@ -125,7 +125,7 @@ export default function OrderHistory() {
       setCancelModalOpen(false);
       setOrderToCancel(null);
     } catch (err: any) {
-      throw new Error(err.message || 'KhÃ´ng thá»ƒ há»§y Ä‘Æ¡n hÃ ng');
+      throw new Error(err.message || 'Không thể hủy đơn hàng');
     }
   };
 
@@ -163,7 +163,7 @@ export default function OrderHistory() {
   };
 
   const handleDeleteFeedbackClick = async (feedbackId: number) => {
-    if (!window.confirm('Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n xÃ³a Ä‘Ã¡nh giÃ¡ nÃ y khÃ´ng?')) return;
+    if (!window.confirm('Bạn có chắc chắn muốn xóa đánh giá này không?')) return;
     try {
       await feedbackService.deleteFeedback(feedbackId);
       // Find the order that holds this feedback and update it in list
@@ -173,7 +173,7 @@ export default function OrderHistory() {
       }
     } catch (err: any) {
       console.error(err);
-      alert('KhÃ´ng thá»ƒ xÃ³a Ä‘Ã¡nh giÃ¡: ' + (err.response?.data?.message || err.message));
+      alert('Không thể xóa đánh giá: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -182,7 +182,7 @@ export default function OrderHistory() {
       <div className="flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-tet-primary" />
-          <p className="text-gray-600">Äang táº£i danh sÃ¡ch Ä‘Æ¡n hÃ ng...</p>
+          <p className="text-gray-600">Đang tải danh sách đơn hàng...</p>
         </div>
       </div>
     );
@@ -202,7 +202,7 @@ export default function OrderHistory() {
       animate={{ opacity: 1, x: 0 }}
       className="space-y-6"
     >
-      {/* THANH TÃŒM KIáº¾M & Bá»˜ Lá»ŒC */}
+      {/* Thanh tìm kiếm và bộ lọc */}
       <OrderFilters
         onSearchChange={handleSearch}
         onStatusChange={handleStatusFilterChange}
@@ -221,7 +221,7 @@ export default function OrderHistory() {
               : 'text-gray-600 hover:bg-gray-50'
           }`}
         >
-          ÄÆ¡n hÃ ng thÆ°á»ng
+          Đơn hàng thường
         </button>
         <button
           onClick={() => handleQuotationTypeChange('quotation')}
@@ -235,7 +235,7 @@ export default function OrderHistory() {
         </button>
       </div>
 
-      {/* DANH SÃCH ÄÆ N HÃ€NG */}
+      {/* Danh sách đơn hàng */}
       {detailError && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-700">
           {detailError}
@@ -260,12 +260,12 @@ export default function OrderHistory() {
         </div>
       ) : (
         <div className="bg-white p-12 rounded-[2.5rem] shadow-sm border border-gray-100 text-center">
-          <div className="text-5xl mb-4">ðŸ“­</div>
-          <p className="text-lg font-bold text-gray-600 mb-2">KhÃ´ng cÃ³ Ä‘Æ¡n hÃ ng</p>
+          <div className="text-5xl mb-4">📭</div>
+          <p className="text-lg font-bold text-gray-600 mb-2">Không có đơn hàng</p>
           <p className="text-sm text-gray-400">
             {quotationType === 'quotation'
               ? 'Không có đơn hàng báo giá phù hợp với bộ lọc.'
-              : 'Báº¡n chÆ°a cÃ³ Ä‘Æ¡n hÃ ng thÆ°á»ng nÃ o hoáº·c khÃ´ng cÃ³ Ä‘Æ¡n hÃ ng phÃ¹ há»£p vá»›i bá»™ lá»c.'}
+              : 'Bạn chưa có đơn hàng thường nào hoặc không có đơn hàng phù hợp với bộ lọc.'}
           </p>
         </div>
       )}
@@ -279,7 +279,7 @@ export default function OrderHistory() {
             disabled={currentPage === 1}
             className="px-4 py-2 rounded-xl border border-gray-100 text-sm font-bold text-gray-400 hover:bg-[#FBF5E8] hover:text-tet-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            TrÆ°á»›c
+            Trước
           </button>
 
           {/* Page Numbers */}

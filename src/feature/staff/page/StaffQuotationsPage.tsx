@@ -162,7 +162,7 @@ export default function StaffQuotationsPage() {
                     )}
                   </div>
                   <p className="text-sm text-gray-700">
-                    Công ty: {item.company || "N/A"}
+                    Khách hàng: {item.company || "N/A"}
                   </p>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     <Calendar className="h-4 w-4" />
