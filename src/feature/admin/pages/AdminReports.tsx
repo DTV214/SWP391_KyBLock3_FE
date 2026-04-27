@@ -4,7 +4,6 @@ import {
   TrendingUp, 
   PieChart, 
   Package, 
-  Users, 
   ShoppingCart, 
   Loader2
 } from "lucide-react";
@@ -14,14 +13,13 @@ import TopTrendingProducts from "../components/TopTrendingProducts";
 import TopProductFinancials from "../components/TopProductFinancials";
 import VatSegmentChart from "../components/VatSegmentChart";
 import ProductAssociationsWidget from "../components/ProductAssociationsWidget";
-import { CustomerCareInsights } from "../components/insights/CustomerCareInsights";
 import { orderService, type OrderResponse } from "@/feature/checkout/services/orderService";
 import adminDashboardService, { 
   type DashboardHighlights, 
   type DashboardSummary 
 } from "../services/adminDashboardService";
 
-type TabType = "revenue" | "products" | "categories" | "customers" | "inventory";
+type TabType = "revenue" | "products" | "categories" | "inventory";
 
 const AdminReports: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("revenue");
@@ -80,7 +78,6 @@ const AdminReports: React.FC = () => {
     { id: "revenue", label: "Doanh thu & VAT", icon: TrendingUp },
     { id: "products", label: "Hiệu suất Sản phẩm", icon: Package },
     { id: "categories", label: "Danh mục hàng hóa", icon: PieChart },
-    { id: "customers", label: "Chăm sóc khách hàng", icon: Users },
     { id: "inventory", label: "Phân tích Sản phẩm", icon: ShoppingCart },
   ];
 
@@ -152,11 +149,6 @@ const AdminReports: React.FC = () => {
               </div>
             )}
 
-            {activeTab === "customers" && (
-              <div className="space-y-6">
-                {insightsData && <CustomerCareInsights data={insightsData} />}
-              </div>
-            )}
 
             {activeTab === "inventory" && (
               <div className="space-y-6">

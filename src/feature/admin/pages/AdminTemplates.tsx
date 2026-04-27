@@ -60,6 +60,10 @@ export default function AdminTemplates() {
   // Details modal config (for showing ConfigDetails in view modal)
   const [detailsModalConfig, setDetailsModalConfig] = useState<ProductConfig | null>(null);
 
+  // New stock filter states
+  const [showInStockOnlyForEdit, setShowInStockOnlyForEdit] = useState(false);
+  const [showInStockOnlyForCreate, setShowInStockOnlyForCreate] = useState(false);
+
   // TODO: Thay bằng API upload Cloudinary thực tế khi sẵn sàng
   const uploadMedia = async (file: File): Promise<string> => {
     console.log("Đang upload file:", file.name);
@@ -1516,27 +1520,38 @@ export default function AdminTemplates() {
                       </h3>
                       
                       {/* Search and Category Filter */}
-                      <div className="space-y-2 mb-2">
-                        <input
-                          type="text"
-                          placeholder="Tìm kiếm sản phẩm..."
-                          value={productSearchForEdit}
-                          onChange={(e) => setProductSearchForEdit(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        />
-                        <select
-                          value={selectedCategoryForEdit}
-                          onChange={(e) => setSelectedCategoryForEdit(parseInt(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value={0}>Tất cả danh mục</option>
-                          {categoriesForEdit.map(cat => (
-                            <option key={cat.categoryid} value={cat.categoryid}>
-                              {cat.categoryname}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                        <div className="space-y-2 mb-2">
+                          <input
+                            type="text"
+                            placeholder="Tìm kiếm sản phẩm..."
+                            value={productSearchForEdit}
+                            onChange={(e) => setProductSearchForEdit(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          />
+                          <div className="flex items-center justify-between gap-2">
+                            <select
+                              value={selectedCategoryForEdit}
+                              onChange={(e) => setSelectedCategoryForEdit(parseInt(e.target.value))}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            >
+                              <option value={0}>Tất cả danh mục</option>
+                              {categoriesForEdit.map(cat => (
+                                <option key={cat.categoryid} value={cat.categoryid}>
+                                  {cat.categoryname}
+                                </option>
+                              ))}
+                            </select>
+                            <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 border border-gray-300 rounded-lg text-xs whitespace-nowrap hover:bg-gray-50 transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={showInStockOnlyForEdit}
+                                onChange={(e) => setShowInStockOnlyForEdit(e.target.checked)}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <span className="font-medium text-gray-700">Chỉ hiện có hàng</span>
+                            </label>
+                          </div>
+                        </div>
                       
                       <div className="max-h-[150px] overflow-y-auto border rounded-lg p-2 space-y-2">
                         {availableProductsForEdit.length === 0 ? (
@@ -1557,6 +1572,10 @@ export default function AdminTemplates() {
                                   if (product.categoryid !== selectedCategoryForEdit) {
                                     return false;
                                   }
+                                }
+                                // Filter by stock
+                                if (showInStockOnlyForEdit && (product.totalQuantity || 0) <= 0) {
+                                  return false;
                                 }
                                 return true;
                               })
@@ -1579,9 +1598,18 @@ export default function AdminTemplates() {
                                 )}
                                 <div className="flex-1 min-w-0">
                                   <p className="font-medium text-sm truncate">{product.productname}</p>
-                                  <p className="text-xs text-gray-500">
-                                    {product.price?.toLocaleString('vi-VN')}đ
-                                  </p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-xs text-gray-500">
+                                      {product.price?.toLocaleString('vi-VN')}đ
+                                    </p>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                                      (product.totalQuantity || 0) > 10 ? 'bg-green-100 text-green-700' :
+                                      (product.totalQuantity || 0) > 0 ? 'bg-orange-100 text-orange-700' :
+                                      'bg-red-100 text-red-700'
+                                    }`}>
+                                      Kho: {product.totalQuantity || 0}
+                                    </span>
+                                  </div>
                                 </div>
                                 <Plus size={16} className="text-blue-600" />
                               </div>
@@ -1946,8 +1974,8 @@ export default function AdminTemplates() {
                       Chọn sản phẩm thêm vào giỏ
                     </h3>
                     
-                    {/* Search box */}
-                    <div className="mb-2">
+                    {/* Search & Selection */}
+                    <div className="space-y-2 mb-2">
                       <input
                         type="text"
                         placeholder="Tìm kiếm sản phẩm..."
@@ -1955,18 +1983,36 @@ export default function AdminTemplates() {
                         onChange={(e) => setProductSearch(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                       />
+                      <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 border border-gray-300 rounded-lg text-xs whitespace-nowrap hover:bg-gray-50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={showInStockOnlyForCreate}
+                          onChange={(e) => setShowInStockOnlyForCreate(e.target.checked)}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <span className="font-medium text-gray-700">Chỉ hiện sản phẩm còn hàng</span>
+                      </label>
                     </div>
                     
-                    <div className="max-h-[200px] overflow-y-auto border rounded-lg p-2 space-y-2">
+                    <div className="max-h-[250px] overflow-y-auto border rounded-lg p-2 space-y-2">
                       {availableProducts.length === 0 ? (
                         <p className="text-center text-gray-500 py-4">Không có sản phẩm khả dụng</p>
                       ) : (
                         <>
                           {availableProducts
                             .filter(product => {
-                              if (!productSearch) return true;
-                              const searchLower = productSearch.toLowerCase();
-                              return product.productname?.toLowerCase().includes(searchLower);
+                              // Filter by search
+                              if (productSearch) {
+                                const searchLower = productSearch.toLowerCase();
+                                if (!product.productname?.toLowerCase().includes(searchLower)) {
+                                  return false;
+                                }
+                              }
+                              // Filter by stock
+                              if (showInStockOnlyForCreate && (product.totalQuantity || 0) <= 0) {
+                                return false;
+                              }
+                              return true;
                             })
                             .map(product => (
                             <div 
@@ -1987,18 +2033,30 @@ export default function AdminTemplates() {
                               )}
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium text-sm truncate">{product.productname}</p>
-                                <p className="text-xs text-gray-500">
-                                  {product.price?.toLocaleString('vi-VN')}đ
-                                </p>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-xs text-gray-500">
+                                    {product.price?.toLocaleString('vi-VN')}đ
+                                  </p>
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                                    (product.totalQuantity || 0) > 10 ? 'bg-green-100 text-green-700' :
+                                    (product.totalQuantity || 0) > 0 ? 'bg-orange-100 text-orange-700' :
+                                    'bg-red-100 text-red-700'
+                                  }`}>
+                                    Kho: {product.totalQuantity || 0}
+                                  </span>
+                                </div>
                               </div>
                               <Plus size={16} className="text-blue-600" />
                             </div>
                           ))}
                           {availableProducts.filter(product => {
-                            if (!productSearch) return true;
-                            const searchLower = productSearch.toLowerCase();
-                            return product.productname?.toLowerCase().includes(searchLower);
-                          }).length === 0 && productSearch && (
+                            if (productSearch) {
+                              const searchLower = productSearch.toLowerCase();
+                              if (!product.productname?.toLowerCase().includes(searchLower)) return false;
+                            }
+                            if (showInStockOnlyForCreate && (product.totalQuantity || 0) <= 0) return false;
+                            return true;
+                          }).length === 0 && (
                             <p className="text-center text-gray-500 py-4 text-sm">
                               Không tìm thấy sản phẩm phù hợp
                             </p>
