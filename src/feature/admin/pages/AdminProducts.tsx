@@ -95,14 +95,39 @@ export default function AdminProducts() {
   const getToken = () => localStorage.getItem("token") || "";
 
   // ── Fetch: paginated single products ──────────────────────────────────────
-  const fetchProducts = useCallback(async (page: number, search: string) => {
+  const fetchProducts = useCallback(async (page: number, search: string, categoryId?: string, status?: string) => {
     try {
       setLoading(true);
       setError(null);
+
+      // Nếu có categoryId -> Sử dụng hàm mới GetByCategoryId (Lấy toàn bộ sản phẩm của danh mục)
+      if (categoryId && categoryId !== "" && categoryId !== "0") {
+        const res = await productService.getByCategoryId(Number(categoryId));
+        let list = (res as any)?.data ?? [];
+        
+        // Lọc thêm theo search và status ở client-side nếu cần
+        list = list.filter((p: Product) => !p.configid);
+        if (search) {
+          const s = search.toLowerCase();
+          list = list.filter((p: Product) => p.productname?.toLowerCase().includes(s));
+        }
+        if (status) {
+          list = list.filter((p: Product) => p.status === status);
+        }
+
+        setProducts(list);
+        setTotalPages(1); 
+        setTotalItems(list.length);
+        setCurrentPage(1);
+        return;
+      }
+
+      // Ngược lại dùng logic phân trang (GetAll)
       const params = new URLSearchParams({
         pageNumber: String(page),
         pageSize: String(PAGE_SIZE),
         ...(search ? { search } : {}),
+        ...(status ? { status } : {}),
       });
       const res: any = await axiosClient.get(`${API_ENDPOINTS.PRODUCTS.LIST}?${params.toString()}`);
       const paged = res?.data;
@@ -181,14 +206,14 @@ export default function AdminProducts() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentPage(1);
-      fetchProducts(1, searchTerm);
+      fetchProducts(1, searchTerm, filterCategory, filterStatus);
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchTerm, fetchProducts]);
+  }, [searchTerm, filterCategory, filterStatus, fetchProducts]);
 
   // Re-fetch single products when page changes
   useEffect(() => {
-    fetchProducts(currentPage, searchTerm);
+    fetchProducts(currentPage, searchTerm, filterCategory, filterStatus);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 

@@ -184,6 +184,12 @@ export const productService = {
     return response;
   },
 
+  // Get all products by category ID (No pagination)
+  getByCategoryId: async (categoryId: number) => {
+    const response = await axiosClient.get(API_ENDPOINTS.PRODUCTS.BY_CATEGORY(categoryId));
+    return response;
+  },
+
   // Get products by account (logged in user)
   getByAccount: async (token: string) => {
     const response = await axiosClient.get(API_ENDPOINTS.PRODUCTS.BY_ACCOUNT, {
@@ -344,6 +350,46 @@ export const productService = {
       );
       return response;
     },
+  },
+
+  // --- Admin Methods ---
+  getAdminProducts: async (params: {
+    pageNumber?: number;
+    pageSize?: number;
+    search?: string;
+    categoryId?: number;
+    status?: string;
+    isSingleProduct?: boolean;
+    isBasket?: boolean;
+  }) => {
+    try {
+      const queryParams = new URLSearchParams();
+
+      if (params.pageNumber) queryParams.append("pageNumber", String(params.pageNumber));
+      if (params.pageSize) queryParams.append("pageSize", String(params.pageSize));
+
+      if (params.search) queryParams.append("search", params.search);
+      if (params.categoryId) queryParams.append("categoryId", String(params.categoryId));
+      if (params.status) queryParams.append("status", params.status);
+      if (params.isSingleProduct !== undefined)
+        queryParams.append("isSingleProduct", String(params.isSingleProduct));
+      if (params.isBasket !== undefined)
+        queryParams.append("isBasket", String(params.isBasket));
+
+      const response = await axiosClient.get(
+        `${API_ENDPOINTS.PRODUCTS.LIST}?${queryParams.toString()}`
+      );
+
+      const resData = (response as any)?.data;
+      return {
+        data: (resData?.data as Product[]) ?? (Array.isArray(resData) ? resData : []),
+        totalPages: (resData?.totalPages as number) ?? 1,
+        totalItems: (resData?.totalItems as number) ?? 0,
+      };
+    } catch (error) {
+      console.error("[productService] Error fetching admin products:", error);
+      throw error;
+    }
   },
 
   // --- NEW: FE-only Available Products for Customer ---
