@@ -218,45 +218,6 @@ export default function ProductPage() {
     fetchAll();
   }, []);
 
-  /*  Fetch by Category (Server-side)  */
-  useEffect(() => {
-    if (selectedCategory === 0) {
-      // If "All" is selected, we rely on the initial fetchAll() data.
-      // But we need to make sure we restore it if it was overwritten.
-      const restoreAll = async () => {
-         try {
-           setSingleLoading(true);
-           const available = await productService.getAvailableProductsForCustomer();
-           setSingleProducts(available.filter((p: Product) => p.status === "ACTIVE" && !p.configid));
-         } catch (err) {
-           console.error("Error restoring all products:", err);
-         } finally {
-           setSingleLoading(false);
-         }
-      };
-      // Only restore if we have actually changed the category before
-      // (Simplified for demo, usually we'd keep a ref to the original list)
-      restoreAll();
-      return;
-    }
-
-    const fetchByCategory = async () => {
-      try {
-        setSingleLoading(true);
-        const res = await productService.getByCategoryId(selectedCategory);
-        // The new BE method returns List<ProductDto> directly in res.data
-        const categoryProducts = (res as any)?.data ?? [];
-        setSingleProducts(categoryProducts);
-      } catch (err) {
-        console.error("Error fetching products by category:", err);
-      } finally {
-        setSingleLoading(false);
-      }
-    };
-
-    fetchByCategory();
-  }, [selectedCategory]);
-
   /*  Filtered / sorted single products  */
   const filteredSingleProducts = useMemo(() => {
     let list = [...singleProducts];

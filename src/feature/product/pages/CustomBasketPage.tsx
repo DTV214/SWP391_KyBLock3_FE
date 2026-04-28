@@ -56,65 +56,42 @@ export default function CustomBasketPage() {
   // Search per category slot
   const [slotSearch, setSlotSearch] = useState<Record<number, string>>({});
 
+  /* ── Action state ── */
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  /* -- Category Products Map (New) -- */
-  const [categoryProductsMap, setCategoryProductsMap] = useState<Record<number, Product[]>>({});
-  const [categoryLoading, setCategoryLoading] = useState(false);
-
   /* ── Mobile panel ── */
   const [panelOpen, setPanelOpen] = useState(false);
 
-  /* ── Fetch initial configs ── */
+  /* ── Fetch data ── */
   useEffect(() => {
-    const fetchConfigs = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const configsData = await configService.getAllConfig();
+        const [configsData, availableProducts] = await Promise.all([
+          configService.getAllConfig(),
+          productService.getAvailableProductsForCustomer(),
+        ]);
+
         setConfigs(configsData);
+        setSingleProducts(
+          availableProducts.filter(
+            (p: Product) => p.status?.toUpperCase() === "ACTIVE" && !p.configid,
+          ),
+        );
       } catch (err: unknown) {
         const error = err as unknown;
-        setError((error as any)?.message || "Không thể tải danh sách mẫu giỏ.");
+        const errorMsg =
+          (error as Record<string, unknown>)?.message ||
+          "Không thể tải dữ liệu. Vui lòng thử lại.";
+        setError(errorMsg.toString());
       } finally {
         setLoading(false);
       }
     };
-    fetchConfigs();
+    fetchData();
   }, []);
-
-  /* -- Fetch products for each category slot when config selected -- */
-  useEffect(() => {
-    const details = selectedConfig?.configDetails;
-    if (!details) return;
-
-    const fetchCategoryProducts = async () => {
-      try {
-        setCategoryLoading(true);
-        const categoryIds = details.map(d => d.categoryid);
-        
-        // Fetch products for each required category in parallel
-        const results = await Promise.all(
-          categoryIds.map(id => productService.getByCategoryId(id))
-        );
-        
-        const newMap: Record<number, Product[]> = {};
-        categoryIds.forEach((id, index) => {
-          newMap[id] = (results[index] as any)?.data ?? [];
-        });
-        
-        setCategoryProductsMap(newMap);
-      } catch (err) {
-        console.error("[CustomBasket] Error fetching category products:", err);
-        setSaveError("Không thể tải danh sách sản phẩm theo danh mục.");
-      } finally {
-        setCategoryLoading(false);
-      }
-    };
-
-    fetchCategoryProducts();
-  }, [selectedConfig]);
 
   /* ── Handlers ── */
   const handleSelectConfig = (config: ProductConfig) => {
@@ -357,18 +334,14 @@ export default function CustomBasketPage() {
   const productsByCategory = useMemo(() => {
     const map: Record<number, Product[]> = {};
     if (!selectedConfig?.configDetails) return map;
-    
     for (const detail of selectedConfig.configDetails) {
       const picked = new Set(pickedItems.map((i) => i.productid));
-      // Use products from the specialized category map
-      const availableInCategory = categoryProductsMap[detail.categoryid] || [];
-      
-      map[detail.categoryid] = availableInCategory.filter(
-        (p) => !picked.has(p.productid!),
+      map[detail.categoryid] = singleProducts.filter(
+        (p) => p.categoryid === detail.categoryid && !picked.has(p.productid!),
       );
     }
     return map;
-  }, [selectedConfig, categoryProductsMap, pickedItems]);
+  }, [selectedConfig, singleProducts, pickedItems]);
 
   const totalPrice = useMemo(
     () =>
