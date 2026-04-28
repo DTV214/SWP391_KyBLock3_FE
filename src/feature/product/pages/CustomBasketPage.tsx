@@ -42,7 +42,6 @@ export default function CustomBasketPage() {
   const token = localStorage.getItem("token");
 
   const [configs, setConfigs] = useState<ProductConfig[]>([]);
-  const [singleProducts, setSingleProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,7 +61,6 @@ export default function CustomBasketPage() {
 
   /* -- Category Products Map (New) -- */
   const [categoryProductsMap, setCategoryProductsMap] = useState<Record<number, Product[]>>({});
-  const [categoryLoading, setCategoryLoading] = useState(false);
 
   /* ── Mobile panel ── */
   const [panelOpen, setPanelOpen] = useState(false);
@@ -91,7 +89,6 @@ export default function CustomBasketPage() {
 
     const fetchCategoryProducts = async () => {
       try {
-        setCategoryLoading(true);
         const categoryIds = details.map(d => d.categoryid);
         
         // Fetch products for each required category in parallel
@@ -108,8 +105,6 @@ export default function CustomBasketPage() {
       } catch (err) {
         console.error("[CustomBasket] Error fetching category products:", err);
         setSaveError("Không thể tải danh sách sản phẩm theo danh mục.");
-      } finally {
-        setCategoryLoading(false);
       }
     };
 
@@ -370,6 +365,10 @@ export default function CustomBasketPage() {
     return map;
   }, [selectedConfig, categoryProductsMap, pickedItems]);
 
+  const totalAvailableProducts = useMemo(() => {
+    return Object.values(categoryProductsMap).reduce((sum, list) => sum + list.length, 0);
+  }, [categoryProductsMap]);
+
   const totalPrice = useMemo(
     () =>
       pickedItems.reduce((s, i) => s + (i.product.price ?? 0) * i.quantity, 0),
@@ -462,7 +461,7 @@ export default function CustomBasketPage() {
             <div className="w-px bg-white/20" />
             <div className="text-center">
               <p className="text-4xl font-black text-amber-300">
-                {singleProducts.length}
+                {totalAvailableProducts > 0 ? totalAvailableProducts : "100+"}
               </p>
               <p className="text-sm font-bold uppercase tracking-wider opacity-80 mt-1">
                 Sản phẩm tuyển chọn

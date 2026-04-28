@@ -186,7 +186,7 @@ export const productService = {
 
   // Get all products by category ID (No pagination)
   getByCategoryId: async (categoryId: number) => {
-    const response = await axiosClient.get(API_ENDPOINTS.PRODUCTS.BY_CATEGORY(categoryId));
+    const response = await axiosClient.get((API_ENDPOINTS as any).PRODUCTS.BY_CATEGORY(categoryId));
     return response;
   },
 
