@@ -15,7 +15,6 @@ import VatSegmentChart from "../components/VatSegmentChart";
 import ProductAssociationsWidget from "../components/ProductAssociationsWidget";
 import { orderService, type OrderResponse } from "@/feature/checkout/services/orderService";
 import adminDashboardService, { 
-  type DashboardHighlights, 
   type DashboardSummary 
 } from "../services/adminDashboardService";
 
@@ -23,7 +22,6 @@ type TabType = "revenue" | "products" | "categories" | "inventory";
 
 const AdminReports: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("revenue");
-  const [insightsData, setInsightsData] = useState<DashboardHighlights | null>(null);
   const [summaryData, setSummaryData] = useState<DashboardSummary | null>(null);
   const [vatOrders, setVatOrders] = useState<OrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,12 +31,8 @@ const AdminReports: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [summary, insights] = await Promise.all([
-          adminDashboardService.getDashboardSummary(),
-          adminDashboardService.getDashboardInsights()
-        ]);
+        const summary = await adminDashboardService.getDashboardSummary();
         setSummaryData(summary);
-        setInsightsData(insights);
       } catch (error) {
         console.error("Failed to fetch reports data:", error);
       } finally {
