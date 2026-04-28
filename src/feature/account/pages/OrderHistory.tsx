@@ -1,4 +1,4 @@
-﻿import { motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -81,7 +81,7 @@ export default function OrderHistory() {
       } catch {
         if (isMounted) {
           setSelectedOrder(null);
-          setDetailError(`Khong the tai chi tiet don hang #${parsedOrderId}.`);
+          setDetailError(`Không thể tải chi tiết đơn hàng #${parsedOrderId}.`);
         }
       }
     };
