@@ -887,11 +887,6 @@ export default function AdminTemplates() {
                   }`}>
                     {template.status}
                   </span>
-                  {template.totalQuantity !== undefined && (
-                    <span className="bg-white/90 backdrop-blur-sm text-tet-accent px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                      Stock: {template.totalQuantity}
-                    </span>
-                  )}
                 </div>
               </div>
 
@@ -1094,7 +1089,6 @@ export default function AdminTemplates() {
                       const displayPrice = detail.childProduct?.price ?? detail.price;
                       const displayImage = detail.childProduct?.imageUrl ?? (detail as any).imageurl;
                       const displaySku = detail.childProduct?.sku;
-                      const displayStock = detail.childProduct?.totalQuantity;
                       return (
                       <div
                         key={index}
@@ -1122,11 +1116,6 @@ export default function AdminTemplates() {
                             <span className="text-xs text-gray-600">
                               Giá: <span className="font-bold text-tet-accent">{(displayPrice || 0).toLocaleString()}đ</span>
                             </span>
-                            {displayStock !== undefined && (
-                              <span className="text-xs text-gray-600">
-                                Stock: <span className="font-bold">{displayStock}</span>
-                              </span>
-                            )}
                           </div>
                         </div>
                         <div className="text-right">
