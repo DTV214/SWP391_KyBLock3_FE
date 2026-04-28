@@ -177,85 +177,65 @@ export default function ProductPage() {
   }, []);
 
   /*  Fetch  */
+  /*  Initial Load & Category Change  */
   useEffect(() => {
-    const fetchAll = async () => {
-      try {
-        const [availableProducts, availableBaskets, catsRes] =
-          await Promise.all([
-            productService.getAvailableProductsForCustomer(),
-            productService.getAvailableShopBasketsForCustomer(),
-            categoryService.getAll(),
-          ]);
-
-        setSingleProducts(
-          availableProducts.filter(
-            (p: Product) => p.status === "ACTIVE" && !p.configid,
-          ),
-        );
-        setSingleLoading(false);
-
-        setBaskets(
-          availableBaskets.filter((p: Product) => p.status === "ACTIVE"),
-        );
-        setBasketLoading(false);
-
-        const catsResponse = catsRes as unknown as Record<string, unknown>;
-        const cats: Category[] = Array.isArray(
-          (catsResponse?.data as Record<string, unknown>)?.data,
-        )
-          ? ((catsResponse?.data as Record<string, unknown>)
-              ?.data as Category[])
-          : Array.isArray(catsResponse?.data)
-            ? (catsResponse?.data as Category[])
-            : [];
-        setCategories(cats);
-      } catch (err) {
-        console.error("Error loading ProductPage data:", err);
-        setSingleLoading(false);
-        setBasketLoading(false);
-      }
-    };
-    fetchAll();
-  }, []);
-
-  /*  Fetch by Category (Server-side)  */
-  useEffect(() => {
-    if (selectedCategory === 0) {
-      // If "All" is selected, we rely on the initial fetchAll() data.
-      // But we need to make sure we restore it if it was overwritten.
-      const restoreAll = async () => {
-         try {
-           setSingleLoading(true);
-           const available = await productService.getAvailableProductsForCustomer();
-           setSingleProducts(available.filter((p: Product) => p.status === "ACTIVE" && !p.configid));
-         } catch (err) {
-           console.error("Error restoring all products:", err);
-         } finally {
-           setSingleLoading(false);
-         }
-      };
-      // Only restore if we have actually changed the category before
-      // (Simplified for demo, usually we'd keep a ref to the original list)
-      restoreAll();
-      return;
-    }
-
-    const fetchByCategory = async () => {
+    const loadData = async () => {
       try {
         setSingleLoading(true);
-        const res = await productService.getByCategoryId(selectedCategory);
-        // The new BE method returns List<ProductDto> directly in res.data
-        const categoryProducts = (res as any)?.data ?? [];
-        setSingleProducts(categoryProducts);
+        setBasketLoading(true);
+
+        // Fetch categories and shop baskets (always needed)
+        const [catsRes, availableBaskets] = await Promise.all([
+          categoryService.getAll(),
+          productService.getAvailableShopBasketsForCustomer(),
+        ]);
+
+        // 1. Handle Categories
+        const catsResponse = catsRes as unknown as Record<string, unknown>;
+        const cats: Category[] = Array.isArray((catsResponse?.data as any)?.data)
+          ? (catsResponse?.data as any).data
+          : Array.isArray(catsResponse?.data)
+          ? catsResponse.data
+          : [];
+        setCategories(cats);
+
+        // 2. Handle Shop Baskets
+        setBaskets(availableBaskets.filter((p: Product) => p.status === "ACTIVE"));
+        setBasketLoading(false);
+
+        // 3. Handle Single Products (Respect Category)
+        if (selectedCategory !== 0) {
+          const res = await productService.getByCategoryId(selectedCategory);
+          const categoryProducts = (res as any)?.data ?? [];
+          setSingleProducts(categoryProducts);
+        } else {
+          const availableProducts = await productService.getAvailableProductsForCustomer();
+          setSingleProducts(
+            availableProducts.filter(
+              (p: Product) => p.status === "ACTIVE" && !p.configid,
+            ),
+          );
+        }
       } catch (err) {
-        console.error("Error fetching products by category:", err);
+        console.error("Error loading ProductPage data:", err);
       } finally {
         setSingleLoading(false);
+        setBasketLoading(false);
       }
     };
 
-    fetchByCategory();
+    loadData();
   }, [selectedCategory]);
+
+  /* Sync selectedCategory with searchParams */
+  useEffect(() => {
+    const cat = searchParams.get("category");
+    const catId = cat ? Number(cat) : 0;
+    if (catId !== selectedCategory) {
+      setSelectedCategory(catId);
+    }
+  }, [searchParams]);
+
 
   /*  Filtered / sorted single products  */
   const filteredSingleProducts = useMemo(() => {
