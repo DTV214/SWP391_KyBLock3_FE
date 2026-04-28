@@ -61,7 +61,6 @@ export default function CustomBasketPage() {
 
   /* -- Category Products Map (New) -- */
   const [categoryProductsMap, setCategoryProductsMap] = useState<Record<number, Product[]>>({});
-  const [categoryLoading, setCategoryLoading] = useState(false);
 
   /* ── Mobile panel ── */
   const [panelOpen, setPanelOpen] = useState(false);
@@ -90,7 +89,6 @@ export default function CustomBasketPage() {
 
     const fetchCategoryProducts = async () => {
       try {
-        setCategoryLoading(true);
         const categoryIds = details.map(d => d.categoryid);
         
         // Fetch products for each required category in parallel
@@ -107,8 +105,6 @@ export default function CustomBasketPage() {
       } catch (err) {
         console.error("[CustomBasket] Error fetching category products:", err);
         setSaveError("Không thể tải danh sách sản phẩm theo danh mục.");
-      } finally {
-        setCategoryLoading(false);
       }
     };
 
@@ -412,7 +408,6 @@ export default function CustomBasketPage() {
     totalPrice,
     onAddToCart: handleAddToCart,
     saving,
-    categoryLoading,
     saveSuccess,
     saveError,
     isLoggedIn: !!token,
@@ -833,7 +828,6 @@ interface CustomizationPanelProps {
   totalPrice: number;
   onAddToCart: () => void;
   saving: boolean;
-  categoryLoading: boolean;
   saveSuccess: boolean;
   saveError: string | null;
   isLoggedIn: boolean;
@@ -857,7 +851,6 @@ function CustomizationPanel({
   totalPrice,
   onAddToCart,
   saving,
-  categoryLoading,
   saveSuccess,
   saveError,
   isLoggedIn,
@@ -1068,18 +1061,7 @@ function CustomizationPanel({
                       </div>
 
                       <div className="max-h-48 overflow-y-auto custom-scrollbar pr-2 space-y-2">
-                        {categoryLoading ? (
-                          // Loading Skeletons
-                          [1, 2, 3].map((i) => (
-                            <div key={i} className="w-full flex items-center gap-3 p-2 rounded-xl bg-gray-50/50 animate-pulse">
-                              <div className="w-10 h-10 rounded-lg bg-gray-200 shrink-0" />
-                              <div className="flex-1 space-y-2">
-                                <div className="h-3 bg-gray-200 rounded w-3/4" />
-                                <div className="h-2 bg-gray-200 rounded w-1/4" />
-                              </div>
-                            </div>
-                          ))
-                        ) : filtered.length === 0 ? (
+                        {filtered.length === 0 ? (
                           <div className="text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                             <p className="text-sm text-gray-500">
                               Không tìm thấy sản phẩm phù hợp.
